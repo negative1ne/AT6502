@@ -8,6 +8,7 @@ using Rectangle = Raylib_cs.Rectangle;
 namespace cSharpRaylib
 
 
+
 {
     class Program
     {
@@ -60,13 +61,22 @@ namespace cSharpRaylib
             int currentRoom = 0;
             bool is3DMode = false;
 
-            // Interactive projection transformation adjustment modifiers
-            float globalScale = 1.0f;       // Modifies overall layout scale sizes
-            float heightMultiplier = 1.8f;  // Stretches height steps vertically to match original heights
-            int panOffsetX = 0;             // Shifts screen map left/right
-            int panOffsetY = 0;             // Shifts screen map up/down
+            // 3D Viewport Calibration Modifiers
+            float globalScale = 1.0f;
+            float heightMultiplier = 1.8f;
+            int panOffsetX = 0;
+            int panOffsetY = 0;
 
-            var stagePalettes = new System.Collections.Generic.Dictionary<int, Color[]>()
+            // NEW EXTENDED CONTROLS STATE DRIVERS
+            int rotationAngle = 0;          // Tracks degrees of rotation (0-360)
+            float tiltFactor = 1.0f;        // Tracks forward/backward projection tilt ratio
+            int renderStyleMode = 0;        // 0 = Filled, 1 = Cel Shaded, 2 = Wireframe
+            bool displayPathOverlays = false; // Toggles tunnel/path coloration highlights
+            bool triggerScreenshotFlag = false; // Tracks screenshot demand requests
+
+            
+
+        var stagePalettes = new System.Collections.Generic.Dictionary<int, Color[]>()
             {
         { 0, new Color[] { Color.White, Color.Gray, Color.DarkGray } },
         { 1, new Color[] { Color.SkyBlue, Color.Pink, Color.Maroon } },
@@ -146,6 +156,41 @@ namespace cSharpRaylib
                         if (Raylib.IsKeyDown(KeyboardKey.K)) panOffsetY += 4; // Pan Down
                         if (Raylib.IsKeyDown(KeyboardKey.J)) panOffsetX -= 4; // Pan Left
                         if (Raylib.IsKeyDown(KeyboardKey.L)) panOffsetX += 4; // Pan Right
+
+                        // --- ADD THE NEW ROTATION, TILT, AND STYLE CONTROLS BELOW ---
+
+                        // A / D Keys: Rotate the map grid smoothly
+                        if (Raylib.IsKeyDown(KeyboardKey.A)) rotationAngle = (rotationAngle - 2 + 360) % 360;
+                        if (Raylib.IsKeyDown(KeyboardKey.D)) rotationAngle = (rotationAngle + 2) % 360;
+
+                        // Q / E Keys: Change the 3D projection tilt factor profile dynamically
+                        if (Raylib.IsKeyDown(KeyboardKey.Q)) tiltFactor = Math.Max(0.4f, tiltFactor - 0.02f);
+                        if (Raylib.IsKeyDown(KeyboardKey.E)) tiltFactor = Math.Min(2.0f, tiltFactor + 0.02f);
+
+                        // M Key: Cycle through Render Styles (0 = Filled, 1 = Cel Shaded, 2 = Wireframe)
+                        if (Raylib.IsKeyPressed(KeyboardKey.M))
+                        {
+                            renderStyleMode = (renderStyleMode + 1) % 3;
+                        }
+
+                        // P Key: Toggle path/tunnel visual color highlights
+                        if (Raylib.IsKeyPressed(KeyboardKey.P))
+                        {
+                            displayPathOverlays = !displayPathOverlays;
+                        }
+
+                        // R Key: Instantly reset view metrics back to defaults
+                        if (Raylib.IsKeyPressed(KeyboardKey.R))
+                        {
+                            globalScale = 1.0f;
+                            heightMultiplier = 1.8f;
+                            panOffsetX = 0;
+                            panOffsetY = 0;
+                            rotationAngle = 0;
+                            tiltFactor = 1.0f;
+                            renderStyleMode = 0;
+                            displayPathOverlays = false;
+                        }
                     }
 
                     // 2. GRAPHICS DRAWING ENVIRONMENT: Step A (Draw natively to our small virtual texture)
@@ -207,9 +252,25 @@ namespace cSharpRaylib
                                 int tileHeight = activeCity.Heights[x, y];
                                 if (tileHeight == 0) continue;
 
-                                // Pass coordinates and the active color palette directly to our module
-                                LevelTransform.DrawIsometricBlock(x, y, tileHeight, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY);
+                                // Fetch the layout attribute byte for path highlights
+                                byte cellAttr = activeCity.Attributes[x, y];
 
+                                // Pass all 13 required arguments directly to the LevelTransform module
+                                LevelTransform.DrawIsometricBlock(
+                                    x,
+                                    y,
+                                    tileHeight,
+                                    activeTheme,
+                                    globalScale,
+                                    heightMultiplier,
+                                    panOffsetX,
+                                    panOffsetY,
+                                    rotationAngle,
+                                    tiltFactor,
+                                    renderStyleMode,
+                                    displayPathOverlays,
+                                    cellAttr
+                                );
                             }
                         }
                     }
