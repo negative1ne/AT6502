@@ -1,9 +1,14 @@
-﻿using System;
-using Raylib_cs;
+﻿using Raylib_cs;
+using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using Color = Raylib_cs.Color;
 
 namespace cSharpRaylib
+
+
 {
     class Program
     {
@@ -44,13 +49,65 @@ namespace cSharpRaylib
             // Initialize standard room navigation trackers cleanly in scope
             int currentRoom = 0;
 
-            // Define color palette dictionary structure for quality-of-life visuals
-            var stagePalettes = new System.Collections.Generic.Dictionary<int, Color[]>()
+            // Fixed color palette profiles using explicit RGB values for strict Raylib compatibility
+    var stagePalettes = new System.Collections.Generic.Dictionary<int, Color[]>()
     {
-        { 0, new Color[] { Color.White, Color.Gray, Color.DarkGray } },     // 1-1: Ball Wave
-        { 1, new Color[] { Color.SkyBlue, Color.Pink, Color.Maroon } },    // 1-2: Tree Wave
-        { 2, new Color[] { Color.Blue, Color.DarkBlue, Color.Red } },      // 1-3: Doomsdome
-        { 3, new Color[] { Color.Violet, Color.Purple, Color.DarkPurple } }// 1-4: Berthilda's Castle
+        // WORLD 1
+        { 0, new Color[] { Color.White, Color.Gray, Color.DarkGray } },
+        { 1, new Color[] { Color.SkyBlue, Color.Pink, Color.Maroon } },
+        { 2, new Color[] { Color.RayWhite, Color.Blue, Color.DarkBlue } },
+        { 3, new Color[] { Color.Violet, Color.Purple, Color.DarkPurple } },         
+
+        // WORLD 2
+        { 4, new Color[] { Color.LightGray, new Color(112, 128, 144, 255), Color.DarkBlue } }, // SlateGray
+        { 5, new Color[] { Color.Magenta, Color.Purple, Color.Black } },
+        { 6, new Color[] { Color.Beige, Color.Brown, Color.DarkBrown } },
+        { 7, new Color[] { Color.Yellow, Color.Orange, Color.Red } },                
+
+        // WORLD 3
+        { 8, new Color[] { Color.LightGray, new Color(112, 128, 144, 255), Color.DarkBlue } },
+        { 9, new Color[] { Color.Lime, new Color(34, 139, 34, 255), Color.DarkGreen } },       // ForestGreen
+        { 10, new Color[] { Color.White, Color.SkyBlue, Color.Blue } },
+        { 11, new Color[] { Color.Purple, Color.DarkPurple, Color.Magenta } },       
+
+        // WORLD 4
+        { 12, new Color[] { Color.Gold, Color.Orange, Color.DarkBrown } },
+        { 13, new Color[] { Color.SkyBlue, Color.Blue, Color.DarkBlue } },
+        { 14, new Color[] { Color.LightGray, new Color(112, 128, 144, 255), Color.DarkBlue } },
+        { 15, new Color[] { Color.DarkGray, Color.Maroon, Color.Black } },           
+
+        // WORLD 5
+        { 16, new Color[] { Color.Magenta, Color.Purple, Color.Black } },
+        { 17, new Color[] { Color.Lime, new Color(34, 139, 34, 255), Color.DarkGreen } },
+        { 18, new Color[] { Color.Beige, Color.Brown, Color.DarkBrown } },
+        { 19, new Color[] { Color.Violet, Color.Purple, Color.DarkPurple } },        
+
+        // WORLD 6
+        { 20, new Color[] { Color.SkyBlue, Color.Blue, Color.DarkBlue } },
+        { 21, new Color[] { Color.SkyBlue, Color.Pink, Color.Maroon } },
+        { 22, new Color[] { Color.SkyBlue, Color.Pink, Color.Maroon } },
+        { 23, new Color[] { Color.DarkGray, Color.Maroon, Color.Black } },           
+
+        // WORLD 7
+        { 24, new Color[] { Color.Magenta, Color.Purple, Color.Black } },
+        { 25, new Color[] { Color.Gold, Color.Orange, Color.DarkBrown } },
+        { 26, new Color[] { Color.White, Color.SkyBlue, Color.Blue } },
+        { 27, new Color[] { Color.Purple, Color.DarkPurple, Color.Magenta } },       
+
+        // WORLD 8
+        { 28, new Color[] { Color.Magenta, Color.Purple, Color.Black } },
+        { 29, new Color[] { Color.SkyBlue, Color.Blue, Color.DarkBlue } },
+        { 30, new Color[] { Color.LightGray, new Color(112, 128, 144, 255), Color.DarkBlue } },
+        { 31, new Color[] { Color.Yellow, Color.Orange, Color.Red } },               
+
+        // WORLD 9
+        { 32, new Color[] { Color.Red, new Color(139, 0, 0, 255), Color.Black } },             // DarkRed
+        { 33, new Color[] { Color.Lime, new Color(34, 139, 34, 255), Color.DarkGreen } },
+        { 34, new Color[] { Color.White, Color.SkyBlue, Color.Blue } },
+        { 35, new Color[] { Color.Purple, Color.DarkPurple, Color.Magenta } },       
+
+        // FINAL STAGE
+        { 36, new Color[] { Color.RayWhite, Color.Gold, new Color(204, 204, 0, 255) } }         // DarkYellow
     };
 
             // The Interactive Video Loop
