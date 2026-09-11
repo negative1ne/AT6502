@@ -46,14 +46,49 @@ namespace cSharpRaylib
 
             while (!Raylib.WindowShouldClose())
             {
-                Raylib.BeginDrawing();
-                Raylib.ClearBackground(Color.DarkGray);
+                // Define color palette dictionary structure for quality-of-life visuals
+                var stagePalettes = new System.Collections.Generic.Dictionary<int, Color[]>()
+    {
+        { 0, new Color[] { Color.White, Color.Gray, Color.DarkGray } },     // 1-1: Ball Wave
+        { 1, new Color[] { Color.SkyBlue, Color.Pink, Color.Maroon } },    // 1-2: Tree Wave
+        { 2, new Color[] { Color.Blue, Color.DarkBlue, Color.Red } },      // 1-3: Doomsdome
+        { 3, new Color[] { Color.Violet, Color.Purple, Color.DarkPurple } }// 1-4: Berthilda's Castle
+    };
 
-                // Display confirmation that data vectors are loaded securely
-                Raylib.DrawText($"Data Engine: Active | Loaded Rooms: {RoomToCityMap.Length}", 20, 20, 20, Color.RayWhite);
-                Raylib.DrawText($"Current Map Index Focus: Room {currentRoom:D2}", 20, 50, 20, Color.Gold);
+                // The Interactive Video Loop
+                while (!Raylib.WindowShouldClose())
+                {
+                    // 1. INPUT HANDLING: Step rooms forward or backward with arrow keys safely
+                    if (Raylib.IsKeyPressed(KeyboardKey.Right))
+                    {
+                        currentRoom++;
+                        if (currentRoom > 36) currentRoom = 0; // Wrap back to stage 1-1
+                    }
+                    if (Raylib.IsKeyPressed(KeyboardKey.Left))
+                    {
+                        currentRoom--;
+                        if (currentRoom < 0) currentRoom = 36; // Wrap around to the final stage
+                    }
 
-                Raylib.EndDrawing();
+                    // 2. GRAPHICS DRAWING ENVIRONMENT
+                    Raylib.BeginDrawing();
+                    Raylib.ClearBackground(Color.Black); // Dark cinema backdrop matching VGMaps templates
+
+                    // Pull active theme profile, fallback to Gray if index is not explicitly filled yet
+                    Color[] activeTheme = stagePalettes.ContainsKey(currentRoom) ? stagePalettes[currentRoom] : stagePalettes[0];
+
+                    // Draw HUD diagnostics strings securely
+                    Raylib.DrawText("ccSharpRaylib — Dynamic Stage Inspector Engine", 20, 20, 20, Color.RayWhite);
+                    Raylib.DrawText($"Current Focus: Stage ID [{currentRoom:D2}] (Use Left/Right Arrows to Flip)", 20, 55, 18, Color.Gold);
+
+                    // Visual indicator of active loaded colors
+                    Raylib.DrawRectangle(20, 95, 40, 20, activeTheme[0]);
+                    Raylib.DrawRectangle(70, 95, 40, 20, activeTheme[1]);
+                    Raylib.DrawRectangle(120, 95, 40, 20, activeTheme[2]);
+                    Raylib.DrawText("Active Layout Palette Matrix Slots", 180, 98, 14, Color.LightGray);
+
+                    Raylib.EndDrawing();
+                }
             }
 
             Raylib.CloseWindow();
