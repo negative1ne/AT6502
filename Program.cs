@@ -60,6 +60,12 @@ namespace cSharpRaylib
             int currentRoom = 0;
             bool is3DMode = false;
 
+            // Interactive projection transformation adjustment modifiers
+            float globalScale = 1.0f;       // Modifies overall layout scale sizes
+            float heightMultiplier = 1.8f;  // Stretches height steps vertically to match original heights
+            int panOffsetX = 0;             // Shifts screen map left/right
+            int panOffsetY = 0;             // Shifts screen map up/down
+
             var stagePalettes = new System.Collections.Generic.Dictionary<int, Color[]>()
             {
         { 0, new Color[] { Color.White, Color.Gray, Color.DarkGray } },
@@ -124,6 +130,24 @@ namespace cSharpRaylib
                     if (Raylib.IsKeyPressed(KeyboardKey.Up)) is3DMode = true;  // Toggle 3D isometric view
                     if (Raylib.IsKeyPressed(KeyboardKey.Down)) is3DMode = false; // Toggle 2D blueprint view
 
+                    // 1.2 VIEWPORT CALIBRATION INPUTS (Runs only when 3D mode view is active)
+                    if (is3DMode)
+                    {
+                        // Modify overall layout sizing scales using Numpad plus/minus keys
+                        if (Raylib.IsKeyDown(KeyboardKey.KpAdd)) globalScale += 0.02f;
+                        if (Raylib.IsKeyDown(KeyboardKey.KpSubtract)) globalScale -= 0.02f;
+
+                        // Modify vertical column stepping thickness using W/S keys to compress or stretch heights
+                        if (Raylib.IsKeyDown(KeyboardKey.W)) heightMultiplier += 0.05f;
+                        if (Raylib.IsKeyDown(KeyboardKey.S)) heightMultiplier -= 0.05f;
+
+                        // Pan map position inside screen space using standard I/K/J/L keys
+                        if (Raylib.IsKeyDown(KeyboardKey.I)) panOffsetY -= 4; // Pan Up
+                        if (Raylib.IsKeyDown(KeyboardKey.K)) panOffsetY += 4; // Pan Down
+                        if (Raylib.IsKeyDown(KeyboardKey.J)) panOffsetX -= 4; // Pan Left
+                        if (Raylib.IsKeyDown(KeyboardKey.L)) panOffsetX += 4; // Pan Right
+                    }
+
                     // 2. GRAPHICS DRAWING ENVIRONMENT: Step A (Draw natively to our small virtual texture)
                     Raylib.BeginTextureMode(targetBuffer);
                     Raylib.ClearBackground(Color.Black);
@@ -175,7 +199,19 @@ namespace cSharpRaylib
                     else
                     {
                         // === RENDER 3D ISOMETRIC BLOCKS ===
-                        Raylib.DrawText("3D Mode Active — Ready for Projection Blocks", 220, 250, 18, Color.LightGray);
+                        // Double nested loops step from back to front to handle depth sorting correctly
+                        for (int x = 0; x < 22; x++)
+                        {
+                            for (int y = 0; y < 22; y++)
+                            {
+                                int tileHeight = activeCity.Heights[x, y];
+                                if (tileHeight == 0) continue;
+
+                                // Pass coordinates and the active color palette directly to our module
+                                LevelTransform.DrawIsometricBlock(x, y, tileHeight, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY);
+
+                            }
+                        }
                     }
 
                     // Draw active palette indicators using explicit array indexes
