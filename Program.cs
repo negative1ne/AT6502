@@ -41,13 +41,11 @@ namespace cSharpRaylib
             Raylib.InitWindow(screenWidth, screenHeight, "cSharpRaylib - Crystal Castles Data Active");
             Raylib.SetTargetFPS(60);
 
-            // Active tracking targets for our upcoming loop tests
+            // Initialize standard room navigation trackers cleanly in scope
             int currentRoom = 0;
 
-            while (!Raylib.WindowShouldClose())
-            {
-                // Define color palette dictionary structure for quality-of-life visuals
-                var stagePalettes = new System.Collections.Generic.Dictionary<int, Color[]>()
+            // Define color palette dictionary structure for quality-of-life visuals
+            var stagePalettes = new System.Collections.Generic.Dictionary<int, Color[]>()
     {
         { 0, new Color[] { Color.White, Color.Gray, Color.DarkGray } },     // 1-1: Ball Wave
         { 1, new Color[] { Color.SkyBlue, Color.Pink, Color.Maroon } },    // 1-2: Tree Wave
@@ -55,41 +53,74 @@ namespace cSharpRaylib
         { 3, new Color[] { Color.Violet, Color.Purple, Color.DarkPurple } }// 1-4: Berthilda's Castle
     };
 
-                // The Interactive Video Loop
-                while (!Raylib.WindowShouldClose())
+            // The Interactive Video Loop
+            while (!Raylib.WindowShouldClose())
+            {
+                // 1. INPUT HANDLING: Step rooms forward or backward safely
+                if (Raylib.IsKeyPressed(KeyboardKey.Right))
                 {
-                    // 1. INPUT HANDLING: Step rooms forward or backward with arrow keys safely
-                    if (Raylib.IsKeyPressed(KeyboardKey.Right))
-                    {
-                        currentRoom++;
-                        if (currentRoom > 36) currentRoom = 0; // Wrap back to stage 1-1
-                    }
-                    if (Raylib.IsKeyPressed(KeyboardKey.Left))
-                    {
-                        currentRoom--;
-                        if (currentRoom < 0) currentRoom = 36; // Wrap around to the final stage
-                    }
-
-                    // 2. GRAPHICS DRAWING ENVIRONMENT
-                    Raylib.BeginDrawing();
-                    Raylib.ClearBackground(Color.Black); // Dark cinema backdrop matching VGMaps templates
-
-                    // Pull active theme profile, fallback to Gray if index is not explicitly filled yet
-                    Color[] activeTheme = stagePalettes.ContainsKey(currentRoom) ? stagePalettes[currentRoom] : stagePalettes[0];
-
-                    // Draw HUD diagnostics strings securely
-                    Raylib.DrawText("ccSharpRaylib — Dynamic Stage Inspector Engine", 20, 20, 20, Color.RayWhite);
-                    Raylib.DrawText($"Current Focus: Stage ID [{currentRoom:D2}] (Use Left/Right Arrows to Flip)", 20, 55, 18, Color.Gold);
-
-                    // Visual indicator of active loaded colors
-                    Raylib.DrawRectangle(20, 95, 40, 20, activeTheme[0]);
-                    Raylib.DrawRectangle(70, 95, 40, 20, activeTheme[1]);
-                    Raylib.DrawRectangle(120, 95, 40, 20, activeTheme[2]);
-                    Raylib.DrawText("Active Layout Palette Matrix Slots", 180, 98, 14, Color.LightGray);
-
-                    Raylib.EndDrawing();
+                    currentRoom++;
+                    if (currentRoom > 36) currentRoom = 0;
                 }
+                if (Raylib.IsKeyPressed(KeyboardKey.Left))
+                {
+                    currentRoom--;
+                    if (currentRoom < 0) currentRoom = 36;
+                }
+
+                // 2. GRAPHICS DRAWING ENVIRONMENT
+                Raylib.BeginDrawing();
+                Raylib.ClearBackground(Color.Black);
+
+                // Fetch active theme color vectors safely using standard fallback
+                Color[] activeTheme = stagePalettes.ContainsKey(currentRoom) ? stagePalettes[currentRoom] : stagePalettes[0];
+
+                // Draw HUD diagnostics engine metrics
+                Raylib.DrawText("ccSharpRaylib — Dynamic Stage Inspector Engine", 20, 20, 20, Color.RayWhite);
+                Raylib.DrawText($"Current Focus: Stage ID [{currentRoom:D2}] (Use Left/Right Arrows to Flip)", 20, 55, 18, Color.Gold);
+
+                // 3. THE 2D TOP-DOWN BLUEPRINT RENDERING ENGINE
+                int rawRoomByte = RoomToCityMap[currentRoom];
+                int cityIndex = rawRoomByte & 0x0F;
+                CityData activeCity = cities[cityIndex];
+
+                // Visual layout grid matrix alignment coordinates
+                int cellSize = 16;
+                int gridOffsetX = 220;
+                int gridOffsetY = 150;
+
+                for (int x = 0; x < 22; x++)
+                {
+                    for (int y = 0; y < 22; y++)
+                    {
+                        int tileHeight = activeCity.Heights[x, y];
+                        if (tileHeight == 0) continue;
+
+                        int posX = gridOffsetX + (y * cellSize);
+                        int posY = gridOffsetY + (x * cellSize);
+
+                        // Quality of life: Shade blocks lighter based on elevation height
+                        byte baseShade = (byte)Math.Min(100 + (tileHeight * 2), 255);
+                        Color blockColor = new Color(
+                            (byte)(activeTheme[0].R * baseShade / 255),
+                            (byte)(activeTheme[0].G * baseShade / 255),
+                            (byte)(activeTheme[0].B * baseShade / 255),
+                            (byte)255
+                        );
+
+                        Raylib.DrawRectangle(posX, posY, cellSize - 1, cellSize - 1, blockColor);
+                    }
+                }
+
+                // Draw active palette indicators
+                Raylib.DrawRectangle(20, 95, 40, 20, activeTheme[0]);
+                Raylib.DrawRectangle(70, 95, 40, 20, activeTheme[1]);
+                Raylib.DrawRectangle(120, 95, 40, 20, activeTheme[2]);
+                Raylib.DrawText("Active Layout Palette Matrix Slots", 180, 98, 14, Color.LightGray);
+
+                Raylib.EndDrawing();
             }
+
 
             Raylib.CloseWindow();
         }
