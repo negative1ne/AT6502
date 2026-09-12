@@ -59,16 +59,18 @@ namespace cSharpRaylib
             bool displayPathOverlays = false;
             bool displayGems = true;
             bool displayElevators = true;
+            bool invertBackground = false; // Add this line right here
             bool triggerTextExport = false;
 
             // Simple Execution Video Frame Loop
             while (!Raylib.WindowShouldClose())
             {
                 InputHandler.HandleKeys(
-                    ref currentRoom, ref is3DMode, ref globalScale, ref heightMultiplier,
-                    ref panOffsetX, ref panOffsetY, ref rotationAngle, ref tiltFactor,
-                    ref renderStyleMode, ref displayPathOverlays, ref displayGems, ref displayElevators, ref triggerTextExport
-                );
+                ref currentRoom, ref is3DMode, ref globalScale, ref heightMultiplier,
+                ref panOffsetX, ref panOffsetY, ref rotationAngle, ref tiltFactor,
+                ref renderStyleMode, ref displayPathOverlays, ref displayGems, ref displayElevators,
+                ref invertBackground, ref triggerTextExport // Added ref parameter
+                 );
 
                 int cityIndex = RoomToCityMap[currentRoom] & 0x0F;
                 CityData activeCity = cities[cityIndex];
@@ -93,9 +95,13 @@ namespace cSharpRaylib
                     MapRenderer.Draw3DWorkspace(activeCity, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, displayGems, displayElevators);
                 }
 
-                // Clean routing of your overlay elements, passing arguments down cleanly
+                // 5. HUD CONTROL OVERLAY AND LABELS PASS
                 string currentStageName = (currentRoom < StageNames.Length) ? StageNames[currentRoom] : "Unknown Castle";
-                InputHandler.DrawControlOverlay(is3DMode, renderStyleMode, displayPathOverlays, displayGems, displayElevators, currentRoom, currentStageName, activeCity.NumElevators, activeTheme);
+
+                InputHandler.DrawControlOverlay(
+                    is3DMode, renderStyleMode, displayPathOverlays, displayGems, displayElevators,
+                    invertBackground, globalScale, currentRoom, currentStageName, activeCity.NumElevators, activeTheme
+                );
 
                 if (triggerTextExport)
                 {
@@ -103,8 +109,10 @@ namespace cSharpRaylib
                     triggerTextExport = false;
                 }
 
-                Raylib.EndTextureMode();
+                // === THE CRITICAL RE-ALIGNMENT FIX SEPARATION HOOKS ===
+                Raylib.EndTextureMode(); // 1. CLOSE THE VIRTUAL BUFFER FIRST!
 
+                // 6. NATIVE HARDWARE BLIT UP-SCALING CANVAS PASS (Fires cleanly onto your monitor)
                 Raylib.BeginDrawing();
                 Raylib.ClearBackground(Color.Black);
 
@@ -114,7 +122,7 @@ namespace cSharpRaylib
 
                 Raylib.DrawTexturePro(targetBuffer.Texture, sourceRec, destRec, originPoint, 0.0f, Color.White);
 
-                Raylib.EndDrawing();
+                Raylib.EndDrawing(); // 2. CLOSE BUFFER DISPLAY COMPLETE
             }
 
             Raylib.UnloadRenderTexture(targetBuffer);
