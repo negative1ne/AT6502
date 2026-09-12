@@ -1,7 +1,8 @@
 ﻿using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Windows.Forms;
+using static System.Windows.Forms.LinkLabel;
 
 namespace cSharpRaylib
 {
@@ -51,8 +52,8 @@ namespace cSharpRaylib
 
             return cities;
         }
-    
-    public static void ExportStageTextFile(int stageNum, string stageName, CityData activeCity)
+
+        public static void ExportStageTextFile(int stageNum, string stageName, CityData activeCity)
         {
             try
             {
@@ -65,31 +66,47 @@ namespace cSharpRaylib
                     writer.WriteLine($"Elevators Configured: {activeCity.NumElevators}\n");
                     writer.WriteLine("[Tile Height Grid Layout (22x22 View)]");
 
-                    for (int x = 0; x < 22; x++)
+                    // Look closely at the loop drivers: i represents X, j represents Y
+                    for (int i = 0; i < 22; i++)
                     {
-                        System.Text.StringBuilder line = new System.Text.StringBuilder();
-                        for (int y = 0; y < 22; y++)
+                        System.Text.StringBuilder rowLine = new System.Text.StringBuilder();
+                        for (int j = 0; j < 22; j++)
                         {
-                            int heightVal = activeCity.Heights[x, y];
-                            if (heightVal == 0)
+                            // Check if an elevator matches this current cell coordinate position
+                            bool isElevatorSpot = false;
+                            foreach (var ev in activeCity.Elevators)
                             {
-                                line.Append("  . ");
+                                if (ev.HorizontalPosition == i && ev.VerticalPosition == j)
+                                {
+                                    isElevatorSpot = true;
+                                    break;
+                                }
+                            }
+
+                            int heightVal = activeCity.Heights[i, j];
+
+                            if (isElevatorSpot)
+                            {
+                                rowLine.Append(" E  ");
+                            }
+                            else if (heightVal == 0)
+                            {
+                                rowLine.Append("  . ");
                             }
                             else
                             {
-                                line.Append($" {heightVal:D2} ");
+                                rowLine.Append($" {heightVal:D2} ");
                             }
                         }
-                        writer.WriteLine(line.ToString());
+                        writer.WriteLine(rowLine.ToString());
                     }
                 }
-                // Emit non-blocking visual debugging log context to target diagnostics trace paths
                 System.Diagnostics.Debug.WriteLine($"Exported matrix block successfully: {fullPath}");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to export data file stream context arrays: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Failed to export data file: {ex.Message}");
             }
         }
+     }
     }
-}

@@ -10,7 +10,7 @@ namespace cSharpRaylib
             ref int currentRoom, ref bool is3DMode, ref float globalScale,
             ref float heightMultiplier, ref int panOffsetX, ref int panOffsetY,
             ref int rotationAngle, ref float tiltFactor, ref int renderStyleMode,
-            ref bool displayPathOverlays, ref bool displayGems, ref bool exportTextFlag)
+            ref bool displayPathOverlays, ref bool displayGems, ref bool displayElevators, ref bool exportTextFlag)
         {
             if (Raylib.IsKeyPressed(KeyboardKey.Right)) { currentRoom = (currentRoom + 1) % 37; }
             if (Raylib.IsKeyPressed(KeyboardKey.Left)) { currentRoom = (currentRoom - 1 + 37) % 37; }
@@ -20,8 +20,8 @@ namespace cSharpRaylib
 
             if (Raylib.IsKeyPressed(KeyboardKey.G)) displayGems = !displayGems;
             if (Raylib.IsKeyPressed(KeyboardKey.P)) displayPathOverlays = !displayPathOverlays;
+            if (Raylib.IsKeyPressed(KeyboardKey.E)) displayElevators = !displayElevators; // Toggles Elevator Render Mode
 
-            // Handle conditional layout keys based on mode
             if (!is3DMode)
             {
                 if (Raylib.IsKeyPressed(KeyboardKey.T)) exportTextFlag = true;
@@ -30,7 +30,6 @@ namespace cSharpRaylib
             {
                 if (Raylib.IsKeyPressed(KeyboardKey.M)) { renderStyleMode = (renderStyleMode + 1) % 3; }
 
-                // 3D camera modifications
                 if (Raylib.IsKeyDown(KeyboardKey.KpAdd)) globalScale += 0.02f;
                 if (Raylib.IsKeyDown(KeyboardKey.KpSubtract)) globalScale -= 0.02f;
                 if (Raylib.IsKeyDown(KeyboardKey.W)) heightMultiplier += 0.05f;
@@ -58,13 +57,14 @@ namespace cSharpRaylib
                 renderStyleMode = 0;
                 displayPathOverlays = false;
                 displayGems = true;
+                displayElevators = true;
             }
         }
 
-        public static void DrawControlOverlay(bool is3DMode, int renderStyle, bool pathsOn, bool gemsOn)
+        public static void DrawControlOverlay(bool is3DMode, int renderStyle, bool pathsOn, bool gemsOn, bool elevatorsOn)
         {
             int rectY = 130;
-            int rectHeight = is3DMode ? 215 : 195;
+            int rectHeight = is3DMode ? 233 : 195; // Adjusted height for clean item wrapping
             Raylib.DrawRectangle(15, rectY, 210, rectHeight, new Color(20, 20, 20, 200));
             Raylib.DrawRectangleLines(15, rectY, 210, rectHeight, Color.DarkGray);
 
@@ -78,25 +78,24 @@ namespace cSharpRaylib
 
             if (!is3DMode)
             {
-                // Change Color.Cyan to Color.SkyBlue so Raylib can recognize it
                 Raylib.DrawText("T          : Export Matrix Text", 25, startTextY + 94, 11, Color.SkyBlue);
                 Raylib.DrawText("R          : Reset View", 25, startTextY + 112, 11, Color.RayWhite);
             }
             else
             {
                 string styleName = renderStyle == 0 ? "Original Filled" : (renderStyle == 1 ? "Cel Shaded" : "Wireframe");
-                Raylib.DrawText($"M          : Style [{styleName}]", 25, startTextY + 94, 11, Color.Orange);
-                Raylib.DrawText("R          : Reset View", 25, startTextY + 112, 11, Color.RayWhite);
+                Raylib.DrawText($"E          : Lifts    [{(elevatorsOn ? "ON" : "OFF")}]", 25, startTextY + 94, 11, Color.Yellow);
+                Raylib.DrawText($"M          : Style [{styleName}]", 25, startTextY + 112, 11, Color.Orange);
+                Raylib.DrawText("R          : Reset View", 25, startTextY + 130, 11, Color.RayWhite);
 
-                // Extended parameters menu block container box coordinates context layout
-                Raylib.DrawRectangle(15, rectY + 225, 210, 110, new Color(20, 20, 20, 200));
-                Raylib.DrawRectangleLines(15, rectY + 225, 210, 110, Color.DarkGray);
+                Raylib.DrawRectangle(15, rectY + 245, 210, 110, new Color(20, 20, 20, 200));
+                Raylib.DrawRectangleLines(15, rectY + 245, 210, 110, Color.DarkGray);
 
-                Raylib.DrawText("3D PARAMETERS", 25, rectY + 232, 12, Color.Gold);
-                Raylib.DrawText("A / D   : Rotate Grid", 25, rectY + 252, 11, Color.LightGray);
-                Raylib.DrawText("Q / E   : Perspective Tilt", 25, rectY + 270, 11, Color.LightGray);
-                Raylib.DrawText("W / S   : Scale Height", 25, rectY + 288, 11, Color.LightGray);
-                Raylib.DrawText("I/K/J/L : Pan Camera", 25, rectY + 306, 11, Color.LightGray);
+                Raylib.DrawText("3D PARAMETERS", 25, rectY + 252, 12, Color.Gold);
+                Raylib.DrawText("A / D   : Rotate Grid", 25, rectY + 272, 11, Color.LightGray);
+                Raylib.DrawText("Q / E   : Perspective Tilt", 25, rectY + 290, 11, Color.LightGray);
+                Raylib.DrawText("W / S   : Scale Height", 25, rectY + 308, 11, Color.LightGray);
+                Raylib.DrawText("I/K/J/L : Pan Camera", 25, rectY + 326, 11, Color.LightGray);
             }
         }
     }

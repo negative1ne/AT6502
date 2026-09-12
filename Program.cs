@@ -18,6 +18,19 @@ namespace cSharpRaylib
                 0x08, 0x7D, 0x05, 0xCB, 0x0E
             };
 
+            string[] StageNames = new string[] {
+                "Ball Wave", "Tree Wave", "Doomsdome", "Berthilda's Castle",
+                "Hidden Ramp", "Staircase", "Crossroads", "Berthilda's Fortress",
+                "Hidden Ramp", "Nasty Tree", "Hidden Spiral", "Berthilda's Dungeon",
+                "Pyramid", "Cross Maze", "Hidden Ramp", "Berthilda's Palace",
+                "Staircase", "Nasty Tree", "Crossroads", "Berthilda's Castle",
+                "Cross Maze", "Tree Wave", "Tree Wave", "Berthilda's Palace",
+                "Staircase", "Pyramid", "Hidden Spiral", "Berthilda's Dungeon",
+                "Staircase", "Cross Maze", "Hidden Ramp", "Berthilda's Fortress",
+                "Impossible Staircase", "Nasty Tree", "Hidden Spiral", "Berthilda's Dungeon",
+                "The End"
+            };
+
             List<CityData> cities = RomManager.LoadRomDatabase();
             var stagePalettes = StagePalettes.GetMasterPaletteMatrix();
 
@@ -33,7 +46,6 @@ namespace cSharpRaylib
             RenderTexture2D targetBuffer = Raylib.LoadRenderTexture(virtualWidth, virtualHeight);
             Raylib.SetTextureFilter(targetBuffer.Texture, TextureFilter.Point);
 
-            // 4. Initialize tracking states inside Program.cs
             int currentRoom = 0;
             bool is3DMode = false;
             float globalScale = 1.0f;
@@ -45,39 +57,17 @@ namespace cSharpRaylib
             int renderStyleMode = 0;
             bool displayPathOverlays = false;
             bool displayGems = true;
-
-            // Ensure this matches the 12th variable passed to your InputHandler
+            bool displayElevators = true;
             bool triggerTextExport = false;
 
-            string[] StageNames = new string[] {
-                "Ball Wave", "Tree Wave", "Doomsdome", "Berthilda's Castle",
-                "Hidden Ramp", "Staircase", "Crossroads", "Berthilda's Fortress",
-                "Hidden Ramp", "Nasty Tree", "Hidden Spiral", "Berthilda's Dungeon",
-                "Pyramid", "Cross Maze", "Hidden Ramp", "Berthilda's Palace",
-                "Staircase", "Nasty Tree", "Crossroads", "Berthilda's Castle",
-                "Cross Maze", "Tree Wave", "Tree Wave", "Berthilda's Palace",
-                "Staircase", "Pyramid", "Hidden Spiral", "Berthilda's Dungeon",
-                "Staircase", "Cross Maze", "Hidden Ramp", "Berthilda's Fortress",
-                "Impossible Staircase", "Nasty Tree", "Hidden Spiral", "Berthilda's Dungeon",
-                "The End"
-            };
-
+            // Simple Execution Video Frame Loop
             while (!Raylib.WindowShouldClose())
             {
-                // Inside the update loop of Program.cs
+                // 1. Core Input Routing Step
                 InputHandler.HandleKeys(
-                    ref currentRoom,
-                    ref is3DMode,
-                    ref globalScale,
-                    ref heightMultiplier,
-                    ref panOffsetX,
-                    ref panOffsetY,
-                    ref rotationAngle,
-                    ref tiltFactor,
-                    ref renderStyleMode,
-                    ref displayPathOverlays,
-                    ref displayGems,
-                    ref triggerTextExport // <-- Pass the updated flag name here
+                    ref currentRoom, ref is3DMode, ref globalScale, ref heightMultiplier,
+                    ref panOffsetX, ref panOffsetY, ref rotationAngle, ref tiltFactor,
+                    ref renderStyleMode, ref displayPathOverlays, ref displayGems, ref displayElevators, ref triggerTextExport
                 );
 
                 Raylib.BeginTextureMode(targetBuffer);
@@ -85,6 +75,7 @@ namespace cSharpRaylib
 
                 Color[] activeTheme = stagePalettes.ContainsKey(currentRoom) ? stagePalettes[currentRoom] : stagePalettes[0];
 
+                // 2. HUD text drawing pass
                 Raylib.DrawText("ccSharpRaylib", 20, 20, 20, Color.RayWhite);
                 string activeStageName = (currentRoom < StageNames.Length) ? StageNames[currentRoom] : "Unknown Castle";
                 int displayLevel = (currentRoom / 4) + 1;
@@ -95,96 +86,38 @@ namespace cSharpRaylib
                 int cityIndex = RoomToCityMap[currentRoom] & 0x0F;
                 CityData activeCity = cities[cityIndex];
 
+                // 3. CLEAN REFACTORED WORKSPACE RENDER CALLS
                 if (!is3DMode)
                 {
-                    int cellSize = 16;
-                    int gridOffsetX = 380;
-                    int gridOffsetY = 150;
-
-                    for (int x = 0; x < 22; x++)
-                    {
-                        for (int y = 0; y < 22; y++)
-                        {
-                            int tileHeight = activeCity.Heights[x, y];
-                            if (tileHeight == 0) continue;
-
-                            int posX = gridOffsetX + (y * cellSize);
-                            int posY = gridOffsetY + (x * cellSize);
-                            byte cellAttr = activeCity.Attributes[x, y];
-
-                            int baseShade = Math.Min(100 + (tileHeight * 12), 255);
-                            Color blockColor = activeTheme[0];
-
-                            if (displayPathOverlays)
-                            {
-                                if ((cellAttr & 0x20) == 0x20) blockColor = Color.Purple;
-                                else if ((cellAttr & 0x04) == 0x04) blockColor = Color.Green;
-                                else if ((cellAttr & 0x10) == 0x10) blockColor = Color.Yellow;
-                            }
-                            else
-                            {
-                                blockColor = new Color(
-                                    (byte)(activeTheme[0].R * baseShade / 255),
-                                    (byte)(activeTheme[0].G * baseShade / 255),
-                                    (byte)(activeTheme[0].B * baseShade / 255),
-                                    (byte)255
-                                );
-                            }
-
-                            Raylib.DrawRectangle(posX, posY, cellSize - 1, cellSize - 1, blockColor);
-
-                            // 2D GEM RENDERING STUB LOOKUP CALL
-                            if (displayGems && ((cellAttr & 0x10) == 0x10))
-                            {
-                                int cx = gridOffsetX + (y * cellSize) - (cellSize / 2) + 8;
-                                int cy = gridOffsetY + (x * cellSize) - (cellSize / 2) + 8;
-                                Raylib.DrawCircle(cx + 4, cy + 4, 3, Color.Red); // Classic arcade ruby dot
-                            }
-                        }
-                    }
+                    MapRenderer.Draw2DBlueprint(activeCity, activeTheme, displayPathOverlays, displayGems);
                 }
                 else
                 {
-                    for (int x = 0; x < 22; x++)
+                    MapRenderer.Draw3DWorkspace(activeCity, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, displayGems);
+
+                    if (displayElevators)
                     {
-                        for (int y = 0; y < 22; y++)
-                        {
-                            int tileHeight = activeCity.Heights[x, y];
-                            if (tileHeight == 0) continue;
-
-                            byte cellAttr = activeCity.Attributes[x, y];
-
-                            LevelTransform.DrawIsometricBlock(
-                                x, y, tileHeight, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY,
-                                rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, cellAttr
-                            );
-
-                            // 3D GEM RENDERING STUB LOOKUP CALL
-                            if (displayGems && ((cellAttr & 0x10) == 0x10))
-                            {
-                                LevelTransform.Draw3DGem(x, y, tileHeight, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, Color.Yellow);
-                            }
-                        }
+                        ElevatorRenderer.Render3DElevators(activeCity.Elevators, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode);
                     }
                 }
 
+                // 4. Panel Overlay Elements Drawing Pass
                 Raylib.DrawRectangle(20, 95, 40, 20, activeTheme[0]);
                 Raylib.DrawRectangle(70, 95, 40, 20, activeTheme[1]);
                 Raylib.DrawRectangle(120, 95, 40, 20, activeTheme[2]);
                 Raylib.DrawText("Active Layout Palette Matrix Slots", 180, 98, 14, Color.LightGray);
 
-                InputHandler.DrawControlOverlay(is3DMode, renderStyleMode, displayPathOverlays, displayGems);
+                InputHandler.DrawControlOverlay(is3DMode, renderStyleMode, displayPathOverlays, displayGems, displayElevators);
 
-                // CRITICAL CAPTURE LAYER INTERCEPT POINT
-                // Intercept the text file matrix compilation request cleanly on demand
                 if (triggerTextExport)
                 {
                     RomManager.ExportStageTextFile(currentRoom, StageNames[currentRoom], activeCity);
-                    triggerTextExport = false; // Reset intercept driver flag instantly
+                    triggerTextExport = false;
                 }
 
                 Raylib.EndTextureMode();
 
+                // 5. Native hardware blit upscaling canvas pass
                 Raylib.BeginDrawing();
                 Raylib.ClearBackground(Color.Black);
 
@@ -197,6 +130,7 @@ namespace cSharpRaylib
                 Raylib.EndDrawing();
             }
 
+            // GPU Memory De-allocations on Exit
             Raylib.UnloadRenderTexture(targetBuffer);
             Raylib.CloseWindow();
         }
