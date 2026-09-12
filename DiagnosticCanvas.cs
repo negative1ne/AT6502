@@ -14,19 +14,24 @@ namespace cSharpRaylib
             const int winW = 1000;
             const int winH = 1000;
 
-            Raylib.InitWindow(winW, winH, "Diagnostic Block Matrix Chart — Interactive Inspector");
+            Raylib.InitWindow(winW, winH, "Diagnostic Grid Laboratory — Interactive View Suite");
             Raylib.SetTargetFPS(60);
 
             int currentRoom = startingRoom;
             bool shouldUpdateStage = true;
+            bool spaceMapView = false; // NEW: Toggle flag to bypass screen math calculations
 
             List<ElevatorData> mockList = new List<ElevatorData>();
             CityData activeCity = null;
 
             while (!Raylib.WindowShouldClose())
             {
+                // Level cycling navigation triggers
                 if (Raylib.IsKeyPressed(KeyboardKey.Right)) { currentRoom = (currentRoom + 1) % 37; shouldUpdateStage = true; }
                 if (Raylib.IsKeyPressed(KeyboardKey.Left)) { currentRoom = (currentRoom - 1 + 37) % 37; shouldUpdateStage = true; }
+
+                // NEW: Press S to swap between Projection View and Flat Space Map View!
+                if (Raylib.IsKeyPressed(KeyboardKey.S)) { spaceMapView = !spaceMapView; }
 
                 if (shouldUpdateStage)
                 {
@@ -40,26 +45,33 @@ namespace cSharpRaylib
                         copy.HorizontalPosition = activeCity.Elevators[i].HorizontalPosition;
                         copy.VerticalPosition = activeCity.Elevators[i].VerticalPosition;
                         copy.BottomPosition = activeCity.Elevators[i].BottomPosition;
+
+                        // SYNC DATA: Pull the active grid assignments from the source cities collection array
+                        copy.CellX = activeCity.Elevators[i].CellX;
+                        copy.CellY = activeCity.Elevators[i].CellY;
+                        copy.IsMapped = activeCity.Elevators[i].IsMapped;
+
                         mockList.Add(copy);
                     }
 
+                    // Run our table overrides ONLY if the current room matches a problem stage entry
                     ElevatorPremapper.ApplyOverrides(currentRoom, mockList);
                     shouldUpdateStage = false;
                 }
 
-                // --- LIVE D-KEY TELEMETRY TEXT DUMP ENGINE HOOK ---
+                // --- LIVE D-KEY RE-WRITTEN INTERFACE TO PRINT VISUAL AND SPACE DETAILS ---
                 if (Raylib.IsKeyPressed(KeyboardKey.D))
                 {
                     try
                     {
                         string currentStageName = stageNames[currentRoom];
                         string filename = $"Diagnostic_Dump_Stage_{currentRoom:D2}_{currentStageName.Replace(" ", "_")}.txt";
-                        string fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
+                        string fullPath = Path.Combine(Directory.GetCurrentDirectory(), filename);
 
-                        using (StreamWriter writer = new StreamWriter(fullPath))
+                        using (StreamWriter writer = new StreamWriter(fullPath, false, Encoding.UTF8))
                         {
                             writer.WriteLine($"=== DIAGNOSTIC GRID SHEET: STAGE {currentRoom:D2} ({currentStageName.ToUpper()}) ===");
-                            writer.WriteLine($"Generated Context Matrix: {DateTime.Now}");
+                            writer.WriteLine($"Mode Target Context Profile: {(spaceMapView ? "FLAT UN-ROTATED SPACE DATA VIEW" : "ISOMETRIC PROJECTION SCREEN VIEW")}");
                             writer.WriteLine("[Legend: NN = Height, O = Premapper Box, R = ROM Footprint, M = Perfect Match, . = Empty Space]\n");
 
                             for (int x = 0; x < 22; x++)
@@ -67,38 +79,51 @@ namespace cSharpRaylib
                                 StringBuilder rowLine = new StringBuilder();
                                 for (int y = 0; y < 22; y++)
                                 {
-                                    // 1. Evaluate premapper assignment layers
                                     bool isPremapped = false;
                                     foreach (var ev in mockList)
                                     {
                                         if (ev.IsMapped && ev.CellX == x && ev.CellY == y) isPremapped = true;
                                     }
 
-                                    // 2. Evaluate raw arcade ROM coordinate footprints
                                     bool isRomFootprint = false;
-                                    int xp = 200 - (x * 4) + (y * 8);
-                                    int yp = 100 + (x * 4) + (y * 2) - activeCity.Heights[x, y];
 
-                                    foreach (var raw in mockList)
+                                    if (spaceMapView)
                                     {
-                                        int footprintX = raw.HorizontalPosition + 112;
-                                        int footprintY = raw.VerticalPosition - 28 - raw.BottomPosition;
-                                        if (footprintX == xp && footprintY == yp) isRomFootprint = true;
+                                        // FLAT SPACE VIEW MAP: Look straight at the un-rotated memory arrays!
+                                        foreach (var raw in mockList)
+                                        {
+                                            // Intercept raw memory array bytes indices cleanly
+                                            int cellX = raw.HorizontalPosition % 22;
+                                            int cellY = raw.VerticalPosition % 22;
+                                            if (cellX == x && cellY == y) isRomFootprint = true;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // SCREEN PROJECTION VIEW MAP
+                                        int xp = 200 - (x * 4) + (y * 8);
+                                        int yp = 100 + (x * 4) + (y * 2) - activeCity.Heights[x, y];
+
+                                        foreach (var raw in mockList)
+                                        {
+                                            int footprintX = raw.HorizontalPosition + 112;
+                                            int footprintY = raw.VerticalPosition - 28 - raw.BottomPosition;
+                                            if (footprintX == xp && footprintY == yp) isRomFootprint = true;
+                                        }
                                     }
 
                                     int h = activeCity.Heights[x, y];
 
-                                    // 3. Print the token status symbol
-                                    if (isPremapped && isRomFootprint) rowLine.Append(" M  "); // PERFECT ALIGNMENT MATCH
-                                    else if (isPremapped) rowLine.Append(" O  "); // PREMAPPER DATA BOX ONLY
-                                    else if (isRomFootprint) rowLine.Append(" R  "); // ARCADE ROM FOOTPRINT ONLY
+                                    if (isPremapped && isRomFootprint) rowLine.Append(" M  ");
+                                    else if (isPremapped) rowLine.Append(" O  ");
+                                    else if (isRomFootprint) rowLine.Append(" R  ");
                                     else if (h == 0) rowLine.Append("  . ");
                                     else rowLine.Append($" {h:D2} ");
                                 }
                                 writer.WriteLine(rowLine.ToString());
                             }
                         }
-                        Console.Beep(1200, 150); // Audible confirmation click alert
+                        Console.Beep(1800, 200);
                     }
                     catch (Exception ex)
                     {
@@ -126,9 +151,12 @@ namespace cSharpRaylib
 
                         if (h > 0)
                         {
-                            Raylib.DrawRectangle(posX + 2, posY + 2, cellSize - 4, cellSize - 4, new Color(0, 50, 0, 255));
+                            // Change layout background visualization color based on active mode
+                            Color terrainColor = spaceMapView ? new Color(0, 30, 60, 255) : new Color(0, 50, 0, 255);
+                            Raylib.DrawRectangle(posX + 2, posY + 2, cellSize - 4, cellSize - 4, terrainColor);
                         }
 
+                        // Premapper data overlay box layer configuration
                         bool isPremappedCell = false;
                         foreach (var ev in mockList)
                         {
@@ -141,18 +169,34 @@ namespace cSharpRaylib
                             Raylib.DrawRectangleLines(posX + 5, posY + 5, cellSize - 10, cellSize - 10, Color.Yellow);
                         }
 
-                        int xp = 200 - (x * 4) + (y * 8);
-                        int yp = 100 + (x * 4) + (y * 2) - h;
+                        // ROM Footprints Layer configuration checks
+                        bool drawRomDot = false;
 
-                        foreach (var raw in mockList)
+                        if (spaceMapView)
                         {
-                            int footprintX = raw.HorizontalPosition + 112;
-                            int footprintY = raw.VerticalPosition - 28 - raw.BottomPosition;
-
-                            if (footprintX == xp && footprintY == yp)
+                            foreach (var raw in mockList)
                             {
-                                Raylib.DrawRectangle(posX + 12, posY + 12, cellSize - 24, cellSize - 24, Color.Red);
+                                int cellX = raw.HorizontalPosition % 22;
+                                int cellY = raw.VerticalPosition % 22;
+                                if (cellX == x && cellY == y) drawRomDot = true;
                             }
+                        }
+                        else
+                        {
+                            int xp = 200 - (x * 4) + (y * 8);
+                            int yp = 100 + (x * 4) + (y * 2) - h;
+
+                            foreach (var raw in mockList)
+                            {
+                                int footprintX = raw.HorizontalPosition + 112;
+                                int footprintY = raw.VerticalPosition - 28 - raw.BottomPosition;
+                                if (footprintX == xp && footprintY == yp) drawRomDot = true;
+                            }
+                        }
+
+                        if (drawRomDot)
+                        {
+                            Raylib.DrawRectangle(posX + 12, posY + 12, cellSize - 24, cellSize - 24, Color.Red);
                         }
                     }
                 }

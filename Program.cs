@@ -84,14 +84,13 @@ namespace cSharpRaylib
                 {
                     try
                     {
-                        // Clean out old frame drift by forcing a fresh table load
-                        // Inside Program.cs -> Change currentRoom to cityIndex:
+                        // Safely inject our hybrid split gate processor
                         ElevatorPremapper.ApplyOverrides(currentRoom, activeCity.Elevators);
-                        lastRoomID = currentRoom; // Secure latch lock state
+                        lastRoomID = currentRoom;
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"Gated premapper fault trapped: {ex.Message}");
+                        System.Diagnostics.Debug.WriteLine($"Gated initialization fault: {ex.Message}");
                     }
                 }
 
