@@ -29,18 +29,27 @@ namespace cSharpRaylib
             int sizeX = (int)(12 * scale);
             int sizeY = (int)(6 * scale * tiltFactor);
 
-            int baseShade = Math.Min(100 + (tileHeight * 12), 255);
+            // Inside LevelTransform.cs -> DrawIsometricBlock function
+            // Replace your color calculation and polygon drawing block with this:
 
-            Color topColor = new Color((byte)(palette[0].R * baseShade / 255), (byte)(palette[0].G * baseShade / 255), (byte)(palette[0].B * baseShade / 255), (byte)255);
-            Color frontColor = new Color((byte)(palette[1].R * baseShade / 255), (byte)(palette[1].G * baseShade / 255), (byte)(palette[1].B * baseShade / 255), (byte)255);
-            Color sideColor = new Color((byte)(palette[2].R * baseShade / 255), (byte)(palette[2].G * baseShade / 255), (byte)(palette[2].B * baseShade / 255), (byte)255);
+            // 3. 3D SHADING LAYER (Applies distinct brightness multipliers to separate faces)
+            int baseShade = Math.Min(100 + (tileHeight * 12), 255);
 
             if (showPaths)
             {
-                if ((cellAttr & 0x20) == 0x20) topColor = Color.Purple;
-                else if ((cellAttr & 0x04) == 0x04) topColor = Color.Green;
-                else if ((cellAttr & 0x10) == 0x10) topColor = Color.Yellow;
+                if ((cellAttr & 0x20) == 0x20) palette[0] = Color.Purple;
+                else if ((cellAttr & 0x04) == 0x04) palette[0] = Color.Green;
+                else if ((cellAttr & 0x10) == 0x10) palette[0] = Color.Yellow;
             }
+
+            // Top cap face: Main base tone
+            Color topColor = new Color((byte)(palette[0].R * baseShade / 255), (byte)(palette[0].G * baseShade / 255), (byte)(palette[0].B * baseShade / 255), (byte)255);
+
+            // Front-Left Face: Multiplied down slightly (85% shading)
+            Color frontColor = new Color((byte)(palette[1].R * baseShade * 0.85f / 255), (byte)(palette[1].G * baseShade * 0.85f / 255), (byte)(palette[1].B * baseShade * 0.85f / 255), (byte)255);
+
+            // Front-Right Face: Multiplied down deeply (65% shading) to give a powerful 3D depth pop effect
+            Color sideColor = new Color((byte)(palette[2].R * baseShade * 0.65f / 255), (byte)(palette[2].G * baseShade * 0.65f / 255), (byte)(palette[2].B * baseShade * 0.65f / 255), (byte)255);
 
             // Determine vertical extrusion extension depth parameters based on styling profiles selected
             // Style 0 = Filled solid walls down to baseline grid plane coordinates

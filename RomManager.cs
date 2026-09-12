@@ -66,16 +66,15 @@ namespace cSharpRaylib
                     writer.WriteLine($"Elevators Configured: {activeCity.NumElevators}\n");
                     writer.WriteLine("[Tile Height Grid Layout (22x22 View)]");
 
-                    // Look closely at the loop drivers: i represents X, j represents Y
                     for (int i = 0; i < 22; i++)
                     {
                         System.Text.StringBuilder rowLine = new System.Text.StringBuilder();
                         for (int j = 0; j < 22; j++)
                         {
-                            // Check if an elevator matches this current cell coordinate position
                             bool isElevatorSpot = false;
                             foreach (var ev in activeCity.Elevators)
                             {
+                                // Match Horizontal to Row Index (i) and Vertical to Column Index (j)
                                 if (ev.HorizontalPosition == i && ev.VerticalPosition == j)
                                 {
                                     isElevatorSpot = true;
@@ -101,12 +100,11 @@ namespace cSharpRaylib
                         writer.WriteLine(rowLine.ToString());
                     }
                 }
-                System.Diagnostics.Debug.WriteLine($"Exported matrix block successfully: {fullPath}");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to export data file: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error exporting text matrix: {ex.Message}");
             }
         }
-     }
+    }
     }

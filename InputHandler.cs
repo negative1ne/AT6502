@@ -20,7 +20,7 @@ namespace cSharpRaylib
 
             if (Raylib.IsKeyPressed(KeyboardKey.G)) displayGems = !displayGems;
             if (Raylib.IsKeyPressed(KeyboardKey.P)) displayPathOverlays = !displayPathOverlays;
-            if (Raylib.IsKeyPressed(KeyboardKey.E)) displayElevators = !displayElevators; // Toggles Elevator Render Mode
+            if (Raylib.IsKeyPressed(KeyboardKey.B)) displayElevators = !displayElevators; // FIXED: Changed from L to B to clear pan conflict
 
             if (!is3DMode)
             {
@@ -64,7 +64,7 @@ namespace cSharpRaylib
         public static void DrawControlOverlay(bool is3DMode, int renderStyle, bool pathsOn, bool gemsOn, bool elevatorsOn)
         {
             int rectY = 130;
-            int rectHeight = is3DMode ? 233 : 195; // Adjusted height for clean item wrapping
+            int rectHeight = is3DMode ? 233 : 195;
             Raylib.DrawRectangle(15, rectY, 210, rectHeight, new Color(20, 20, 20, 200));
             Raylib.DrawRectangleLines(15, rectY, 210, rectHeight, Color.DarkGray);
 
@@ -84,7 +84,7 @@ namespace cSharpRaylib
             else
             {
                 string styleName = renderStyle == 0 ? "Original Filled" : (renderStyle == 1 ? "Cel Shaded" : "Wireframe");
-                Raylib.DrawText($"E          : Lifts    [{(elevatorsOn ? "ON" : "OFF")}]", 25, startTextY + 94, 11, Color.Yellow);
+                Raylib.DrawText($"B          : Elevators [{(elevatorsOn ? "ON" : "OFF")}]", 25, startTextY + 94, 11, Color.Yellow); // Updated text label
                 Raylib.DrawText($"M          : Style [{styleName}]", 25, startTextY + 112, 11, Color.Orange);
                 Raylib.DrawText("R          : Reset View", 25, startTextY + 130, 11, Color.RayWhite);
 

@@ -4,6 +4,7 @@ namespace cSharpRaylib
 {
     public class CityData
     {
+        // FIXED: Explicitly allocate the 22x22 dimensional grid arrays in system memory
         public byte[,] Heights = new byte[22, 22];
         public byte[,] Attributes = new byte[22, 22];
         public int NumElevators;

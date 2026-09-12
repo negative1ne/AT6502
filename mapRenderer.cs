@@ -7,7 +7,6 @@ namespace cSharpRaylib
 {
     public static class MapRenderer
     {
-        // Renders the flat 2D blueprint view, shifted away from the overlay boxes
         public static void Draw2DBlueprint(CityData activeCity, Color[] activeTheme, bool displayPathOverlays, bool displayGems)
         {
             int cellSize = 16;
@@ -25,14 +24,31 @@ namespace cSharpRaylib
                     int posY = gridOffsetY + (x * cellSize);
                     byte cellAttr = activeCity.Attributes[x, y];
 
-                    int baseShade = Math.Min(100 + (tileHeight * 12), 255);
-                    Color blockColor = activeTheme[0];
-
-                    if (displayPathOverlays)
+                    // Check if an elevator is configured on this tile position
+                    bool isElevatorSpot = false;
+                    foreach (var ev in activeCity.Elevators)
                     {
-                        if ((cellAttr & 0x20) == 0x20) blockColor = Color.Purple; // Tunnel
-                        else if ((cellAttr & 0x04) == 0x04) blockColor = Color.Green;  // Path
-                        else if ((cellAttr & 0x10) == 0x10) blockColor = Color.Yellow; // Gem Tile
+                        if (ev.HorizontalPosition == x && ev.VerticalPosition == y)
+                        {
+                            isElevatorSpot = true;
+                            break;
+                        }
+                    }
+
+                    int baseShade = Math.Min(100 + (tileHeight * 12), 255);
+                    Color blockColor;
+
+                    // 1. ELEVATOR GRAPHIC OVERLAY: Draw as a distinct color square (Orange)
+                    if (isElevatorSpot)
+                    {
+                        blockColor = Color.Orange;
+                    }
+                    else if (displayPathOverlays)
+                    {
+                        if ((cellAttr & 0x20) == 0x20) blockColor = Color.Purple;
+                        else if ((cellAttr & 0x04) == 0x04) blockColor = Color.Green;
+                        else if ((cellAttr & 0x10) == 0x10) blockColor = Color.Yellow;
+                        else blockColor = activeTheme[0];
                     }
                     else
                     {
@@ -46,18 +62,15 @@ namespace cSharpRaylib
 
                     Raylib.DrawRectangle(posX, posY, cellSize - 1, cellSize - 1, blockColor);
 
-                    // Render ruby gem indicator dot
+                    // Render ruby gem indicator dot over tile center
                     if (displayGems && ((cellAttr & 0x10) == 0x10))
                     {
-                        int cx = gridOffsetX + (y * cellSize) - (cellSize / 2) + 8;
-                        int cy = gridOffsetY + (x * cellSize) - (cellSize / 2) + 8;
-                        Raylib.DrawCircle(cx + 4, cy + 4, 3, Color.Red);
+                        Raylib.DrawCircle(posX + 8, posY + 8, 3, Color.Red);
                     }
                 }
             }
         }
 
-        // Loops front-to-back and invokes the 3D block projections and golden gems
         public static void Draw3DWorkspace(CityData activeCity, Color[] activeTheme, float scale, float heightScale,
             int offsetX, int offsetY, int rotationAngle, float tiltFactor, int renderStyle, bool showPaths, bool displayGems)
         {
