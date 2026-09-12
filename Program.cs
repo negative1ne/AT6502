@@ -31,6 +31,7 @@ namespace cSharpRaylib
                 "The End"
             };
 
+            // Database parsed and auto-premapped entirely behind the scene boundary line
             List<CityData> cities = RomManager.LoadRomDatabase();
             var stagePalettes = StagePalettes.GetMasterPaletteMatrix();
 
@@ -63,61 +64,47 @@ namespace cSharpRaylib
             // Simple Execution Video Frame Loop
             while (!Raylib.WindowShouldClose())
             {
-                // 1. Core Input Routing Step
                 InputHandler.HandleKeys(
                     ref currentRoom, ref is3DMode, ref globalScale, ref heightMultiplier,
                     ref panOffsetX, ref panOffsetY, ref rotationAngle, ref tiltFactor,
                     ref renderStyleMode, ref displayPathOverlays, ref displayGems, ref displayElevators, ref triggerTextExport
                 );
 
+                int cityIndex = RoomToCityMap[currentRoom] & 0x0F;
+                CityData activeCity = cities[cityIndex];
+
+                // Continuous state machines update tick calls passed out
+                foreach (var ev in activeCity.Elevators)
+                {
+                    ev.Update();
+                }
+
                 Raylib.BeginTextureMode(targetBuffer);
                 Raylib.ClearBackground(Color.Black);
 
                 Color[] activeTheme = stagePalettes.ContainsKey(currentRoom) ? stagePalettes[currentRoom] : stagePalettes[0];
 
-                // 2. HUD text drawing pass
-                Raylib.DrawText("ccSharpRaylib", 20, 20, 20, Color.RayWhite);
-                string activeStageName = (currentRoom < StageNames.Length) ? StageNames[currentRoom] : "Unknown Castle";
-                int displayLevel = (currentRoom / 4) + 1;
-                int displayWave = (currentRoom % 4) + 1;
-                string viewModeLabel = is3DMode ? "3D Isometric" : "2D Flat";
-                Raylib.DrawText($"Level {displayLevel} - {displayWave} [{activeStageName}] | {viewModeLabel}", 20, 55, 18, Color.Gold);
-
-                int cityIndex = RoomToCityMap[currentRoom] & 0x0F;
-                CityData activeCity = cities[cityIndex];
-
-                // 3. CLEAN REFACTORED WORKSPACE RENDER CALLS
                 if (!is3DMode)
                 {
-                    MapRenderer.Draw2DBlueprint(activeCity, activeTheme, displayPathOverlays, displayGems);
+                    MapRenderer.Draw2DBlueprint(activeCity, activeTheme, displayPathOverlays, displayGems, displayElevators);
                 }
                 else
                 {
-                    MapRenderer.Draw3DWorkspace(activeCity, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, displayGems);
-
-                    if (displayElevators)
-                    {
-                        ElevatorRenderer.Render3DElevators(activeCity.Elevators, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode);
-                    }
+                    MapRenderer.Draw3DWorkspace(activeCity, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, displayGems, displayElevators);
                 }
 
-                // 4. Panel Overlay Elements Drawing Pass
-                Raylib.DrawRectangle(20, 95, 40, 20, activeTheme[0]);
-                Raylib.DrawRectangle(70, 95, 40, 20, activeTheme[1]);
-                Raylib.DrawRectangle(120, 95, 40, 20, activeTheme[2]);
-                Raylib.DrawText("Active Layout Palette Matrix Slots", 180, 98, 14, Color.LightGray);
-
-                InputHandler.DrawControlOverlay(is3DMode, renderStyleMode, displayPathOverlays, displayGems, displayElevators);
+                // Clean routing of your overlay elements, passing arguments down cleanly
+                string currentStageName = (currentRoom < StageNames.Length) ? StageNames[currentRoom] : "Unknown Castle";
+                InputHandler.DrawControlOverlay(is3DMode, renderStyleMode, displayPathOverlays, displayGems, displayElevators, currentRoom, currentStageName, activeCity.NumElevators, activeTheme);
 
                 if (triggerTextExport)
                 {
-                    RomManager.ExportStageTextFile(currentRoom, StageNames[currentRoom], activeCity);
+                    RomManager.ExportStageTextFile(currentRoom, currentStageName, activeCity);
                     triggerTextExport = false;
                 }
 
                 Raylib.EndTextureMode();
 
-                // 5. Native hardware blit upscaling canvas pass
                 Raylib.BeginDrawing();
                 Raylib.ClearBackground(Color.Black);
 
@@ -130,7 +117,6 @@ namespace cSharpRaylib
                 Raylib.EndDrawing();
             }
 
-            // GPU Memory De-allocations on Exit
             Raylib.UnloadRenderTexture(targetBuffer);
             Raylib.CloseWindow();
         }

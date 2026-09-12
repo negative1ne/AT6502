@@ -33,9 +33,19 @@ namespace cSharpRaylib
 
     public class ElevatorData
     {
-        public int TopPosition, BottomPosition;
         public int HorizontalPosition, VerticalPosition;
+        public int TopPosition, BottomPosition;
         public int WaitTime;
+
+        // --- ADD THESE NEW SANDBOX FIELDS TO FIX THE COMPILER ERRORS ---
+        public int CellX { get; set; }
+        public int CellY { get; set; }
+        public bool IsMapped { get; set; } = false;
+
+        // --- ADD THESE NEW DYNAMIC ANIMATION TRACKERS FOR ENGINE INTEGRATION ---
+        public int Mode { get; set; } = 0;           // 0=Idle Bottom, 1=Up, 2=Idle Top, 3=Down
+        public int CurrentPosition { get; set; }     // Animated height tracking register value
+        public int CurrentSitTime { get; set; }      // Wait state timer tracker
 
         public int Load(byte[] data, int offset)
         {
@@ -46,7 +56,62 @@ namespace cSharpRaylib
             VerticalPosition = data[offset++];
             WaitTime = data[offset++];
             offset++;
+
+            // Initialize your starting parameters cleanly
+            CellX = 0;
+            CellY = 0;
+            IsMapped = false;
+            CurrentPosition = BottomPosition;
+            Mode = 0;
+            CurrentSitTime = 0;
+
             return offset;
         }
+
+        // The unified state machine mechanics engine calculation block we verified
+        public void Update()
+        {
+            const int SitTimeInc = 3;
+
+            switch (Mode)
+            {
+                case 0: // Stationary at bottom boundary
+                    CurrentSitTime += SitTimeInc;
+                    if (CurrentSitTime > WaitTime)
+                    {
+                        CurrentSitTime = 0;
+                        Mode = 1; // Change tracking state to Up
+                    }
+                    break;
+
+                case 1: // Moving up column path
+                    CurrentPosition++;
+                    if (CurrentPosition >= TopPosition)
+                    {
+                        CurrentPosition = TopPosition;
+                        Mode = 2; // Arrived at top ridge limit
+                    }
+                    break;
+
+                case 2: // Stationary at top boundary
+                    CurrentSitTime += SitTimeInc;
+                    if (CurrentSitTime > WaitTime)
+                    {
+                        CurrentSitTime = 0;
+                        Mode = 3; // Change tracking state to Down
+                    }
+                    break;
+
+                case 3: // Moving down column path
+                    CurrentPosition--;
+                    if (CurrentPosition <= BottomPosition)
+                    {
+                        CurrentPosition = BottomPosition;
+                        Mode = 0; // Arrived back at bottom
+                    }
+                    break;
+            }
+        }
     }
+  
 }

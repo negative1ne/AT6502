@@ -7,7 +7,7 @@ namespace cSharpRaylib
 {
     public static class MapRenderer
     {
-        public static void Draw2DBlueprint(CityData activeCity, Color[] activeTheme, bool displayPathOverlays, bool displayGems)
+        public static void Draw2DBlueprint(CityData activeCity, Color[] activeTheme, bool displayPathOverlays, bool displayGems, bool displayElevators)
         {
             int cellSize = 16;
             int gridOffsetX = 380;
@@ -17,29 +17,31 @@ namespace cSharpRaylib
             {
                 for (int y = 0; y < 22; y++)
                 {
+                    // FIXED OVERRIDE: If it's a hidden lift spot like Stage 32, draw it even if height is 0
+                    bool isElevatorCell = false;
+                    foreach (var ev in activeCity.Elevators)
+                    {
+                        if (ev.IsMapped && ev.CellX == x && ev.CellY == y)
+                        {
+                            isElevatorCell = true;
+                            break;
+                        }
+                    }
+
                     int tileHeight = activeCity.Heights[x, y];
-                    if (tileHeight == 0) continue;
+
+                    // Only escape if it's completely empty space AND not a lift
+                    if (tileHeight == 0 && !isElevatorCell) continue;
 
                     int posX = gridOffsetX + (y * cellSize);
                     int posY = gridOffsetY + (x * cellSize);
                     byte cellAttr = activeCity.Attributes[x, y];
 
-                    // Check if an elevator is configured on this tile position
-                    bool isElevatorSpot = false;
-                    foreach (var ev in activeCity.Elevators)
-                    {
-                        if (ev.HorizontalPosition == x && ev.VerticalPosition == y)
-                        {
-                            isElevatorSpot = true;
-                            break;
-                        }
-                    }
-
                     int baseShade = Math.Min(100 + (tileHeight * 12), 255);
                     Color blockColor;
 
-                    // 1. ELEVATOR GRAPHIC OVERLAY: Draw as a distinct color square (Orange)
-                    if (isElevatorSpot)
+                    // Dynamic B Key Visibility Layer Check
+                    if (isElevatorCell && displayElevators)
                     {
                         blockColor = Color.Orange;
                     }
@@ -62,35 +64,62 @@ namespace cSharpRaylib
 
                     Raylib.DrawRectangle(posX, posY, cellSize - 1, cellSize - 1, blockColor);
 
-                    // Render ruby gem indicator dot over tile center
-                    if (displayGems && ((cellAttr & 0x10) == 0x10))
+                    if (displayGems && ((cellAttr & 0x10) == 0x10) && !(isElevatorCell && displayElevators))
                     {
                         Raylib.DrawCircle(posX + 8, posY + 8, 3, Color.Red);
+                    }
+
+                    if (isElevatorCell && displayElevators)
+                    {
+                        Raylib.DrawText("E", posX + 4, posY + 1, 12, Color.White);
                     }
                 }
             }
         }
 
+
+        // Updated method signature with displayElevators visibility tracking flag parameters added safely
         public static void Draw3DWorkspace(CityData activeCity, Color[] activeTheme, float scale, float heightScale,
-            int offsetX, int offsetY, int rotationAngle, float tiltFactor, int renderStyle, bool showPaths, bool displayGems)
+            int offsetX, int offsetY, int rotationAngle, float tiltFactor, int renderStyle, bool showPaths, bool displayGems, bool displayElevators)
         {
+            // MAIN 3D STRUCTURAL GRAPHICS GRID LOOPS
             for (int x = 0; x < 22; x++)
             {
                 for (int y = 0; y < 22; y++)
                 {
-                    int tileHeight = activeCity.Heights[x, y];
-                    if (tileHeight == 0) continue;
+                    int currentHeight = activeCity.Heights[x, y];
+                    bool isElevatorCell = false;
+                    int drawHeight = currentHeight;
+
+                    // Query our 100% verified pre-mapped database to look for a platform slot match
+                    foreach (var ev in activeCity.Elevators)
+                    {
+                        if (ev.IsMapped && ev.CellX == x && ev.CellY == y)
+                        {
+                            isElevatorCell = true;
+                            // INTERCEPT ANIMATION DEPTHS: Only override height if the B key toggle is ON
+                            if (displayElevators)
+                            {
+                                drawHeight = ev.CurrentPosition;
+                            }
+                            break;
+                        }
+                    }
+
+                    if (drawHeight == 0) continue;
 
                     byte cellAttr = activeCity.Attributes[x, y];
 
+                    // Route column positions through your structural math transformations
                     LevelTransform.DrawIsometricBlock(
-                        x, y, tileHeight, activeTheme, scale, heightScale, offsetX, offsetY,
+                        x, y, drawHeight, activeTheme, scale, heightScale, offsetX, offsetY,
                         rotationAngle, tiltFactor, renderStyle, showPaths, cellAttr
                     );
 
-                    if (displayGems && ((cellAttr & 0x10) == 0x10))
+                    // Gem overlays pass
+                    if (displayGems && ((cellAttr & 0x10) == 0x10) && !(isElevatorCell && displayElevators))
                     {
-                        LevelTransform.Draw3DGem(x, y, tileHeight, scale, heightScale, offsetX, offsetY, rotationAngle, tiltFactor, Color.Yellow);
+                        LevelTransform.Draw3DGem(x, y, drawHeight, scale, heightScale, offsetX, offsetY, rotationAngle, tiltFactor, Color.Yellow);
                     }
                 }
             }
