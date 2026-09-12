@@ -1,7 +1,7 @@
 ﻿using cSharpRaylib;
 using System.Collections.Generic;
 
-namespace cViewerTest
+namespace cSharpRaylib
 {
     public static class ElevatorPremapper
     {

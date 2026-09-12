@@ -1,9 +1,6 @@
-﻿using cViewerTest;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Windows.Forms;
-using static System.Windows.Forms.LinkLabel;
+using System.Text;
 
 namespace cSharpRaylib
 {
@@ -12,7 +9,7 @@ namespace cSharpRaylib
         // Changed return type from List<Program.CityData> to plain List<CityData>
         public static List<CityData> LoadRomDatabase()
         {
-            
+
             string romDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "rom");
             string file1Path = Path.Combine(romDir, "136022-102.1h");
             string file2Path = Path.Combine(romDir, "136022-101.1f");
@@ -43,8 +40,8 @@ namespace cSharpRaylib
                 city.Load(combinedData, i * 0x400);
                 cities.Add(city);
             }
-            
-            
+
+
             // === ISOLATED DATA LAYER INITIALIZATION OVERRIDES ===
             // This maps 37 waves to the 16 base cities automatically inside the loader module
             byte[] RoomToCityMap = new byte[] {
@@ -66,31 +63,55 @@ namespace cSharpRaylib
 
             return cities; // Return the fully pre-mapped, bulletproof database object
         }
-    
 
 
-public static void ExportStageTextFile(int stageNum, string stageName, CityData activeCity)
+
+        public static void ExportStageTextFile(int stageNum, string stageName, CityData activeCity)
         {
             try
             {
                 string filename = $"Stage_{stageNum:D2}_{stageName.Replace(" ", "_")}_Matrix.txt";
-                string fullPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
+                string fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
 
-                using (System.IO.StreamWriter writer = new System.IO.StreamWriter(fullPath))
+                using (StreamWriter writer = new StreamWriter(fullPath))
                 {
-                    writer.WriteLine($"=== STRUCTURAL AUDIT: STAGE {stageNum} ({stageName}) ===");
-                    writer.WriteLine($"Elevators Configured: {activeCity.NumElevators}\n");
-                    writer.WriteLine("[Tile Height Grid Layout (22x22 View)]");
+                    writer.WriteLine($"=== VIEWER TEST 1 EXPORT LOG - RUN TIME: {DateTime.Now} ===");
+                    writer.WriteLine($"Stage [{stageNum:D2}] - [{stageName}] | Lifts Configured: {activeCity.NumElevators}");
+
+                    if (activeCity.NumElevators == 0)
+                    {
+                        writer.WriteLine("  * Lift Data: N/A (No lifts configured on this layout)");
+                        writer.WriteLine("\nLOCATION : N/A\nBEHAVIOR : N/A\nRESULTS  : 0/0 passed");
+                    }
+                    else
+                    {
+                        int passedCount = 0;
+                        for (int i = 0; i < activeCity.Elevators.Count; i++)
+                        {
+                            var ev = activeCity.Elevators[i];
+                            // Simple layout validation pass verification strings tracking bounds
+                            string statusStr = ev.IsMapped ? $"SUCCESS -> [CellX: {ev.CellX}, CellY: {ev.CellY}]" : "FAILED -> Out of bounds";
+                            if (ev.IsMapped) passedCount++;
+
+                            writer.WriteLine($"  * Lift [{i}]: ScreenX={ev.HorizontalPosition}, ScreenY={ev.VerticalPosition} | Map Position: {statusStr}");
+                        }
+
+                        writer.WriteLine("\nLOCATION : Pending Audit");
+                        writer.WriteLine("BEHAVIOR : Pending Audit");
+                        writer.WriteLine($"RESULTS  : {passedCount}/{activeCity.Elevators.Count} passed");
+                    }
+
+                    writer.WriteLine("\n--------------------------------------------------------------------------------");
+                    writer.WriteLine("[Tile Height Grid Layout (22x22 Raw Blueprint View)]\n");
 
                     for (int i = 0; i < 22; i++)
                     {
-                        System.Text.StringBuilder rowLine = new System.Text.StringBuilder();
+                        StringBuilder rowLine = new StringBuilder();
                         for (int j = 0; j < 22; j++)
                         {
                             bool isElevatorSpot = false;
                             foreach (var ev in activeCity.Elevators)
                             {
-                                // Match Horizontal to Row (i) and Vertical to Column (j) coordinates
                                 if (ev.IsMapped && ev.CellX == i && ev.CellY == j)
                                 {
                                     isElevatorSpot = true;
@@ -100,18 +121,9 @@ public static void ExportStageTextFile(int stageNum, string stageName, CityData 
 
                             int heightVal = activeCity.Heights[i, j];
 
-                            if (isElevatorSpot)
-                            {
-                                rowLine.Append(" E  ");
-                            }
-                            else if (heightVal == 0)
-                            {
-                                rowLine.Append("  . ");
-                            }
-                            else
-                            {
-                                rowLine.Append($" {heightVal:D2} ");
-                            }
+                            if (isElevatorSpot) rowLine.Append(" E  ");
+                            else if (heightVal == 0) rowLine.Append("  . ");
+                            else rowLine.Append($" {heightVal:D2} ");
                         }
                         writer.WriteLine(rowLine.ToString());
                     }
@@ -119,8 +131,9 @@ public static void ExportStageTextFile(int stageNum, string stageName, CityData 
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error exporting text matrix: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error exporting layout report text matrix: {ex.Message}");
             }
         }
     }
+  
 }
