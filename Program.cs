@@ -47,7 +47,10 @@ namespace cSharpRaylib
             RenderTexture2D targetBuffer = Raylib.LoadRenderTexture(virtualWidth, virtualHeight);
             Raylib.SetTextureFilter(targetBuffer.Texture, TextureFilter.Point);
 
+            // Inside Program.cs -> Main method variable block
             int currentRoom = 0;
+            int lastRoomID = -1; // INJECT THIS VARIABLE LATCH TRACKER HERE
+            
             bool is3DMode = false;
             float globalScale = 1.0f;
             float heightMultiplier = 1.8f;
@@ -72,8 +75,25 @@ namespace cSharpRaylib
                 ref invertBackground, ref triggerTextExport // Added ref parameter
                  );
 
+                // --- PROTECTED SINGLE-SHOT SECOVERY RE-INITIALIZATION ---
                 int cityIndex = RoomToCityMap[currentRoom] & 0x0F;
                 CityData activeCity = cities[cityIndex];
+
+                // Only executes once upon explicit room change key triggers
+                if (currentRoom != lastRoomID)
+                {
+                    try
+                    {
+                        // Clean out old frame drift by forcing a fresh table load
+                        // Inside Program.cs -> Change currentRoom to cityIndex:
+                        ElevatorPremapper.ApplyOverrides(currentRoom, activeCity.Elevators);
+                        lastRoomID = currentRoom; // Secure latch lock state
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Gated premapper fault trapped: {ex.Message}");
+                    }
+                }
 
                 // Continuous state machines update tick calls passed out
                 foreach (var ev in activeCity.Elevators)
@@ -105,7 +125,8 @@ namespace cSharpRaylib
 
                 if (triggerTextExport)
                 {
-                    RomManager.ExportStageTextFile(currentRoom, currentStageName, activeCity);
+                    // Passes arrays across the window boundary lines to allow live level flipping
+                    DiagnosticCanvas.LaunchDebugWindow(currentRoom, StageNames, RoomToCityMap, cities);
                     triggerTextExport = false;
                 }
 

@@ -52,14 +52,7 @@ namespace cSharpRaylib
                 0x08, 0x7D, 0x05, 0xCB, 0x0E
             };
 
-            for (int roomNum = 0; roomNum < 37; roomNum++)
-            {
-                int baseCityIndex = RoomToCityMap[roomNum] & 0x0F;
-                CityData targetedCity = cities[baseCityIndex];
-
-                // Securely lock the 100% validated coordinates into memory at boot time
-                ElevatorPremapper.ApplyOverrides(roomNum, targetedCity.Elevators);
-            }
+            
 
             return cities; // Return the fully pre-mapped, bulletproof database object
         }
