@@ -1,5 +1,7 @@
 ﻿using System;
 using Raylib_cs;
+// Add this exact line below to resolve the color definition ambiguity:
+using Color = Raylib_cs.Color;
 
 namespace cSharpRaylib
 {
@@ -75,12 +77,12 @@ namespace cSharpRaylib
             Raylib.DrawText("CONTROLS QUICK MENU", 25, startTextY, 13, Color.Gold);
 
             string[] universalMenus = {
-                "Left/Right : Change Stage",
-                "Up / Down  : Toggle 2D/3D",
-                $"P          : Pathways [{(pathsOn ? "ON" : "OFF")}]",
-                $"M          : Mode [{renderStyle}]",
-                "F12        : Screenshot",
-                "R          : Reset View"
+            "Left/Right : Change Stage",
+            "Up / Down  : Toggle 2D/3D",
+            $"P          : Pathways [{(pathsOn ? "ON" : "OFF")}]",
+            $"M          : Screen Mode [{renderStyle}]", // Updated label layout name
+            "F12        : Screenshot",
+            "R          : Reset View"
             };
 
             for (int i = 0; i < universalMenus.Length; i++)

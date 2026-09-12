@@ -6,9 +6,6 @@ using Color = Raylib_cs.Color;
 using Rectangle = Raylib_cs.Rectangle;
 
 namespace cSharpRaylib
-
-
-
 {
     class Program
     {
@@ -23,10 +20,25 @@ namespace cSharpRaylib
          0x08, 0x7D, 0x05, 0xCB, 0x0E
          };
 
-            // 2. Load and Combine Arcade Hardware Memory Buffers Safely
+            /// 2. Load and Combine Arcade Hardware Memory Buffers Safely with Missing File Traps
             string romDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "rom");
-            byte[] file1 = File.ReadAllBytes(Path.Combine(romDir, "136022-102.1h"));
-            byte[] file2 = File.ReadAllBytes(Path.Combine(romDir, "136022-101.1f"));
+            string file1Path = Path.Combine(romDir, "136022-102.1h");
+            string file2Path = Path.Combine(romDir, "136022-101.1f");
+
+            if (!Directory.Exists(romDir) || !File.Exists(file1Path) || !File.Exists(file2Path))
+            {
+                // Fire up a direct native modal notice window before terminating the thread context safety paths
+                System.Windows.Forms.MessageBox.Show(
+                    "Critical Error: No ROM files found!\n\nPlease ensure your 'rom' folder contains:\n- 136022-102.1h\n- 136022-101.1f",
+                    "Crystal Castles Viewer Error",
+                    System.Windows.Forms.MessageBoxButtons.OK,
+                    System.Windows.Forms.MessageBoxIcon.Error
+                );
+                return; // Safety exit execution context directly cleanly
+            }
+
+            byte[] file1 = File.ReadAllBytes(file1Path);
+            byte[] file2 = File.ReadAllBytes(file2Path);
             byte[] combinedData = new byte[file1.Length + file2.Length];
             file1.CopyTo(combinedData, 0);
             file2.CopyTo(combinedData, file1.Length);
@@ -74,9 +86,9 @@ namespace cSharpRaylib
             bool displayPathOverlays = false; // Toggles tunnel/path coloration highlights
             bool triggerScreenshotFlag = false; // Tracks screenshot demand requests
 
-            
 
-        var stagePalettes = new System.Collections.Generic.Dictionary<int, Color[]>()
+
+            var stagePalettes = new System.Collections.Generic.Dictionary<int, Color[]>()
             {
         { 0, new Color[] { Color.White, Color.Gray, Color.DarkGray } },
         { 1, new Color[] { Color.SkyBlue, Color.Pink, Color.Maroon } },
@@ -120,188 +132,121 @@ namespace cSharpRaylib
             // The Interactive Video Loop starts immediately below this
             while (!Raylib.WindowShouldClose())
             {
+                // 1. ROUTE ALL INPUT FUNCTIONS OUT TO THE ISOLATED INPUT HANDLER
+                InputHandler.HandleKeys(
+                    ref currentRoom, ref is3DMode, ref globalScale, ref heightMultiplier,
+                    ref panOffsetX, ref panOffsetY, ref rotationAngle, ref tiltFactor,
+                    ref renderStyleMode, ref displayPathOverlays, targetBuffer
+                );
 
-                // The Interactive Video Loop
-                while (!Raylib.WindowShouldClose())
+                // 2. GRAPHICS DRAWING ENVIRONMENT: Step A (Draw natively to our small virtual texture)
+                Raylib.BeginTextureMode(targetBuffer);
+                Raylib.ClearBackground(Color.Black);
+
+                // Fetch active theme color vectors safely using standard fallback
+                Color[] activeTheme = stagePalettes.ContainsKey(currentRoom) ? stagePalettes[currentRoom] : stagePalettes[0];
+
+                // Render HUD text information labels
+                Raylib.DrawText("ccSharpRaylib - Dynamic Stage Inspector Engine", 20, 20, 20, Color.RayWhite);
+
+                int displayLevel = (currentRoom / 4) + 1;
+                int displayWave = (currentRoom % 4) + 1;
+                Raylib.DrawText($"Current Stage [{currentRoom:D2}] - Level {displayLevel} - {displayWave} Ball Wave", 20, 55, 18, Color.Gold);
+
+                int rawRoomByte = RoomToCityMap[currentRoom];
+                int cityIndex = rawRoomByte & 0x0F;
+                CityData activeCity = cities[cityIndex];
+
+                // Route map coordinates out based on selected viewport mode profile
+                if (!is3DMode)
                 {
-                    // 1. INPUT HANDLING: Room switching indices
-                    if (Raylib.IsKeyPressed(KeyboardKey.Right))
+                    // === RENDER FLAT 2D BLUEPRINT (FIXED & CENTERED SHIFTED RIGHT) ===
+                    int cellSize = 16;
+                    int gridOffsetX = 380; // Shifted right to clear layout boxes completely
+                    int gridOffsetY = 150;
+
+                    for (int x = 0; x < 22; x++)
                     {
-                        currentRoom++;
-                        if (currentRoom > 36) currentRoom = 0;
-                    }
-                    if (Raylib.IsKeyPressed(KeyboardKey.Left))
-                    {
-                        currentRoom--;
-                        if (currentRoom < 0) currentRoom = 36;
-                    }
-
-                    // INPUT HANDLING: Viewpoint configuration switches
-                    if (Raylib.IsKeyPressed(KeyboardKey.Up)) is3DMode = true;  // Toggle 3D isometric view
-                    if (Raylib.IsKeyPressed(KeyboardKey.Down)) is3DMode = false; // Toggle 2D blueprint view
-
-                    // 1.2 VIEWPORT CALIBRATION INPUTS (Runs only when 3D mode view is active)
-                    if (is3DMode)
-                    {
-                        // Modify overall layout sizing scales using Numpad plus/minus keys
-                        if (Raylib.IsKeyDown(KeyboardKey.KpAdd)) globalScale += 0.02f;
-                        if (Raylib.IsKeyDown(KeyboardKey.KpSubtract)) globalScale -= 0.02f;
-
-                        // Modify vertical column stepping thickness using W/S keys to compress or stretch heights
-                        if (Raylib.IsKeyDown(KeyboardKey.W)) heightMultiplier += 0.05f;
-                        if (Raylib.IsKeyDown(KeyboardKey.S)) heightMultiplier -= 0.05f;
-
-                        // Pan map position inside screen space using standard I/K/J/L keys
-                        if (Raylib.IsKeyDown(KeyboardKey.I)) panOffsetY -= 4; // Pan Up
-                        if (Raylib.IsKeyDown(KeyboardKey.K)) panOffsetY += 4; // Pan Down
-                        if (Raylib.IsKeyDown(KeyboardKey.J)) panOffsetX -= 4; // Pan Left
-                        if (Raylib.IsKeyDown(KeyboardKey.L)) panOffsetX += 4; // Pan Right
-
-                        // --- ADD THE NEW ROTATION, TILT, AND STYLE CONTROLS BELOW ---
-
-                        // A / D Keys: Rotate the map grid smoothly
-                        if (Raylib.IsKeyDown(KeyboardKey.A)) rotationAngle = (rotationAngle - 2 + 360) % 360;
-                        if (Raylib.IsKeyDown(KeyboardKey.D)) rotationAngle = (rotationAngle + 2) % 360;
-
-                        // Q / E Keys: Change the 3D projection tilt factor profile dynamically
-                        if (Raylib.IsKeyDown(KeyboardKey.Q)) tiltFactor = Math.Max(0.4f, tiltFactor - 0.02f);
-                        if (Raylib.IsKeyDown(KeyboardKey.E)) tiltFactor = Math.Min(2.0f, tiltFactor + 0.02f);
-
-                        // M Key: Cycle through Render Styles (0 = Filled, 1 = Cel Shaded, 2 = Wireframe)
-                        if (Raylib.IsKeyPressed(KeyboardKey.M))
+                        for (int y = 0; y < 22; y++)
                         {
-                            renderStyleMode = (renderStyleMode + 1) % 3;
-                        }
+                            int tileHeight = activeCity.Heights[x, y];
+                            if (tileHeight == 0) continue;
 
-                        // P Key: Toggle path/tunnel visual color highlights
-                        if (Raylib.IsKeyPressed(KeyboardKey.P))
-                        {
-                            displayPathOverlays = !displayPathOverlays;
-                        }
+                            int posX = gridOffsetX + (y * cellSize);
+                            int posY = gridOffsetY + (x * cellSize);
 
-                        // R Key: Instantly reset view metrics back to defaults
-                        if (Raylib.IsKeyPressed(KeyboardKey.R))
-                        {
-                            globalScale = 1.0f;
-                            heightMultiplier = 1.8f;
-                            panOffsetX = 0;
-                            panOffsetY = 0;
-                            rotationAngle = 0;
-                            tiltFactor = 1.0f;
-                            renderStyleMode = 0;
-                            displayPathOverlays = false;
-                        }
-                    }
+                            int baseShade = Math.Min(100 + (tileHeight * 12), 255);
+                            Color blockColor = activeTheme[0];
 
-                    // 2. GRAPHICS DRAWING ENVIRONMENT: Step A (Draw natively to our small virtual texture)
-                    Raylib.BeginTextureMode(targetBuffer);
-                    Raylib.ClearBackground(Color.Black);
-
-                    // Fetch active theme color vectors safely using standard fallback
-                    Color[] activeTheme = stagePalettes.ContainsKey(currentRoom) ? stagePalettes[currentRoom] : stagePalettes[0];
-
-                    // Render HUD text information labels
-                    Raylib.DrawText("ccSharpRaylib — Dynamic Stage Inspector Engine", 20, 20, 20, Color.RayWhite);
-                    Raylib.DrawText($"Current Focus: Stage ID [{currentRoom:D2}] | View Mode: {(is3DMode ? "3D Isometric (Up)" : "2D Blueprint (Down)")}", 20, 55, 18, Color.Gold);
-
-                    int rawRoomByte = RoomToCityMap[currentRoom];
-                    int cityIndex = rawRoomByte & 0x0F;
-                    CityData activeCity = cities[cityIndex];
-
-                    // Route map coordinates out based on selected viewport mode profile
-                    if (!is3DMode)
-                    {
-                        // === RENDER FLAT 2D BLUEPRINT ===
-                        int cellSize = 16;
-                        int gridOffsetX = 220;
-                        int gridOffsetY = 150;
-
-                        for (int x = 0; x < 22; x++)
-                        {
-                            for (int y = 0; y < 22; y++)
+                            if (displayPathOverlays)
                             {
-                                int tileHeight = activeCity.Heights[x, y];
-                                if (tileHeight == 0) continue;
-
-                                int posX = gridOffsetX + (y * cellSize);
-                                int posY = gridOffsetY + (x * cellSize);
-
-                                // Quality of life: Shade blocks lighter based on elevation height
-                                int baseShade = Math.Min(100 + (tileHeight * 2), 255);
-
-                                // Explicitly pull from the top walk color element (Index 0) and use byte casting
-                                Color blockColor = new Color(
+                                byte cellAttr = activeCity.Attributes[x, y];
+                                if ((cellAttr & 0x20) == 0x20) blockColor = Color.Purple; // Tunnel Highlight
+                                else if ((cellAttr & 0x04) == 0x04) blockColor = Color.Green;  // Path Highlight
+                                else if ((cellAttr & 0x10) == 0x10) blockColor = Color.Yellow; // Gem Highlight
+                            }
+                            else
+                            {
+                                blockColor = new Color(
                                     (byte)(activeTheme[0].R * baseShade / 255),
                                     (byte)(activeTheme[0].G * baseShade / 255),
                                     (byte)(activeTheme[0].B * baseShade / 255),
                                     (byte)255
                                 );
-
-                                Raylib.DrawRectangle(posX, posY, cellSize - 1, cellSize - 1, blockColor);
                             }
+
+                            Raylib.DrawRectangle(posX, posY, cellSize - 1, cellSize - 1, blockColor);
                         }
                     }
-                    else
+                }
+                else
+                {
+                    // === RENDER 3D ISOMETRIC BLOCKS ===
+                    for (int x = 0; x < 22; x++)
                     {
-                        // === RENDER 3D ISOMETRIC BLOCKS ===
-                        // Double nested loops step from back to front to handle depth sorting correctly
-                        for (int x = 0; x < 22; x++)
+                        for (int y = 0; y < 22; y++)
                         {
-                            for (int y = 0; y < 22; y++)
-                            {
-                                int tileHeight = activeCity.Heights[x, y];
-                                if (tileHeight == 0) continue;
+                            int tileHeight = activeCity.Heights[x, y];
+                            if (tileHeight == 0) continue;
 
-                                // Fetch the layout attribute byte for path highlights
-                                byte cellAttr = activeCity.Attributes[x, y];
+                            byte cellAttr = activeCity.Attributes[x, y];
 
-                                // Pass all 13 required arguments directly to the LevelTransform module
-                                LevelTransform.DrawIsometricBlock(
-                                    x,
-                                    y,
-                                    tileHeight,
-                                    activeTheme,
-                                    globalScale,
-                                    heightMultiplier,
-                                    panOffsetX,
-                                    panOffsetY,
-                                    rotationAngle,
-                                    tiltFactor,
-                                    renderStyleMode,
-                                    displayPathOverlays,
-                                    cellAttr
-                                );
-                            }
+                            LevelTransform.DrawIsometricBlock(
+                                x, y, tileHeight, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY,
+                                rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, cellAttr
+                            );
                         }
                     }
-
-                    // Draw active palette indicators using explicit array indexes
-                    Raylib.DrawRectangle(20, 95, 40, 20, activeTheme[0]);
-                    Raylib.DrawRectangle(70, 95, 40, 20, activeTheme[1]);
-                    Raylib.DrawRectangle(120, 95, 40, 20, activeTheme[2]);
-                    Raylib.DrawText("Active Layout Palette Matrix Slots", 180, 98, 14, Color.LightGray);
-
-                    Raylib.EndTextureMode(); // Hidden virtual canvas processing done
-
-                    // GRAPHICS DRAWING ENVIRONMENT: Step B (Blit and upscale native texture directly to screen)
-                    Raylib.BeginDrawing();
-                    Raylib.ClearBackground(Color.Black);
-
-                    // Blit virtual texture to window screen scaled exactly 3x larger cleanly
-                    // Raylib textures are upside down natively due to OpenGL rules, so a negative height flips it right side up
-                    Rectangle sourceRec = new Rectangle(0, 0, virtualWidth, -virtualHeight);
-                    Rectangle destRec = new Rectangle(0, 0, screenWidth, screenHeight);
-                    System.Numerics.Vector2 originPoint = new System.Numerics.Vector2(0, 0);
-
-                    Raylib.DrawTexturePro(targetBuffer.Texture, sourceRec, destRec, originPoint, 0.0f, Color.White);
-
-                    Raylib.EndDrawing();
                 }
 
-                // Unload texture buffers safely from GPU storage upon termination
-                Raylib.UnloadRenderTexture(targetBuffer);
-                Raylib.CloseWindow();
+                // Draw active palette indicators using explicit array indexes
+                Raylib.DrawRectangle(20, 95, 40, 20, activeTheme[0]);
+                Raylib.DrawRectangle(70, 95, 40, 20, activeTheme[1]);
+                Raylib.DrawRectangle(120, 95, 40, 20, activeTheme[2]);
+                Raylib.DrawText("Active Layout Palette Matrix Slots", 180, 98, 14, Color.LightGray);
+
+                // 4. DRAW THE PANEL OVERLAY UI INTERFACE CONTROLS CONTAINER
+                InputHandler.DrawControlOverlay(is3DMode, renderStyleMode, displayPathOverlays);
+
+                Raylib.EndTextureMode(); // Hidden virtual canvas processing done
+
+                // GRAPHICS DRAWING ENVIRONMENT: Step B (Blit and upscale native texture directly to screen)
+                Raylib.BeginDrawing();
+                Raylib.ClearBackground(Color.Black);
+
+                Rectangle sourceRec = new Rectangle(0, 0, virtualWidth, -virtualHeight);
+                Rectangle destRec = new Rectangle(0, 0, screenWidth, screenHeight);
+                System.Numerics.Vector2 originPoint = new System.Numerics.Vector2(0, 0);
+
+                Raylib.DrawTexturePro(targetBuffer.Texture, sourceRec, destRec, originPoint, 0.0f, Color.White);
+
+                Raylib.EndDrawing();
             }
+
+            // --- THIS CLEAN UP IS OUTSIDE THE SINGLE WINDOW LOOP NOW ---
+            // Unload texture buffers safely from GPU storage upon termination
+            Raylib.UnloadRenderTexture(targetBuffer);
+            Raylib.CloseWindow();
         }
 
         public class CityData

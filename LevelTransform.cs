@@ -10,11 +10,12 @@ namespace cSharpRaylib
     {
         // Core rendering routine handling projection transformations, styling flags, and overlays
         public static void DrawIsometricBlock(int x, int y, int tileHeight, Color[] palette,
-            float scale, float heightScale, int offsetX, int offsetY,
-            int rotationAngle, float tiltFactor, int renderStyle, bool showPaths, byte cellAttr)
+        float scale, float heightScale, int offsetX, int offsetY,
+        int rotationAngle, float tiltFactor, int renderStyle, bool showPaths, byte cellAttr)
         {
-            int originX = 400 + offsetX;
-            int originY = 300 + offsetY;
+            // Shifted base workspace coordinates from (400, 300) to (500, 340)
+            int originX = 500 + offsetX;
+            int originY = 340 + offsetY;
 
             // 1. ROTATION MATRIX LAYER: Rotate around the center of the 22x22 grid (11, 11)
             double rad = rotationAngle * Math.PI / 180.0;
@@ -34,18 +35,18 @@ namespace cSharpRaylib
             // 3. COLOR SHADING CALCULATIONS (Ported from 2D view logic)
             int baseShade = Math.Min(100 + (tileHeight * 12), 255);
 
-            // Override coloring completely if path visibility flags are toggled on
-            Color baseColor = palette[0];
+            // DECLARE AND CALCULATE BASE SHADED VALUES FIRST
+            Color topColor = new Color((byte)(palette[0].R * baseShade / 255), (byte)(palette[0].G * baseShade / 255), (byte)(palette[0].B * baseShade / 255), (byte)255);
+            Color frontColor = new Color((byte)(palette[1].R * baseShade / 255), (byte)(palette[1].G * baseShade / 255), (byte)(palette[1].B * baseShade / 255), (byte)255);
+            Color sideColor = new Color((byte)(palette[2].R * baseShade / 255), (byte)(palette[2].G * baseShade / 255), (byte)(palette[2].B * baseShade / 255), (byte)255);
+
+            // APPLY THE PATHWAY OVERRIDES SAFELY AFTER THEY ARE DECLARED
             if (showPaths)
             {
-                if ((cellAttr & 0x20) == 0x20) baseColor = Color.Purple;       // Tunnel Highlight
-                else if ((cellAttr & 0x04) == 0x04) baseColor = Color.Green;   // Path Highlight
-                else if ((cellAttr & 0x10) == 0x10) baseColor = Color.Yellow;  // Gem Highlight
+                if ((cellAttr & 0x20) == 0x20) topColor = Color.Purple; // Tunnel Highlight
+                else if ((cellAttr & 0x04) == 0x04) topColor = Color.Green;  // Path Highlight
+                else if ((cellAttr & 0x10) == 0x10) topColor = Color.Yellow; // Gem Highlight
             }
-
-            Color topColor   = new Color((byte)(palette[0].R * baseShade / 255), (byte)(palette[0].G * baseShade / 255), (byte)(palette[0].B * baseShade / 255), (byte)255);
-            Color frontColor = new Color((byte)(palette[1].R * baseShade / 255), (byte)(palette[1].G * baseShade / 255), (byte)(palette[1].B * baseShade / 255), (byte)255);
-            Color sideColor  = new Color((byte)(palette[2].R * baseShade / 255), (byte)(palette[2].G * baseShade / 255), (byte)(palette[2].B * baseShade / 255), (byte)255);
 
             // 4. DRAWING PATH STYLES (0 = Filled, 1 = Cel Shaded, 2 = Wireframe)
             if (renderStyle == 0 || renderStyle == 1) // Filled Faces
