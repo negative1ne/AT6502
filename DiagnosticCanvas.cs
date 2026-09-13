@@ -5,10 +5,19 @@ using System.Collections.Generic;
 using Raylib_cs;
 using Color = Raylib_cs.Color;
 
+// ============================================================================
+// DIAGNOSTICCANVAS.CS - INJECT STATE MANAGEMENT VARIABLES AT THE TOP
+// ============================================================================
 namespace cSharpRaylib
 {
     public static class DiagnosticCanvas
     {
+        // Tracks which elevator list item index is currently stuck to the mouse cursor
+        private static int _selectedElevatorIndex = -1;
+
+        // Target list configuration limit matching your multi-stage expansions
+        private const int MaxElevatorLimit = 10;
+
         public static void LaunchDebugWindow(int startingRoom, string[] stageNames, byte[] roomToCityMap, List<CityData> cities)
         {
             const int winW = 1000;
@@ -131,9 +140,62 @@ namespace cSharpRaylib
                     }
                 }
 
+                // ------------------------------------------------------------
+                // 1) RESOLVE ON-SCREEN GRID COORDINATES & MOUSE CLICK MECHANICS
+                // ------------------------------------------------------------
+                int mousePixelX = Raylib.GetMouseX();
+                int mousePixelY = Raylib.GetMouseY();
+
+                // Inverse math matching your startX=100, startY=100, cellSize=36 footprints exactly
+                int calculatedColY = (mousePixelX - 100) / 36;
+                int calculatedRowX = (mousePixelY - 100) / 36;
+
+                string coordinateTelemetryString = "ROW (X): OUT  |  COL (Y): OUT";
+                bool isMouseInsideGrid = (calculatedRowX >= 0 && calculatedRowX < 22 && calculatedColY >= 0 && calculatedColY < 22);
+
+                if (isMouseInsideGrid)
+                {
+                    coordinateTelemetryString = $"ROW (X): {calculatedRowX:D2}  |  COL (Y): {calculatedColY:D2}";
+
+                    // 2) INTEGRATE THE LEVEL EDITOR INTERACTION ENGINE
+                    if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+                    {
+                        // STATE A: An elevator is currently grabbed. Relocate it and release the mouse lock.
+                        if (_selectedElevatorIndex >= 0 && _selectedElevatorIndex < mockList.Count)
+                        {
+                            mockList[_selectedElevatorIndex].CellX = calculatedRowX;
+                            mockList[_selectedElevatorIndex].CellY = calculatedColY;
+                            mockList[_selectedElevatorIndex].IsMapped = true;
+
+                            _selectedElevatorIndex = -1; // Release focus cleanly
+                        }
+                        // STATE B: Cursor is free. Scan for an existing yellow/orange elevator cell click hook.
+                        else
+                        {
+                            for (int i = 0; i < mockList.Count; i++)
+                            {
+                                if (mockList[i].IsMapped && mockList[i].CellX == calculatedRowX && mockList[i].CellY == calculatedColY)
+                                {
+                                    _selectedElevatorIndex = i;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
                 Raylib.BeginDrawing();
                 Raylib.ClearBackground(Color.Black);
+               
+                // --- ITEM 1: RENDER FIXED CO-ORDINATE DISPLAY PANEL ONSCREEN ---
+                Raylib.DrawRectangle(100, 30, 380, 40, Color.DarkBlue);
+                Raylib.DrawRectangleLines(100, 30, 380, 40, Color.White);
+                Raylib.DrawText(coordinateTelemetryString, 120, 40, 20, Color.Lime);
 
+                // Render descriptive operational header text strings
+                Raylib.DrawText($"STAGE: {stageNames[currentRoom].ToUpper()}", 500, 30, 20, Color.Gold);
+                Raylib.DrawText("Click Lift to Select -> 2nd Click Moves It  |  S: Toggle Space View", 500, 55, 13, Color.LightGray);
+
+              
                 int cellSize = 36;
                 int startX = 100;
                 int startY = 100;
