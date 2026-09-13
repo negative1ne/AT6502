@@ -68,17 +68,18 @@ namespace cSharpRaylib
                     shouldUpdateStage = false;
                 }
 
-                if (Raylib.IsKeyPressed(KeyboardKey.D))
+                // ============================================================================
+                // DIAGNOSTICCANVAS.CS - RE-MAPPED ISOLATED FILE EXPORT SHORTCUT
+                // ============================================================================
+                // --- LIVE E-KEY MODULE INTERFACE TO EXPORT VERIFIED DETAILS ---
+                // FIX: Changed from KeyboardKey.D to KeyboardKey.E to protect your backups from overwrites
+                if (Raylib.IsKeyPressed(KeyboardKey.E))
                 {
-                    string currentStageName = stageNames[currentRoom];
-
-                    // --- 1. RUN ORIGINAL TERRAIN GRID SHEET DUMP ---
                     try
                     {
-                        string filename = $"Diagnostic_Dump_Stage_{currentRoom:D2}_{currentStageName.Replace(" ", "_")}.txt";
-                        string fullPath = Path.Combine(Directory.GetCurrentDirectory(), filename);
+                        string currentStageName = stageNames[currentRoom];
 
-                        using (StreamWriter writer = new StreamWriter(fullPath, false, Encoding.UTF8))
+                        using (StreamWriter writer = new StreamWriter(currentStageName, false, Encoding.UTF8))
                         {
                             writer.WriteLine($"=== DIAGNOSTIC GRID SHEET: STAGE {currentRoom:D2} ({currentStageName.ToUpper()}) ===");
                             writer.WriteLine($"Mode Target Context Profile: {(spaceMapView ? "FLAT UN-ROTATED SPACE DATA VIEW" : "ISOMETRIC PROJECTION SCREEN VIEW")}");
@@ -229,11 +230,16 @@ namespace cSharpRaylib
                 Raylib.DrawRectangleLines(100, 30, 380, 40, Color.White);
                 Raylib.DrawText(coordinateTelemetryString, 120, 40, 20, Color.Lime);
 
-                // Render descriptive operational header text strings
+                // ============================================================================
+                // DIAGNOSTICCANVAS.CS - HUD INSTRUCTION TEXT UPDATE
+                // ============================================================================
                 Raylib.DrawText($"STAGE: {stageNames[currentRoom].ToUpper()}", 500, 30, 20, Color.Gold);
-                Raylib.DrawText("Click Lift to Select -> 2nd Click Moves It  |  S: Toggle Space View", 500, 55, 13, Color.LightGray);
 
-              
+                // FIX: Updated user messaging instruction labels to match your new isolated key binding
+                Raylib.DrawText("Click Lift to Select -> 2nd Click Moves It  |  S: Toggle Space View", 500, 55, 13, Color.LightGray);
+                Raylib.DrawText("Press 'E' to Export Clean Diagnostic Reports and File Audits Safely", 500, 75, 13, Color.SkyBlue);
+
+
                 int cellSize = 36;
                 int startX = 100;
                 int startY = 100;
