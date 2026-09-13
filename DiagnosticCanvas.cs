@@ -68,12 +68,13 @@ namespace cSharpRaylib
                     shouldUpdateStage = false;
                 }
 
-                // --- LIVE D-KEY RE-WRITTEN INTERFACE TO PRINT VISUAL AND SPACE DETAILS ---
                 if (Raylib.IsKeyPressed(KeyboardKey.D))
                 {
+                    string currentStageName = stageNames[currentRoom];
+
+                    // --- 1. RUN ORIGINAL TERRAIN GRID SHEET DUMP ---
                     try
                     {
-                        string currentStageName = stageNames[currentRoom];
                         string filename = $"Diagnostic_Dump_Stage_{currentRoom:D2}_{currentStageName.Replace(" ", "_")}.txt";
                         string fullPath = Path.Combine(Directory.GetCurrentDirectory(), filename);
 
@@ -95,13 +96,10 @@ namespace cSharpRaylib
                                     }
 
                                     bool isRomFootprint = false;
-
                                     if (spaceMapView)
                                     {
-                                        // FLAT SPACE VIEW MAP: Look straight at the un-rotated memory arrays!
                                         foreach (var raw in mockList)
                                         {
-                                            // Intercept raw memory array bytes indices cleanly
                                             int cellX = raw.HorizontalPosition % 22;
                                             int cellY = raw.VerticalPosition % 22;
                                             if (cellX == x && cellY == y) isRomFootprint = true;
@@ -109,7 +107,6 @@ namespace cSharpRaylib
                                     }
                                     else
                                     {
-                                        // SCREEN PROJECTION VIEW MAP
                                         int xp = 200 - (x * 4) + (y * 8);
                                         int yp = 100 + (x * 4) + (y * 2) - activeCity.Heights[x, y];
 
@@ -132,12 +129,53 @@ namespace cSharpRaylib
                                 writer.WriteLine(rowLine.ToString());
                             }
                         }
-                        Console.Beep(1800, 200);
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"Failed to write layout dump sheet: {ex.Message}");
+                        System.Diagnostics.Debug.WriteLine($"Terrain dump failed: {ex.Message}");
                     }
+
+                    // --- 2. NEW DETACHED PASSIVE FILE IMPORT VERIFIER LOG ---
+                    try
+                    {
+                        string importDebugFilename = $"file_import_stage_{currentRoom:D2}.txt";
+                        string importDebugPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, importDebugFilename);
+
+                        string searchPattern = $"Diagnostic_Dump_Stage_{currentRoom:D2}_*.txt";
+                        string[] matchingFiles = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, searchPattern);
+
+                        using (StreamWriter debugWriter = new StreamWriter(importDebugPath, false, Encoding.UTF8))
+                        {
+                            debugWriter.WriteLine("================================================================================");
+                            debugWriter.WriteLine($"=== DEFENSIVE FILE IMPORT AUDIT REPORT: STAGE {currentRoom:D2} ===");
+                            debugWriter.WriteLine($"Time of execution pass: {DateTime.Now}");
+                            debugWriter.WriteLine("================================================================================");
+                            debugWriter.WriteLine($" Target Directory Scan: {AppDomain.CurrentDomain.BaseDirectory}");
+                            debugWriter.WriteLine($" Pattern Search Target: {searchPattern}");
+
+                            bool fileExists = matchingFiles.Length > 0;
+                            debugWriter.WriteLine($" Source file physically exists on disk: {(fileExists ? "YES (Success)" : "NO (Failed)")}");
+
+                            if (fileExists)
+                            {
+                                debugWriter.WriteLine($" Found exact filename matching pattern: {Path.GetFileName(matchingFiles[0])}");
+                                List<(int RowX, int ColY)> parsedCoords = LoadVerifiedCoordsFromDisk(currentRoom);
+
+                                debugWriter.WriteLine($" Total coordinate positions successfully parsed: {parsedCoords.Count}");
+                                for (int i = 0; i < parsedCoords.Count; i++)
+                                {
+                                    debugWriter.WriteLine($"  * Match Index [{i}]: Mapped to absolute Grid RowX = {parsedCoords[i].RowX:D2}, ColY = {parsedCoords[i].ColY:D2}");
+                                }
+                            }
+                            else
+                            {
+                                debugWriter.WriteLine("\n[ERROR] Diagnostic reader can't find source text layout sheet.");
+                            }
+                            debugWriter.WriteLine("================================================================================");
+                        }
+                        Console.Beep(1800, 100);
+                    }
+                    catch (Exception) { }
                 }
 
                 // ------------------------------------------------------------
@@ -199,7 +237,8 @@ namespace cSharpRaylib
                 int cellSize = 36;
                 int startX = 100;
                 int startY = 100;
-
+                // Inside your while loop, right above the "for (int x = 0; x < 22; x++)" block:
+                List<(int RowX, int ColY)> diskMappedElevators = LoadVerifiedCoordsFromDisk(currentRoom);
                 for (int x = 0; x < 22; x++)
                 {
                     for (int y = 0; y < 22; y++)
@@ -218,14 +257,19 @@ namespace cSharpRaylib
                             Raylib.DrawRectangle(posX + 2, posY + 2, cellSize - 4, cellSize - 4, terrainColor);
                         }
 
-                        // Premapper data overlay box layer configuration
-                        bool isPremappedCell = false;
-                        foreach (var ev in mockList)
+                        // --- PASSIVE DIRECT FILE OVERLAP OVERLAY PASS ---
+                        bool existsInTextFile = false;
+                        foreach (var coord in diskMappedElevators)
                         {
-                            if (ev.IsMapped && ev.CellX == x && ev.CellY == y) isPremappedCell = true;
+                            if (coord.RowX == x && coord.ColY == y)
+                            {
+                                existsInTextFile = true;
+                                break;
+                            }
                         }
 
-                        if (isPremappedCell)
+                        // Map any entries found in the file onto the screen grid cleanly as Orange boxes
+                        if (existsInTextFile)
                         {
                             Raylib.DrawRectangleLines(posX + 4, posY + 4, cellSize - 8, cellSize - 8, Color.Orange);
                             Raylib.DrawRectangleLines(posX + 5, posY + 5, cellSize - 10, cellSize - 10, Color.Yellow);
@@ -268,5 +312,63 @@ namespace cSharpRaylib
 
             Raylib.CloseWindow();
         }
+        /// <summary>
+        /// Reads absolute coordinate tuples directly from hand-edited text files.
+        /// Bypasses all engine variables and dictionary limitations.
+        /// </summary>
+        /// <summary>
+        /// Scans your active directory for Diagnostic_Dump files, handles dynamic 
+        /// stage names, and reads coordinates directly from the hand-edited text grid layout.
+        /// </summary>
+        private static List<(int RowX, int ColY)> LoadVerifiedCoordsFromDisk(int stageNum)
+        {
+            List<(int RowX, int ColY)> customCoords = new List<(int RowX, int ColY)>();
+            string targetDir = AppDomain.CurrentDomain.BaseDirectory;
+
+            try
+            {
+                // Find any file in your folder that begins with your specific stage prefix format rules
+                string searchPattern = $"Diagnostic_Dump_Stage_{stageNum:D2}_*.txt";
+                string[] matchingFiles = Directory.GetFiles(targetDir, searchPattern);
+
+                // If no matching dump sheet exists yet for this wave, return empty list safely
+                if (matchingFiles.Length == 0) return customCoords;
+
+                string fullPath = matchingFiles[0]; // Isolate the first matching file found
+                string[] lines = File.ReadAllLines(fullPath);
+
+                // Start reading after line 4 to skip the header and legends text lines safely
+                for (int x = 0; x < lines.Length; x++)
+                {
+                    string line = lines[x];
+                    if (string.IsNullOrWhiteSpace(line) || line.Contains("===") || line.Contains("Mode") || line.Contains("[Legend")) continue;
+
+                    // Split your 22-column space-separated text characters cleanly
+                    string[] tokens = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                    // Track row coordinates processing index
+                    int currentRowX = customCoords.Count / 22;
+
+                    for (int currentColY = 0; currentColY < tokens.Length && currentColY < 22; currentColY++)
+                    {
+                        string token = tokens[currentColY].Trim();
+
+                        // O = Premapper Box, M = Perfect Match, R = ROM Footprint
+                        // If you edited a square to 'O' or 'M' by hand, extract it instantly!
+                        if (token == "O" || token == "M")
+                        {
+                            customCoords.Add((x - 4, currentColY)); // Offset header lines index to track 0-21 grid bounds
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Defensive catch boundary to keep frame rendering loops completely stable
+            }
+
+            return customCoords;
+        }
     }
+
 }
