@@ -65,15 +65,19 @@ namespace cSharpRaylib
             bool invertBackground = false; // Add this line right here
             bool triggerTextExport = false;
 
-            // Simple Execution Video Frame Loop
+            // ============================================================================
+            // PROGRAM.CS - ROUTING VARIABLES TO YOUR ORIGINAL BASELINE
+            // ============================================================================
             while (!Raylib.WindowShouldClose())
             {
+                // Ensure the last argument matches the precise variable name 
+                // expected by your original, working InputHandler.cs file
                 InputHandler.HandleKeys(
-                ref currentRoom, ref is3DMode, ref globalScale, ref heightMultiplier,
-                ref panOffsetX, ref panOffsetY, ref rotationAngle, ref tiltFactor,
-                ref renderStyleMode, ref displayPathOverlays, ref displayGems, ref displayElevators,
-                ref invertBackground, ref triggerTextExport // Added ref parameter
-                 );
+                    ref currentRoom, ref is3DMode, ref globalScale, ref heightMultiplier,
+                    ref panOffsetX, ref panOffsetY, ref rotationAngle, ref tiltFactor,
+                    ref renderStyleMode, ref displayPathOverlays, ref displayGems, ref displayElevators,
+                    ref invertBackground, ref triggerTextExport // Or ref exportTextFlag if that's what your baseline calls it
+                );
 
                 // --- PROTECTED SINGLE-SHOT SECOVERY RE-INITIALIZATION ---
                 int cityIndex = RoomToCityMap[currentRoom] & 0x0F;
