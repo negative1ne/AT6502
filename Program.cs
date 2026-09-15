@@ -1,6 +1,7 @@
-﻿using System;
+﻿using Raylib_cs;
+using System;
 using System.Collections.Generic;
-using Raylib_cs;
+using System.Text;
 using Color = Raylib_cs.Color;
 using Rectangle = Raylib_cs.Rectangle;
 
@@ -89,16 +90,47 @@ namespace cSharpRaylib
                 // FIX: Lifted from lower down in the file to resolve the CS0841 scoping error!
                 string currentStageName = (currentRoom < StageNames.Length) ? StageNames[currentRoom] : "Unknown Castle";
 
+                // ============================================================================
+                // PROGRAM.CS - DEEP-COPY LOG VERIFIER INTERCEPT HOOK
+                // ============================================================================
                 // Only executes once upon explicit room change key triggers
                 if (currentRoom != lastRoomID)
                 {
                     try
                     {
-                        // 1. PHASE 1 LOGGER: Force a single-shot diagnostic dump to disk on stage transition
+                        // 1. PHASE 1 LOGGER: Log the active level transition state parameters stably
                         SessionLogger.LogStageTransition(currentRoom, currentStageName, cityIndex, activeCity.Elevators);
 
-                        // 2. Keep your original baseline premapper line completely untouched right below it
+                        // 2. Keep your original baseline premapper override executions completely functional
                         ElevatorPremapper.ApplyOverrides(currentRoom, activeCity.Elevators);
+
+                        // --- STEP 2: VERIFY DATA INTEGRITY NATIVELY ON LEVEL LOAD ---
+                        var targetIsolatedRoom = RomManager.IsolatedStages[currentRoom];
+                        string logFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_execution_audit.log");
+
+                        StringBuilder verificationBuffer = new StringBuilder();
+                        verificationBuffer.AppendLine($"[DATA_VERIFICATION] Cross-examining 37-Stage Deep-Copy structural array for Wave [{currentRoom:D2}]...");
+
+                        bool matricesAreIdentical = true;
+                        for (int x = 0; x < 22; x++)
+                        {
+                            for (int y = 0; y < 22; y++)
+                            {
+                                if (targetIsolatedRoom.Heights[x, y] != activeCity.Heights[x, y] ||
+                                    targetIsolatedRoom.Attributes[x, y] != activeCity.Attributes[x, y])
+                                {
+                                    matricesAreIdentical = false;
+                                }
+                            }
+                        }
+
+                        string resultMarkerStr = matricesAreIdentical ? "✅ VERIFIED MATCH: Deep-copy layout block matches parent city exactly." : "🛑 ALERT: Structural matrix drift detected inside copy layer!";
+                        verificationBuffer.AppendLine($"    -> {resultMarkerStr}");
+                        verificationBuffer.AppendLine($"    -> Parent City Array Elevators: {activeCity.Elevators.Count} | Isolated Array Elevators: {targetIsolatedRoom.Elevators.Count}");
+                        verificationBuffer.AppendLine("================================================================================");
+
+                        File.AppendAllText(logFile, verificationBuffer.ToString(), Encoding.UTF8);
+
                         lastRoomID = currentRoom;
                     }
                     catch (Exception ex)

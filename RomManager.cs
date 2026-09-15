@@ -1,15 +1,24 @@
-﻿using System;
+﻿// ============================================================================
+// ROMMANAGER.CS - COMPLETE COMPONENT UPGRADE (37-STAGE DEEP COPY FACTORY)
+// ============================================================================
+using System;
 using System.IO;
 using System.Text;
+using System.Collections.Generic;
+using System.Windows.Forms;
 
 namespace cSharpRaylib
 {
     public static class RomManager
     {
-        // Changed return type from List<Program.CityData> to plain List<CityData>
+        // STEP 3: Retain the old 16-room structure exactly as-is to preserve working viewports
+        public static List<CityData> BaseCities = new List<CityData>();
+
+        // STEP 1: Implement the pristine, isolated 37-stage deep-copy database array container
+        public static List<CityData> IsolatedStages = new List<CityData>();
+
         public static List<CityData> LoadRomDatabase()
         {
-
             string romDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "rom");
             string file1Path = Path.Combine(romDir, "136022-102.1h");
             string file2Path = Path.Combine(romDir, "136022-101.1f");
@@ -31,19 +40,16 @@ namespace cSharpRaylib
             file1.CopyTo(combinedData, 0);
             file2.CopyTo(combinedData, file1.Length);
 
-            // Removed Program. from the list instantiation
-            List<CityData> cities = new List<CityData>();
+            // 1. Populate the old 16 base cities natively from the file layout bytes
+            BaseCities.Clear();
             for (int i = 0; i < 16; i++)
             {
-                // Removed Program. from the object creation
                 CityData city = new CityData();
                 city.Load(combinedData, i * 0x400);
-                cities.Add(city);
+                BaseCities.Add(city);
             }
 
-
-            // === ISOLATED DATA LAYER INITIALIZATION OVERRIDES ===
-            // This maps 37 waves to the 16 base cities automatically inside the loader module
+            // Master arcade hardcoded wave matching array matrix pointers
             byte[] RoomToCityMap = new byte[] {
                 0x00, 0x02, 0x09, 0xC3, 0x46, 0x71, 0x0C, 0xC7,
                 0x06, 0x0D, 0x45, 0xCB, 0x04, 0x0A, 0x06, 0x4F,
@@ -52,12 +58,53 @@ namespace cSharpRaylib
                 0x08, 0x7D, 0x05, 0xCB, 0x0E
             };
 
-            
+            // 2. STAGE 1 SETUP & DEEP COPY: Allocate 37 completely separate, distinct room containers
+            IsolatedStages.Clear();
+            for (int stageNum = 0; stageNum < 37; stageNum++)
+            {
+                int parentCityIndex = RoomToCityMap[stageNum] & 0x0F;
+                CityData parentCity = BaseCities[parentCityIndex];
 
-            return cities; // Return the fully pre-mapped, bulletproof database object
+                // Create a completely detached, un-linked object container instance in RAM
+                CityData clonedRoom = new CityData();
+                clonedRoom.NumElevators = parentCity.NumElevators;
+
+                // Deep-copy byte matrices row-by-row to break memory pointer cross-talk references
+                for (int x = 0; x < 22; x++)
+                {
+                    for (int y = 0; y < 22; y++)
+                    {
+                        clonedRoom.Heights[x, y] = parentCity.Heights[x, y];
+                        clonedRoom.Attributes[x, y] = parentCity.Attributes[x, y];
+                    }
+                }
+
+                // Isolate elevator track configurations safely into pristine memory vectors
+                foreach (var parentLift in parentCity.Elevators)
+                {
+                    ElevatorData clonedLift = new ElevatorData();
+                    clonedLift.HorizontalPosition = parentLift.HorizontalPosition;
+                    clonedLift.VerticalPosition = parentLift.VerticalPosition;
+                    clonedLift.TopPosition = parentLift.TopPosition;
+                    clonedLift.BottomPosition = parentLift.BottomPosition;
+                    clonedLift.WaitTime = parentLift.WaitTime;
+
+                    clonedLift.CellX = 0;
+                    clonedLift.CellY = 0;
+                    clonedLift.IsMapped = false;
+                    clonedLift.CurrentPosition = parentLift.BottomPosition;
+                    clonedLift.Mode = 0;
+                    clonedLift.CurrentSitTime = 0;
+
+                    clonedRoom.Elevators.Add(clonedLift);
+                }
+
+                IsolatedStages.Add(clonedRoom);
+            }
+
+            // Return the old list reference stably to protect your existing executable loops from crashing
+            return BaseCities;
         }
-
-
 
         public static void ExportStageTextFile(int stageNum, string stageName, CityData activeCity)
         {
@@ -82,7 +129,6 @@ namespace cSharpRaylib
                         for (int i = 0; i < activeCity.Elevators.Count; i++)
                         {
                             var ev = activeCity.Elevators[i];
-                            // Simple layout validation pass verification strings tracking bounds
                             string statusStr = ev.IsMapped ? $"SUCCESS -> [CellX: {ev.CellX}, CellY: {ev.CellY}]" : "FAILED -> Out of bounds";
                             if (ev.IsMapped) passedCount++;
 
@@ -128,5 +174,4 @@ namespace cSharpRaylib
             }
         }
     }
-  
 }
