@@ -1,4 +1,7 @@
-﻿using System;
+﻿// ============================================================================
+// INPUTHANDLER.CS - INTEGRATED DUAL-WINDOW ENGINE ROUTER
+// ============================================================================
+using System;
 using Raylib_cs;
 using Color = Raylib_cs.Color;
 
@@ -11,7 +14,7 @@ namespace cSharpRaylib
             ref float heightMultiplier, ref int panOffsetX, ref int panOffsetY,
             ref int rotationAngle, ref float tiltFactor, ref int renderStyleMode,
             ref bool displayPathOverlays, ref bool displayGems, ref bool displayElevators,
-            ref bool invertBackground, ref bool exportTextFlag)
+            ref bool invertBackground, ref bool exportTextFlag, ref bool trigger3DLabFlag)
         {
             // Room Selection Transitions
             if (Raylib.IsKeyPressed(KeyboardKey.Right)) { currentRoom = (currentRoom + 1) % 37; }
@@ -33,6 +36,9 @@ namespace cSharpRaylib
 
             // CANVAS INVERSION HOOK (V Key)
             if (Raylib.IsKeyPressed(KeyboardKey.V)) { invertBackground = !invertBackground; }
+
+            // NEW: INTERACTIVE 3D LAB CANVAS TRIGGER (X Key)
+            if (Raylib.IsKeyPressed(KeyboardKey.X)) { trigger3DLabFlag = true; }
 
             // Global 3D Mode Calibrations
             if (is3DMode)
@@ -76,12 +82,10 @@ namespace cSharpRaylib
         public static void DrawControlOverlay(bool is3DMode, int renderStyle, bool pathsOn, bool gemsOn, bool elevatorsOn,
         bool isInverted, float globalScale, int currentRoom, string stageName, int totalElevators, Color[] activeTheme)
         {
-            // Dynamic text and box colors based on background state
             Color cardBg = isInverted ? new Color(230, 230, 230, 220) : new Color(20, 20, 20, 200);
             Color cardBorder = isInverted ? Color.DarkGray : Color.LightGray;
             Color textClr = isInverted ? Color.Black : Color.RayWhite;
 
-            // RENDER CLEAN HUD STRINGS HIGH ABOVE MAP BLOCKS
             Raylib.DrawText("ccSharpRaylib", 20, 20, 20, isInverted ? Color.Black : Color.RayWhite);
 
             int displayLevel = (currentRoom / 4) + 1;
@@ -90,15 +94,13 @@ namespace cSharpRaylib
 
             Raylib.DrawText($"Level {displayLevel} - {displayWave} [{stageName}] | Lifts: {totalElevators} | {viewModeLabel}", 20, 55, 18, Color.Gold);
 
-            // Palette slot boxes layout paths
             Raylib.DrawRectangle(20, 95, 40, 20, activeTheme[0]);
             Raylib.DrawRectangle(70, 95, 40, 20, activeTheme[1]);
             Raylib.DrawRectangle(120, 95, 40, 20, activeTheme[2]);
             Raylib.DrawText("Active Layout Palette Matrix Slots", 180, 98, 14, isInverted ? Color.DarkGray : Color.LightGray);
 
-            // RENDER THE CONTROLS CONTAINER MENU CARD PANEL
             int rectY = 130;
-            int cardHeight = is3DMode ? 250 : 225;
+            int cardHeight = is3DMode ? 265 : 240;
             Raylib.DrawRectangle(15, rectY, 210, cardHeight, cardBg);
             Raylib.DrawRectangleLines(15, rectY, 210, cardHeight, cardBorder);
 
@@ -110,28 +112,29 @@ namespace cSharpRaylib
             Raylib.DrawText($"P          : Pathways [{(pathsOn ? "ON" : "OFF")}]", 25, startTextY + 58, 11, textClr);
             Raylib.DrawText($"G          : Gems     [{(gemsOn ? "ON" : "OFF")}]", 25, startTextY + 76, 11, textClr);
             Raylib.DrawText($"B          : Lifts    [{(elevatorsOn ? "ON" : "OFF")}]", 25, startTextY + 96, 11, Color.Orange);
-            Raylib.DrawText($"V          : Invert   [{(isInverted ? "WHITE" : "BLACK")}]", 25, startTextY + 114, 11, Color.Yellow); // Added menu item
-            Raylib.DrawText($"+ / -      : Zoom [{globalScale:F2}]", 25, startTextY + 132, 11, textClr); // Added zoom telemetry item
+            Raylib.DrawText($"V          : Invert   [{(isInverted ? "WHITE" : "BLACK")}]", 25, startTextY + 114, 11, Color.Yellow);
+            Raylib.DrawText($"X          : Launch 3D Lab", 25, startTextY + 132, 11, Color.Lime);
+            Raylib.DrawText($"+ / -      : Zoom [{globalScale:F2}]", 25, startTextY + 150, 11, textClr);
 
             if (!is3DMode)
             {
-                Raylib.DrawText("T          : Export Matrix Text", 25, startTextY + 152, 11, Color.SkyBlue);
-                Raylib.DrawText("R          : Reset View", 25, startTextY + 170, 11, textClr);
+                Raylib.DrawText("T          : Export Matrix Text", 25, startTextY + 170, 11, Color.SkyBlue);
+                Raylib.DrawText("R          : Reset View", 25, startTextY + 188, 11, textClr);
             }
             else
             {
                 string styleName = renderStyle == 0 ? "Original Filled" : (renderStyle == 1 ? "Cel Shaded" : "Wireframe");
-                Raylib.DrawText($"M          : Style [{styleName}]", 25, startTextY + 152, 11, Color.Orange);
-                Raylib.DrawText("R          : Reset View", 25, startTextY + 170, 11, textClr);
+                Raylib.DrawText($"M          : Style [{styleName}]", 25, startTextY + 170, 11, Color.Orange);
+                Raylib.DrawText("R          : Reset View", 25, startTextY + 188, 11, textClr);
 
-                Raylib.DrawRectangle(15, rectY + 260, 210, 110, cardBg);
-                Raylib.DrawRectangleLines(15, rectY + 260, 210, 110, cardBorder);
+                Raylib.DrawRectangle(15, rectY + 280, 210, 110, cardBg);
+                Raylib.DrawRectangleLines(15, rectY + 280, 210, 110, cardBorder);
 
-                Raylib.DrawText("3D PARAMETERS", 25, rectY + 267, 12, Color.Gold);
-                Raylib.DrawText("A / D   : Rotate Grid", 25, rectY + 287, 11, isInverted ? Color.DarkGray : Color.LightGray);
-                Raylib.DrawText("Q / E   : Perspective Tilt", 25, rectY + 305, 11, isInverted ? Color.DarkGray : Color.LightGray);
-                Raylib.DrawText("W / S   : Scale Height", 25, rectY + 323, 11, isInverted ? Color.DarkGray : Color.LightGray);
-                Raylib.DrawText("I/K/J/L : Pan Camera", 25, rectY + 341, 11, isInverted ? Color.DarkGray : Color.LightGray);
+                Raylib.DrawText("3D PARAMETERS", 25, rectY + 287, 12, Color.Gold);
+                Raylib.DrawText("A / D   : Rotate Grid", 25, rectY + 307, 11, isInverted ? Color.DarkGray : Color.LightGray);
+                Raylib.DrawText("Q / E   : Perspective Tilt", 25, rectY + 325, 11, isInverted ? Color.DarkGray : Color.LightGray);
+                Raylib.DrawText("W / S   : Scale Height", 25, rectY + 343, 11, isInverted ? Color.DarkGray : Color.LightGray);
+                Raylib.DrawText("I/K/J/L : Pan Camera", 25, rectY + 361, 11, isInverted ? Color.DarkGray : Color.LightGray);
             }
         }
     }

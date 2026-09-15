@@ -1,4 +1,7 @@
-﻿using Raylib_cs;
+﻿// ============================================================================
+// PROGRAM.CS - CORE GRAPHICS UPDATE AND LABORATORY ROUTING
+// ============================================================================
+using Raylib_cs;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -32,7 +35,6 @@ namespace cSharpRaylib
                 "The End"
             };
 
-            // Database parsed and auto-premapped entirely behind the scene boundary line
             List<CityData> cities = RomManager.LoadRomDatabase();
             var stagePalettes = StagePalettes.GetMasterPaletteMatrix();
 
@@ -48,10 +50,9 @@ namespace cSharpRaylib
             RenderTexture2D targetBuffer = Raylib.LoadRenderTexture(virtualWidth, virtualHeight);
             Raylib.SetTextureFilter(targetBuffer.Texture, TextureFilter.Point);
 
-            // Inside Program.cs -> Main method variable block
             int currentRoom = 0;
-            int lastRoomID = -1; // INJECT THIS VARIABLE LATCH TRACKER HERE
-            
+            int lastRoomID = -1;
+
             bool is3DMode = false;
             float globalScale = 1.0f;
             float heightMultiplier = 1.8f;
@@ -63,45 +64,33 @@ namespace cSharpRaylib
             bool displayPathOverlays = false;
             bool displayGems = true;
             bool displayElevators = true;
-            bool invertBackground = false; // Add this line right here
+            bool invertBackground = false;
             bool triggerTextExport = false;
+            bool trigger3DLabWindow = false; // INJECT FLAG HERE
 
-            // ============================================================================
-            // PROGRAM.CS - ROUTING VARIABLES TO YOUR ORIGINAL BASELINE
-            // ============================================================================
             while (!Raylib.WindowShouldClose())
             {
-                // Ensure the last argument matches the precise variable name 
-                // expected by your original, working InputHandler.cs file
+                // Pass parameter values stably with our new laboratory layout argument track safely mapped out
                 InputHandler.HandleKeys(
                     ref currentRoom, ref is3DMode, ref globalScale, ref heightMultiplier,
                     ref panOffsetX, ref panOffsetY, ref rotationAngle, ref tiltFactor,
                     ref renderStyleMode, ref displayPathOverlays, ref displayGems, ref displayElevators,
-                    ref invertBackground, ref triggerTextExport // Or ref exportTextFlag if that's what your baseline calls it
+                    ref invertBackground, ref triggerTextExport, ref trigger3DLabWindow
                 );
 
-                // ============================================================================
-                // PROGRAM.CS - SYNCHRONIZED RUNTIME STATE MECHANICS MACHINE (v0.5)
-                // ============================================================================
-                // --- PROTECTED SINGLE-SHOT RECOVERY RE-INITIALIZATION ---
                 int cityIndex = RoomToCityMap[currentRoom] & 0x0F;
                 CityData activeCity = cities[cityIndex];
                 string currentStageName = (currentRoom < StageNames.Length) ? StageNames[currentRoom] : "Unknown Castle";
 
-                // Only executes once upon explicit room change key triggers
                 if (currentRoom != lastRoomID)
                 {
                     try
                     {
                         var isolatedTargetRoom = RomManager.IsolatedStages[currentRoom];
 
-                        // FIX STEP 1: Execute your text file override sideload FIRST!
                         ElevatorPremapper.ApplyOverrides(currentRoom, isolatedTargetRoom.Elevators);
-
-                        // FIX STEP 2: Log your transition metrics SECOND so the file captures the loaded values!
                         SessionLogger.LogStageTransition(currentRoom, currentStageName, cityIndex, isolatedTargetRoom.Elevators);
 
-                        // STEP 3: Execute our structural verification pass to guarantee zero data loss
                         StringBuilder verificationBuffer = new StringBuilder();
                         verificationBuffer.AppendLine($"[DATA_VERIFICATION] Cross-examining 37-Stage Deep-Copy structural array for Wave [{currentRoom:D2}]...");
 
@@ -118,14 +107,10 @@ namespace cSharpRaylib
                             }
                         }
 
-                        // ============================================================================
-                        // PROGRAM.CS - ADVANCED 3D FORENSIC VIEWPORT LOGGER INJECTION
-                        // ============================================================================
                         string resultMarkerStr = matricesAreIdentical ? "✅ VERIFIED MATCH: Deep-copy layout block matches parent city exactly." : "🛑 ALERT: Structural matrix drift detected inside copy layer!";
                         verificationBuffer.AppendLine($"    -> {resultMarkerStr}");
                         verificationBuffer.AppendLine($"    -> Parent City Array Elevators: {activeCity.Elevators.Count} | Isolated Array Elevators: {isolatedTargetRoom.Elevators.Count}");
 
-                        // --- 2D CANVAS VIEWPORT CHECK ---
                         verificationBuffer.AppendLine("\n[VIEWPORT_CROSS_CHECK] Analyzing coordinate synchronization with primary 2D viewports...");
                         for (int i = 0; i < isolatedTargetRoom.Elevators.Count; i++)
                         {
@@ -136,7 +121,6 @@ namespace cSharpRaylib
                             }
                         }
 
-                        // --- ADVANCED 3D FORENSIC PROJECTION AUDIT RING ---
                         verificationBuffer.AppendLine("\n[3D_PROJECT_AUDIT] Tracing Isometric 3D Space Projection Coordinates...");
                         for (int i = 0; i < isolatedTargetRoom.Elevators.Count; i++)
                         {
@@ -147,7 +131,6 @@ namespace cSharpRaylib
                                 int cy = ev.CellY;
                                 int th = isolatedTargetRoom.Heights[cx, cy];
 
-                                // Reverse-engineer the isometric screen coordinate projection vectors
                                 int projectedIsoX = 200 - (cx * 4) + (cy * 8);
                                 int projectedIsoY = 100 + (cx * 4) + (cy * 2) - th;
 
@@ -169,10 +152,6 @@ namespace cSharpRaylib
                     }
                 }
 
-                // ============================================================================
-                // PROGRAM.CS - DEPLOYING THE SOLID GRAPHICS VIEWPORT SWITCHBOARD (v0.5)
-                // ============================================================================
-                // --- 60 FPS CONTINUOUS RUNTIME VECTOR SYNCHRONIZATION ---
                 var currentActiveIsolatedRoom = RomManager.IsolatedStages[currentRoom];
 
                 int safeBoundLimit = Math.Min(activeCity.Elevators.Count, currentActiveIsolatedRoom.Elevators.Count);
@@ -181,10 +160,8 @@ namespace cSharpRaylib
                     var romLift = activeCity.Elevators[i];
                     var isolatedLift = currentActiveIsolatedRoom.Elevators[i];
 
-                    // Core state ticker update pass
                     romLift.Update();
 
-                    // Parallel runtime parameter mirroring assignment
                     isolatedLift.HorizontalPosition = romLift.HorizontalPosition;
                     isolatedLift.VerticalPosition = romLift.VerticalPosition;
                     isolatedLift.CurrentPosition = romLift.CurrentPosition;
@@ -192,7 +169,6 @@ namespace cSharpRaylib
                     isolatedLift.CurrentSitTime = romLift.CurrentSitTime;
                 }
 
-                // FIX: Cleared out the duplicate nested BeginTextureMode statement loops!
                 Raylib.BeginTextureMode(targetBuffer);
                 Raylib.ClearBackground(invertBackground ? Color.RayWhite : Color.Black);
 
@@ -201,16 +177,11 @@ namespace cSharpRaylib
 
                 if (!is3DMode)
                 {
-                    // Render flat grids natively from your isolated memory track container arrays
                     MapRenderer.Draw2DBlueprint(drawingRoom, activeTheme, displayPathOverlays, displayGems, displayElevators);
                 }
                 else
                 {
-                    // Render uncompressed landscape wireframes from your isolated memory containers
                     MapRenderer.Draw3DWorkspace(drawingRoom, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, displayGems, displayElevators);
-
-                    // EXTRA SAFETLY FEATURE PASS: Run your active 3D elevator graphics shells cleanly 
-                    // on top of your verified isolated memory matrix tracks
                     ElevatorRenderer.Render3DElevators(drawingRoom.Elevators, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode);
                 }
 
@@ -219,23 +190,21 @@ namespace cSharpRaylib
                     invertBackground, globalScale, currentRoom, currentStageName, drawingRoom.Elevators.Count, activeTheme
                 );
 
-                // --- OPTION 5 INTERACTIVE WINDOWS SWITCHBOARD HOOKS ---
                 if (triggerTextExport)
                 {
-                    // Passes data parameters safely across window boundary lines on 'T' key click passes
                     DiagnosticCanvas.LaunchDebugWindow(currentRoom, StageNames, RoomToCityMap, cities);
                     triggerTextExport = false;
                 }
 
-                // NEW HOOK: Map the 'X' key inside InputHandler to launch your independent 3D Lab Window!
-                if (Raylib.IsKeyPressed(KeyboardKey.X))
+                // RUN DUAL INTERACTIVE SWITCHBOARD HOOK: 
+                if (trigger3DLabWindow)
                 {
-                    // Wakes up your parallel 3D processing canvas sandbox loop cleanly
                     System.Diagnostics.Debug.WriteLine("[SANDBOX] Diverting processing stream to 3D Diagnostic Canvas...");
+                    DiagnosticCanvas.LaunchDebugWindow(currentRoom, StageNames, RoomToCityMap, cities);
+                    trigger3DLabWindow = false;
                 }
 
                 Raylib.EndTextureMode();
-
                 // --- HARDWARE CANVAS BLIT UP-SCALING PASS ---
                 Raylib.BeginDrawing();
                 Raylib.ClearBackground(Color.Black);
