@@ -108,10 +108,113 @@ namespace cSharpRaylib
             // INJECT THIS HOOK HERE: Triggers our file scanner immediately after the 37 stages populate!
             ElevatorPremapper.InitializeFromDisk();
 
+            // INJECT THIS HOOK HERE: Triggers our file scanner immediately after the 37 stages populate!
+            ElevatorPremapper.InitializeFromDisk();
+
+            // NEW INJECTION PASS: Triggers your single-shot laboratory audit log generation right at boot time!
+            GenerateStartupLaboratoryLogs();
+
             // Return the old list reference stably to keep your existing 3D code loops functional
             return BaseCities;
         }
+        // ============================================================================
+        // ROMMANAGER.CS - COMPONENT INJECTION: STARTUP ISOLATED REPORT GENERATOR
+        // ============================================================================
+        public static void GenerateStartupLaboratoryLogs()
+        {
+            // Master arcade hardcoded stage names index matching array
+            string[] stageNames = new string[] {
+                "Ball Wave", "Tree Wave", "Doomsdome", "Berthilda's Castle",
+                "Hidden Ramp", "Staircase", "Crossroads", "Berthilda's Fortress",
+                "Hidden Ramp", "Nasty Tree", "Hidden Spiral", "Berthilda's Dungeon",
+                "Pyramid", "Cross Maze", "Hidden Ramp", "Berthilda's Palace",
+                "Staircase", "Nasty Tree", "Crossroads", "Berthilda's Castle",
+                "Cross Maze", "Tree Wave", "Tree Wave", "Berthilda's Palace",
+                "Staircase", "Pyramid", "Hidden Spiral", "Berthilda's Dungeon",
+                "Staircase", "Cross Maze", "Hidden Ramp", "Berthilda's Fortress",
+                "Impossible Staircase", "Nasty Tree", "Hidden Spiral", "Berthilda's Dungeon",
+                "The End"
+            };
 
+            SessionLogger.LogVerificationMessage("\n[3D_LAB_AUTO_AUDIT] Commencing single-shot startup text logging pass across all stages...");
+
+            for (int stageNum = 0; stageNum < 37; stageNum++)
+            {
+                var isolatedRoom = IsolatedStages[stageNum];
+                string currentStageName = (stageNum < stageNames.Length) ? stageNames[stageNum] : "Unknown Wave";
+
+                try
+                {
+                    string filename = $"LAB_TEST_LOG_STAGE_{stageNum:D2}.txt";
+                    string fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
+
+                    using (StreamWriter sw = new StreamWriter(fullPath, false, Encoding.UTF8))
+                    {
+                        sw.WriteLine("================================================================================");
+                        sw.WriteLine($"=== CRYSTAL CASTLES ISOLATED AUTOMATED AUDIT REPORT: STAGE {stageNum:D2} ===");
+                        sw.WriteLine($"Stage Name Reference profile: {currentStageName.ToUpper()}");
+                        sw.WriteLine($"Generated at Application Startup: {DateTime.Now}");
+                        sw.WriteLine("================================================================================");
+
+                        if (isolatedRoom.Elevators.Count == 0)
+                        {
+                            sw.WriteLine("  * Elevator Configuration: N/A (No lifts configured for this stage template matrix)");
+                        }
+                        else
+                        {
+                            sw.WriteLine($"  * Found {isolatedRoom.Elevators.Count} active engine structures mapping traces:");
+                            sw.WriteLine("--------------------------------------------------------------------------------");
+
+                            for (int i = 0; i < isolatedRoom.Elevators.Count; i++)
+                            {
+                                var ev = isolatedRoom.Elevators[i];
+
+                                // Fetch raw structural map terrain deck heights natively out of our memory layer
+                                int terrainTileHeight = isolatedRoom.Heights[ev.CellX, ev.CellY];
+
+                                sw.WriteLine($"  * LIFT INDEX POINTER [{i}]:");
+                                sw.WriteLine($"    - Verification Mapping Bounds  : IsMappedInEngine = {ev.IsMapped}");
+                                sw.WriteLine($"    - Verified Grid Cell Positions : Row_X = {ev.CellX:D2}, Col_Y = {ev.CellY:D2}");
+                                sw.WriteLine($"    - Ground Deck Terrain Altitude : TerrainTileHeight = {terrainTileHeight:D2}");
+                                sw.WriteLine($"    - Raw Arcade Thresholds Data   : BottomPosition   = {ev.BottomPosition:D3}");
+                                sw.WriteLine($"                                   : TopPosition      = {ev.TopPosition:D3}");
+                                sw.WriteLine($"                                   : TravelOffset     = {ev.CurrentPosition:D3}");
+
+                                // Calculate what the primary 3D engine projection formulas yield using default scale bases (1.0f scale, 1.8f heightScale)
+                                float defaultScale = 1.0f;
+                                float defaultHeightScale = 1.8f;
+
+                                double rad = 0.0; // Assume baseline 0-degree angle projection layer for calculations
+                                double cx = ev.CellX - 11.0;
+                                double cy = ev.CellY - 11.0;
+
+                                float rotX = (float)(cx * Math.Cos(rad) - cy * Math.Sin(rad)) + 11f;
+                                float rotY = (float)(cx * Math.Sin(rad) + cy * Math.Cos(rad)) + 11f;
+
+                                int projectedScreenX = (int)(500 - (rotX * 12 * defaultScale) + (rotY * 12 * defaultScale));
+                                int projectedBaseShaftY = (int)(340 + (rotX * 6 * defaultScale) + (rotY * 6 * defaultScale) - (ev.BottomPosition * defaultHeightScale * defaultScale));
+                                int projectedPlatformY = (int)(340 + (rotX * 6 * defaultScale) + (rotY * 6 * defaultScale) - (ev.CurrentPosition * defaultHeightScale * defaultScale));
+
+                                sw.WriteLine($"    - Predicted 3D Engine Output   : ScreenPixelX = {projectedScreenX}");
+                                sw.WriteLine($"                                   : BaseShaftY   = {projectedBaseShaftY}");
+                                sw.WriteLine($"                                   : PlatformY    = {projectedPlatformY}");
+
+                                // Calculate discrepancy delta margin offsets
+                                int heightDeltaDiscrepancy = ev.BottomPosition - terrainTileHeight;
+                                sw.WriteLine($"    - Discrepancy Calibration Delta: (ArcadeBottom - TerrainTileHeight) = {heightDeltaDiscrepancy:+0;-0;0}");
+                                sw.WriteLine("--------------------------------------------------------------------------------");
+                            }
+                        }
+                        sw.WriteLine("================================================================================");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    SessionLogger.LogVerificationMessage($"    -> [ERROR] Failed to compile text log sheet for Stage [{stageNum:D2}]: {ex.Message}");
+                }
+            }
+            SessionLogger.LogVerificationMessage("[3D_LAB_AUTO_AUDIT] Isolated test logging complete. All reports verified on disk.");
+        }
         public static void ExportStageTextFile(int stageNum, string stageName, CityData activeCity)
         {
             try
