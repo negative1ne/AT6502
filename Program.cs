@@ -119,26 +119,42 @@ namespace cSharpRaylib
                         }
 
                         // ============================================================================
-                        // PROGRAM.CS - VIEWPORT ALIGNMENT RING LOGGER INJECTION
+                        // PROGRAM.CS - ADVANCED 3D FORENSIC VIEWPORT LOGGER INJECTION
                         // ============================================================================
                         string resultMarkerStr = matricesAreIdentical ? "✅ VERIFIED MATCH: Deep-copy layout block matches parent city exactly." : "🛑 ALERT: Structural matrix drift detected inside copy layer!";
                         verificationBuffer.AppendLine($"    -> {resultMarkerStr}");
                         verificationBuffer.AppendLine($"    -> Parent City Array Elevators: {activeCity.Elevators.Count} | Isolated Array Elevators: {isolatedTargetRoom.Elevators.Count}");
 
-                        // --- INJECT VIEWPORT CROSS-CHECK ENGINE LOGGING ---
-                        verificationBuffer.AppendLine("\n[VIEWPORT_CROSS_CHECK] Analyzing coordinate synchronization with primary viewports...");
+                        // --- 2D CANVAS VIEWPORT CHECK ---
+                        verificationBuffer.AppendLine("\n[VIEWPORT_CROSS_CHECK] Analyzing coordinate synchronization with primary 2D viewports...");
                         for (int i = 0; i < isolatedTargetRoom.Elevators.Count; i++)
                         {
                             var ev = isolatedTargetRoom.Elevators[i];
                             if (ev.IsMapped)
                             {
-                                // Trace the variables passed straight down to your drawing functions
-                                int currentCellX = ev.CellX;
-                                int currentCellY = ev.CellY;
-                                int underlyingRawHeight = isolatedTargetRoom.Heights[currentCellX, currentCellY];
+                                verificationBuffer.AppendLine($"    - Elevator [{i}]: File Matrix Location Cell = ({ev.CellX:D2},{ev.CellY:D2}) | Terrain Height = {isolatedTargetRoom.Heights[ev.CellX, ev.CellY]:D2}");
+                            }
+                        }
 
-                                verificationBuffer.AppendLine($"    - Elevator [{i}]: File Data dictates position = ({currentCellX:D2},{currentCellY:D2})");
-                                verificationBuffer.AppendLine($"      [RENDER CHECK] -> Drawing tile height at these cells = {underlyingRawHeight:D2} | ActiveLatching={ev.IsMapped}");
+                        // --- ADVANCED 3D FORENSIC PROJECTION AUDIT RING ---
+                        verificationBuffer.AppendLine("\n[3D_PROJECT_AUDIT] Tracing Isometric 3D Space Projection Coordinates...");
+                        for (int i = 0; i < isolatedTargetRoom.Elevators.Count; i++)
+                        {
+                            var ev = isolatedTargetRoom.Elevators[i];
+                            if (ev.IsMapped)
+                            {
+                                int cx = ev.CellX;
+                                int cy = ev.CellY;
+                                int th = isolatedTargetRoom.Heights[cx, cy];
+
+                                // Reverse-engineer the isometric screen coordinate projection vectors
+                                int projectedIsoX = 200 - (cx * 4) + (cy * 8);
+                                int projectedIsoY = 100 + (cx * 4) + (cy * 2) - th;
+
+                                verificationBuffer.AppendLine($"    - Elevator [{i}] Geometry Profile:");
+                                verificationBuffer.AppendLine($"      * Hard ROM Anchors -> ArcadeX = {ev.HorizontalPosition:D3}, ArcadeY = {ev.VerticalPosition:D3}");
+                                verificationBuffer.AppendLine($"      * Predicted 3D Box -> TargetX = {projectedIsoX:D3}, TargetY = {projectedIsoY:D3} | Ground Deck Altitude = {th:D2}");
+                                verificationBuffer.AppendLine($"      * Motion Threshold -> BottomPos = {ev.BottomPosition} | TopPos = {ev.TopPosition} | TravelOffset = {ev.CurrentPosition}");
                             }
                         }
                         verificationBuffer.AppendLine("================================================================================");
