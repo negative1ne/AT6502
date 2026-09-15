@@ -91,23 +91,23 @@ namespace cSharpRaylib
                 string currentStageName = (currentRoom < StageNames.Length) ? StageNames[currentRoom] : "Unknown Castle";
 
                 // ============================================================================
-                // PROGRAM.CS - DEEP-COPY LOG VERIFIER INTERCEPT HOOK
+                // PROGRAM.CS - ROUTING MIGRATION PASS (2D LOOP REDIRECTION AND FILE LOG INTERCEPT)
                 // ============================================================================
                 // Only executes once upon explicit room change key triggers
                 if (currentRoom != lastRoomID)
                 {
                     try
                     {
-                        // 1. PHASE 1 LOGGER: Log the active level transition state parameters stably
+                        // 1. Log the transition into our dynamically rotated session file
                         SessionLogger.LogStageTransition(currentRoom, currentStageName, cityIndex, activeCity.Elevators);
 
-                        // 2. Keep your original baseline premapper override executions completely functional
-                        ElevatorPremapper.ApplyOverrides(currentRoom, activeCity.Elevators);
+                        // --- THE SAFE PASSIVE INTERCEPT BRIDGING HOOK ---
+                        // STEP 1: Route our disk overrides to write straight to our isolated 37-stage collection list,
+                        // keeping the 16 base cities completely pristine for your 3D viewports!
+                        var isolatedTargetRoom = RomManager.IsolatedStages[currentRoom];
+                        ElevatorPremapper.ApplyOverrides(currentRoom, isolatedTargetRoom.Elevators);
 
-                        // --- STEP 2: VERIFY DATA INTEGRITY NATIVELY ON LEVEL LOAD ---
-                        var targetIsolatedRoom = RomManager.IsolatedStages[currentRoom];
-                        string logFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_execution_audit.log");
-
+                        // STEP 2: Execute our structural verification pass to guarantee zero data loss
                         StringBuilder verificationBuffer = new StringBuilder();
                         verificationBuffer.AppendLine($"[DATA_VERIFICATION] Cross-examining 37-Stage Deep-Copy structural array for Wave [{currentRoom:D2}]...");
 
@@ -116,8 +116,8 @@ namespace cSharpRaylib
                         {
                             for (int y = 0; y < 22; y++)
                             {
-                                if (targetIsolatedRoom.Heights[x, y] != activeCity.Heights[x, y] ||
-                                    targetIsolatedRoom.Attributes[x, y] != activeCity.Attributes[x, y])
+                                if (isolatedTargetRoom.Heights[x, y] != activeCity.Heights[x, y] ||
+                                    isolatedTargetRoom.Attributes[x, y] != activeCity.Attributes[x, y])
                                 {
                                     matricesAreIdentical = false;
                                 }
@@ -126,10 +126,10 @@ namespace cSharpRaylib
 
                         string resultMarkerStr = matricesAreIdentical ? "✅ VERIFIED MATCH: Deep-copy layout block matches parent city exactly." : "🛑 ALERT: Structural matrix drift detected inside copy layer!";
                         verificationBuffer.AppendLine($"    -> {resultMarkerStr}");
-                        verificationBuffer.AppendLine($"    -> Parent City Array Elevators: {activeCity.Elevators.Count} | Isolated Array Elevators: {targetIsolatedRoom.Elevators.Count}");
+                        verificationBuffer.AppendLine($"    -> Parent City Array Elevators: {activeCity.Elevators.Count} | Isolated Array Elevators: {isolatedTargetRoom.Elevators.Count}");
                         verificationBuffer.AppendLine("================================================================================");
 
-                        File.AppendAllText(logFile, verificationBuffer.ToString(), Encoding.UTF8);
+                        SessionLogger.LogVerificationMessage(verificationBuffer.ToString());
 
                         lastRoomID = currentRoom;
                     }
@@ -152,10 +152,13 @@ namespace cSharpRaylib
 
                 if (!is3DMode)
                 {
-                    MapRenderer.Draw2DBlueprint(activeCity, activeTheme, displayPathOverlays, displayGems, displayElevators);
+                    // STEP 4 CUTOVER: Shift your 2D flat viewport drawing loops to read exclusively from the isolated array!
+                    var drawingRoom2D = RomManager.IsolatedStages[currentRoom];
+                    MapRenderer.Draw2DBlueprint(drawingRoom2D, activeTheme, displayPathOverlays, displayGems, displayElevators);
                 }
                 else
                 {
+                    // Keep your working 3D engine locked into the original base cities array to maintain total view stability
                     MapRenderer.Draw3DWorkspace(activeCity, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, displayGems, displayElevators);
                 }
 
