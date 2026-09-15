@@ -145,6 +145,9 @@ namespace cSharpRaylib
                     ev.Update();
                 }
 
+                // ============================================================================
+                // PROGRAM.CS - SHIFTING 2D SCREEN VIEWPORT TO THE ISOLATED TRACK
+                // ============================================================================
                 Raylib.BeginTextureMode(targetBuffer);
                 Raylib.ClearBackground(Color.Black);
 
@@ -152,13 +155,13 @@ namespace cSharpRaylib
 
                 if (!is3DMode)
                 {
-                    // STEP 4 CUTOVER: Shift your 2D flat viewport drawing loops to read exclusively from the isolated array!
+                    // STEP 1: Switch your 2D flat view drawing loops to read from the newly verified 37 isolated stages!
                     var drawingRoom2D = RomManager.IsolatedStages[currentRoom];
                     MapRenderer.Draw2DBlueprint(drawingRoom2D, activeTheme, displayPathOverlays, displayGems, displayElevators);
                 }
                 else
                 {
-                    // Keep your working 3D engine locked into the original base cities array to maintain total view stability
+                    // STEP 2: Keep your working 3D engine locked into the original base cities array to maintain total view stability
                     MapRenderer.Draw3DWorkspace(activeCity, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, displayGems, displayElevators);
                 }
 
