@@ -1,82 +1,124 @@
-﻿using System.Collections.Generic;
+﻿// ============================================================================
+// ELEVATORPREMAPPER.CS - TEXT MATRIX SHEET SLURPER OVERHAUL (v0.5)
+// ============================================================================
+using System;
+using System.IO;
+using System.Text;
+using System.Collections.Generic;
 
 namespace cSharpRaylib
 {
     public static class ElevatorPremapper
     {
+        private static bool _isInitialized = false;
+        private static readonly Dictionary<int, List<(int X, int Y)>> _fileCoordinateCache = new Dictionary<int, List<(int, int)>>();
+
         /// <summary>
-        /// Applies 100% hand-verified 0-indexed matrix coordinates to the live elevator collection.
-        /// Maps parameters directly by Stage ID to support high-density split layouts cleanly.
+        /// Reads absolute coordinate tokens straight from your hand-edited Map sheets.
+        /// Bypasses string report requirements and reads grid indices natively.
+        /// </summary>
+        public static void InitializeFromDisk()
+        {
+            if (_isInitialized) return;
+
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string mapsFolder = Path.Combine(baseDir, "data", "maps");
+
+            SessionLogger.LogVerificationMessage("[PREMAPPER_INIT] Initializing matrix sheet slurper pass... Target folder: .\\data\\maps\\");
+
+            if (!Directory.Exists(mapsFolder))
+            {
+                SessionFolderErrorTrace();
+                _isInitialized = true;
+                return;
+            }
+
+            for (int stageNum = 0; stageNum < 37; stageNum++)
+            {
+                List<(int X, int Y)> stageCoords = new List<(int X, int Y)>();
+
+                string customPattern = $"Diagnostic_Dump_Stage_{stageNum:D2}_*.txt";
+                string flatPattern = $"Diagnostic_Dump_Stage_{stageNum:D2}.txt";
+
+                string[] files = Directory.GetFiles(mapsFolder, customPattern);
+                if (files.Length == 0) files = Directory.GetFiles(mapsFolder, flatPattern);
+
+                if (files.Length > 0)
+                {
+                    try
+                    {
+                        string targetFilePath = files[0];
+                        string[] lines = File.ReadAllLines(targetFilePath);
+
+                        for (int r = 0; r < lines.Length; r++)
+                        {
+                            string currentLine = lines[r];
+                            // Skip text header lines, profile names, and legends safely
+                            if (string.IsNullOrWhiteSpace(currentLine) || currentLine.Contains("===") || currentLine.Contains("Context") || currentLine.Contains("[Legend")) continue;
+
+                            string[] stringTokens = currentLine.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                            // Account for the edge padding marker lines inside the files
+                            int currentRowX = r - 4;
+                            if (currentRowX < 0 || currentRowX >= 22) continue;
+
+                            // Loop across all 22 columns inside the text matrix grid row array path
+                            for (int c = 0; c < stringTokens.Length && c < 22; c++)
+                            {
+                                string token = stringTokens[c].Trim();
+
+                                // O = Premapper Box, M = Perfect Match
+                                if (token == "M" || token == "O")
+                                {
+                                    stageCoords.Add((currentRowX, c));
+                                }
+                            }
+                        }
+
+                        if (stageCoords.Count > 0)
+                        {
+                            _fileCoordinateCache[stageNum] = stageCoords;
+                            SessionLogger.LogVerificationMessage($"    -> Stage [{stageNum:D2}]: Successfully extracted {stageCoords.Count} matrix markers from flat file grid.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        SessionLogger.LogVerificationMessage($"    -> Stage [{stageNum:D2}][ERROR] File parsing matrix failure: {ex.Message}");
+                    }
+                }
+            }
+
+            _isInitialized = true;
+            SessionLogger.LogVerificationMessage("[PREMAPPER_INIT] Matrix memory cache layer sealed completely.");
+        }
+
+        private static void SessionFolderErrorTrace()
+        {
+            SessionLogger.LogVerificationMessage("    -> [CRITICAL WARNING]: Directory '.\\data\\maps\\' is missing from disk tree path configuration layout!");
+        }
+
+        /// <summary>
+        /// Binds extracted text sheet grid markers directly straight onto your running game object containers.
         /// </summary>
         public static void ApplyOverrides(int stageNum, List<ElevatorData> elevators)
         {
             if (elevators == null || elevators.Count == 0) return;
 
-            // Define target tracking coordinates array for the current active stage context
-            List<(int X, int Y)> targetCoords = new List<(int X, int Y)>();
+            if (!_isInitialized) InitializeFromDisk();
 
-            switch (stageNum)
+            if (_fileCoordinateCache.ContainsKey(stageNum))
             {
-                case 3:  // Stage 03 - Berthilda's Castle
-                case 19: // Stage 19 - Berthilda's Castle Variant
-                    targetCoords.Add((4, 18));
-                    targetCoords.Add((13, 2));
-                    targetCoords.Add((17, 18));
-                    targetCoords.Add((11, 10));
-                    break;
+                var targetCoords = _fileCoordinateCache[stageNum];
+                int loopLimit = System.Math.Min(elevators.Count, targetCoords.Count);
 
-                case 4:  // Stage 04 - Hidden Ramp
-                case 8:  // Stage 08 - Hidden Ramp Variant
-                case 14: // Stage 14 - Hidden Ramp Master
-                case 30: // Stage 30 - Hidden Ramp Duplicate
-                    targetCoords.Add((4, 18));
-                    targetCoords.Add((19, 3));
-                    targetCoords.Add((16, 16));
-                    targetCoords.Add((8, 8));
-                    break;
+                for (int i = 0; i < loopLimit; i++)
+                {
+                    elevators[i].CellX = targetCoords[i].X;
+                    elevators[i].CellY = targetCoords[i].Y;
+                    elevators[i].IsMapped = true;
+                }
 
-                case 6:  // Stage 06 - Crossroads
-                case 18: // Stage 18 - Crossroads Master
-                    targetCoords.Add((2, 18));
-                    targetCoords.Add((6, 14));
-                    targetCoords.Add((10, 10));
-                    targetCoords.Add((14, 6));
-                    break;
-
-                case 11: // Stage 11 - Berthilda's Dungeon
-                case 27: // Stage 27 - Berthilda's Dungeon Variant
-                case 35: // Stage 35 - Berthilda's Dungeon Duplicate
-                    targetCoords.Add((4, 16));
-                    targetCoords.Add((8, 8));
-                    targetCoords.Add((10, 3));
-                    targetCoords.Add((11, 15));
-                    targetCoords.Add((17, 5));
-                    break;
-
-                case 12: // Stage 12 - Pyramid
-                case 25: // Stage 25 - Pyramid High-Density Variant (Fixed Missing Squares)
-                    targetCoords.Add((2, 11));
-                    targetCoords.Add((3, 12));
-                    targetCoords.Add((11, 15));
-                    targetCoords.Add((1, 18));
-                    break;
-
-                case 32: // Stage 32 - Impossible Staircase (Fixed Collision Tracker)
-                    targetCoords.Add((16, 8));
-                    break;
-
-                default:
-                    // Fallback pass: leave other un-audited stages to map their default structures cleanly
-                    return;
-            }
-
-            // Safe assignment pass linking extracted data bounds to live array slots
-            int loopLimit = System.Math.Min(elevators.Count, targetCoords.Count);
-            for (int i = 0; i < loopLimit; i++)
-            {
-                elevators[i].CellX = targetCoords[i].X;
-                elevators[i].CellY = targetCoords[i].Y;
-                elevators[i].IsMapped = true;
+                SessionLogger.LogVerificationMessage($"[MATRIX_BRIDGE] Overwrote {loopLimit} live coordinates on Stage [{stageNum:D2}] using flat text sheet tokens.");
             }
         }
     }

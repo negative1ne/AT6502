@@ -99,10 +99,16 @@ namespace cSharpRaylib
                     clonedRoom.Elevators.Add(clonedLift);
                 }
 
+                 // ============================================================================
+                // ROMMANAGER.CS - BOOT FILE-READER HOOK INTERCEPT (At End of LoadRomDatabase)
+                // ============================================================================
                 IsolatedStages.Add(clonedRoom);
             }
 
-            // Return the old list reference stably to protect your existing executable loops from crashing
+            // INJECT THIS HOOK HERE: Triggers our file scanner immediately after the 37 stages populate!
+            ElevatorPremapper.InitializeFromDisk();
+
+            // Return the old list reference stably to keep your existing 3D code loops functional
             return BaseCities;
         }
 

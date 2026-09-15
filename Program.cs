@@ -81,33 +81,27 @@ namespace cSharpRaylib
                 );
 
                 // ============================================================================
-                // PROGRAM.CS - VARIABLE SCOPE ALIGNMENT PASS (Around Line 80)
+                // PROGRAM.CS - SYNCHRONIZED RUNTIME STATE MECHANICS MACHINE (v0.5)
                 // ============================================================================
                 // --- PROTECTED SINGLE-SHOT RECOVERY RE-INITIALIZATION ---
                 int cityIndex = RoomToCityMap[currentRoom] & 0x0F;
                 CityData activeCity = cities[cityIndex];
-
-                // FIX: Lifted from lower down in the file to resolve the CS0841 scoping error!
                 string currentStageName = (currentRoom < StageNames.Length) ? StageNames[currentRoom] : "Unknown Castle";
 
-                // ============================================================================
-                // PROGRAM.CS - ROUTING MIGRATION PASS (2D LOOP REDIRECTION AND FILE LOG INTERCEPT)
-                // ============================================================================
                 // Only executes once upon explicit room change key triggers
                 if (currentRoom != lastRoomID)
                 {
                     try
                     {
-                        // 1. Log the transition into our dynamically rotated session file
-                        SessionLogger.LogStageTransition(currentRoom, currentStageName, cityIndex, activeCity.Elevators);
-
-                        // --- THE SAFE PASSIVE INTERCEPT BRIDGING HOOK ---
-                        // STEP 1: Route our disk overrides to write straight to our isolated 37-stage collection list,
-                        // keeping the 16 base cities completely pristine for your 3D viewports!
                         var isolatedTargetRoom = RomManager.IsolatedStages[currentRoom];
+
+                        // FIX STEP 1: Execute your text file override sideload FIRST!
                         ElevatorPremapper.ApplyOverrides(currentRoom, isolatedTargetRoom.Elevators);
 
-                        // STEP 2: Execute our structural verification pass to guarantee zero data loss
+                        // FIX STEP 2: Log your transition metrics SECOND so the file captures the loaded values!
+                        SessionLogger.LogStageTransition(currentRoom, currentStageName, cityIndex, isolatedTargetRoom.Elevators);
+
+                        // STEP 3: Execute our structural verification pass to guarantee zero data loss
                         StringBuilder verificationBuffer = new StringBuilder();
                         verificationBuffer.AppendLine($"[DATA_VERIFICATION] Cross-examining 37-Stage Deep-Copy structural array for Wave [{currentRoom:D2}]...");
 
@@ -139,11 +133,30 @@ namespace cSharpRaylib
                     }
                 }
 
-                // Continuous state machines update tick calls passed out
-                foreach (var ev in activeCity.Elevators)
+                // --- 60 FPS CONTINUOUS RUNTIME VECTOR SYNCHRONIZATION ---
+                // We map moving platform animation variables from the active ROM data stream 
+                // straight into the isolated 37-stage containers every single frame tick!
+                var currentActiveIsolatedRoom = RomManager.IsolatedStages[currentRoom];
+
+                int safeBoundLimit = Math.Min(activeCity.Elevators.Count, currentActiveIsolatedRoom.Elevators.Count);
+                for (int i = 0; i < safeBoundLimit; i++)
                 {
-                    ev.Update();
+                    var romLift = activeCity.Elevators[i];
+                    var isolatedLift = currentActiveIsolatedRoom.Elevators[i];
+
+                    // Core state ticker update pass
+                    romLift.Update();
+
+                    // Parallel runtime parameter mirroring assignment
+                    isolatedLift.HorizontalPosition = romLift.HorizontalPosition;
+                    isolatedLift.VerticalPosition = romLift.VerticalPosition;
+                    isolatedLift.CurrentPosition = romLift.CurrentPosition;
+                    isolatedLift.Mode = romLift.Mode;
+                    isolatedLift.CurrentSitTime = romLift.CurrentSitTime;
                 }
+
+                Raylib.BeginTextureMode(targetBuffer);
+                Raylib.ClearBackground(Color.Black);
 
                 // ============================================================================
                 // PROGRAM.CS - SHIFTING 2D SCREEN VIEWPORT TO THE ISOLATED TRACK
