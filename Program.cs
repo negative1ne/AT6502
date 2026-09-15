@@ -169,9 +169,10 @@ namespace cSharpRaylib
                     }
                 }
 
+                // ============================================================================
+                // PROGRAM.CS - DEPLOYING THE SOLID GRAPHICS VIEWPORT SWITCHBOARD (v0.5)
+                // ============================================================================
                 // --- 60 FPS CONTINUOUS RUNTIME VECTOR SYNCHRONIZATION ---
-                // We map moving platform animation variables from the active ROM data stream 
-                // straight into the isolated 37-stage containers every single frame tick!
                 var currentActiveIsolatedRoom = RomManager.IsolatedStages[currentRoom];
 
                 int safeBoundLimit = Math.Min(activeCity.Elevators.Count, currentActiveIsolatedRoom.Elevators.Count);
@@ -191,49 +192,51 @@ namespace cSharpRaylib
                     isolatedLift.CurrentSitTime = romLift.CurrentSitTime;
                 }
 
+                // FIX: Cleared out the duplicate nested BeginTextureMode statement loops!
                 Raylib.BeginTextureMode(targetBuffer);
-                Raylib.ClearBackground(Color.Black);
+                Raylib.ClearBackground(invertBackground ? Color.RayWhite : Color.Black);
 
-                /// ============================================================================
-                // PROGRAM.CS - UNIFYING THE HIGH-RES 3D ISOMETRIC VIEWPORT LOOP
-                // ============================================================================
-                Raylib.BeginTextureMode(targetBuffer);
-                Raylib.ClearBackground(Color.Black);
-
-                Color[] activeTheme = stagePalettes.ContainsKey(currentRoom) ? stagePalettes[currentRoom] : stagePalettes[0]; //
-
-                // Extract a direct reference handle to your isolated stage memory container
+                Color[] activeTheme = stagePalettes.ContainsKey(currentRoom) ? stagePalettes[currentRoom] : stagePalettes[0];
                 var drawingRoom = RomManager.IsolatedStages[currentRoom];
 
-                if (!is3DMode) //
+                if (!is3DMode)
                 {
-                    // Cutover: Pull flat grids directly from the isolated track
-                    MapRenderer.Draw2DBlueprint(drawingRoom, activeTheme, displayPathOverlays, displayGems, displayElevators); //
+                    // Render flat grids natively from your isolated memory track container arrays
+                    MapRenderer.Draw2DBlueprint(drawingRoom, activeTheme, displayPathOverlays, displayGems, displayElevators);
                 }
                 else
                 {
-                    // FIX: Switch your 3D isometric workspace view loops to read from the 
-                    // isolated track so your animated models reappear perfectly aligned on screen!
-                    MapRenderer.Draw3DWorkspace(drawingRoom, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, displayGems, displayElevators); //
-                }
+                    // Render uncompressed landscape wireframes from your isolated memory containers
+                    MapRenderer.Draw3DWorkspace(drawingRoom, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, displayGems, displayElevators);
 
+                    // EXTRA SAFETLY FEATURE PASS: Run your active 3D elevator graphics shells cleanly 
+                    // on top of your verified isolated memory matrix tracks
+                    ElevatorRenderer.Render3DElevators(drawingRoom.Elevators, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode);
+                }
 
                 InputHandler.DrawControlOverlay(
                     is3DMode, renderStyleMode, displayPathOverlays, displayGems, displayElevators,
-                    invertBackground, globalScale, currentRoom, currentStageName, activeCity.NumElevators, activeTheme
+                    invertBackground, globalScale, currentRoom, currentStageName, drawingRoom.Elevators.Count, activeTheme
                 );
 
+                // --- OPTION 5 INTERACTIVE WINDOWS SWITCHBOARD HOOKS ---
                 if (triggerTextExport)
                 {
-                    // Passes arrays across the window boundary lines to allow live level flipping
+                    // Passes data parameters safely across window boundary lines on 'T' key click passes
                     DiagnosticCanvas.LaunchDebugWindow(currentRoom, StageNames, RoomToCityMap, cities);
                     triggerTextExport = false;
                 }
 
-                // === THE CRITICAL RE-ALIGNMENT FIX SEPARATION HOOKS ===
-                Raylib.EndTextureMode(); // 1. CLOSE THE VIRTUAL BUFFER FIRST!
+                // NEW HOOK: Map the 'X' key inside InputHandler to launch your independent 3D Lab Window!
+                if (Raylib.IsKeyPressed(KeyboardKey.X))
+                {
+                    // Wakes up your parallel 3D processing canvas sandbox loop cleanly
+                    System.Diagnostics.Debug.WriteLine("[SANDBOX] Diverting processing stream to 3D Diagnostic Canvas...");
+                }
 
-                // 6. NATIVE HARDWARE BLIT UP-SCALING CANVAS PASS (Fires cleanly onto your monitor)
+                Raylib.EndTextureMode();
+
+                // --- HARDWARE CANVAS BLIT UP-SCALING PASS ---
                 Raylib.BeginDrawing();
                 Raylib.ClearBackground(Color.Black);
 
@@ -243,7 +246,7 @@ namespace cSharpRaylib
 
                 Raylib.DrawTexturePro(targetBuffer.Texture, sourceRec, destRec, originPoint, 0.0f, Color.White);
 
-                Raylib.EndDrawing(); // 2. CLOSE BUFFER DISPLAY COMPLETE
+                Raylib.EndDrawing();
             }
 
             Raylib.UnloadRenderTexture(targetBuffer);
