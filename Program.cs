@@ -118,9 +118,29 @@ namespace cSharpRaylib
                             }
                         }
 
+                        // ============================================================================
+                        // PROGRAM.CS - VIEWPORT ALIGNMENT RING LOGGER INJECTION
+                        // ============================================================================
                         string resultMarkerStr = matricesAreIdentical ? "✅ VERIFIED MATCH: Deep-copy layout block matches parent city exactly." : "🛑 ALERT: Structural matrix drift detected inside copy layer!";
                         verificationBuffer.AppendLine($"    -> {resultMarkerStr}");
                         verificationBuffer.AppendLine($"    -> Parent City Array Elevators: {activeCity.Elevators.Count} | Isolated Array Elevators: {isolatedTargetRoom.Elevators.Count}");
+
+                        // --- INJECT VIEWPORT CROSS-CHECK ENGINE LOGGING ---
+                        verificationBuffer.AppendLine("\n[VIEWPORT_CROSS_CHECK] Analyzing coordinate synchronization with primary viewports...");
+                        for (int i = 0; i < isolatedTargetRoom.Elevators.Count; i++)
+                        {
+                            var ev = isolatedTargetRoom.Elevators[i];
+                            if (ev.IsMapped)
+                            {
+                                // Trace the variables passed straight down to your drawing functions
+                                int currentCellX = ev.CellX;
+                                int currentCellY = ev.CellY;
+                                int underlyingRawHeight = isolatedTargetRoom.Heights[currentCellX, currentCellY];
+
+                                verificationBuffer.AppendLine($"    - Elevator [{i}]: File Data dictates position = ({currentCellX:D2},{currentCellY:D2})");
+                                verificationBuffer.AppendLine($"      [RENDER CHECK] -> Drawing tile height at these cells = {underlyingRawHeight:D2} | ActiveLatching={ev.IsMapped}");
+                            }
+                        }
                         verificationBuffer.AppendLine("================================================================================");
 
                         SessionLogger.LogVerificationMessage(verificationBuffer.ToString());
@@ -158,24 +178,27 @@ namespace cSharpRaylib
                 Raylib.BeginTextureMode(targetBuffer);
                 Raylib.ClearBackground(Color.Black);
 
-                // ============================================================================
-                // PROGRAM.CS - SHIFTING 2D SCREEN VIEWPORT TO THE ISOLATED TRACK
+                /// ============================================================================
+                // PROGRAM.CS - UNIFYING THE HIGH-RES 3D ISOMETRIC VIEWPORT LOOP
                 // ============================================================================
                 Raylib.BeginTextureMode(targetBuffer);
                 Raylib.ClearBackground(Color.Black);
 
-                Color[] activeTheme = stagePalettes.ContainsKey(currentRoom) ? stagePalettes[currentRoom] : stagePalettes[0];
+                Color[] activeTheme = stagePalettes.ContainsKey(currentRoom) ? stagePalettes[currentRoom] : stagePalettes[0]; //
 
-                if (!is3DMode)
+                // Extract a direct reference handle to your isolated stage memory container
+                var drawingRoom = RomManager.IsolatedStages[currentRoom];
+
+                if (!is3DMode) //
                 {
-                    // STEP 1: Switch your 2D flat view drawing loops to read from the newly verified 37 isolated stages!
-                    var drawingRoom2D = RomManager.IsolatedStages[currentRoom];
-                    MapRenderer.Draw2DBlueprint(drawingRoom2D, activeTheme, displayPathOverlays, displayGems, displayElevators);
+                    // Cutover: Pull flat grids directly from the isolated track
+                    MapRenderer.Draw2DBlueprint(drawingRoom, activeTheme, displayPathOverlays, displayGems, displayElevators); //
                 }
                 else
                 {
-                    // STEP 2: Keep your working 3D engine locked into the original base cities array to maintain total view stability
-                    MapRenderer.Draw3DWorkspace(activeCity, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, displayGems, displayElevators);
+                    // FIX: Switch your 3D isometric workspace view loops to read from the 
+                    // isolated track so your animated models reappear perfectly aligned on screen!
+                    MapRenderer.Draw3DWorkspace(drawingRoom, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, displayGems, displayElevators); //
                 }
 
 

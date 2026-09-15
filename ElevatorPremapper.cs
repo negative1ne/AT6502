@@ -62,13 +62,17 @@ namespace cSharpRaylib
                             int currentRowX = r - 4;
                             if (currentRowX < 0 || currentRowX >= 22) continue;
 
+                            // ============================================================================
+                            // ELEVATORPREMAPPER.CS - ENFORCING TOTAL CHARACTER TOKEN VALIDATION
+                            // ============================================================================
                             // Loop across all 22 columns inside the text matrix grid row array path
                             for (int c = 0; c < stringTokens.Length && c < 22; c++)
                             {
                                 string token = stringTokens[c].Trim();
 
-                                // O = Premapper Box, M = Perfect Match
-                                if (token == "M" || token == "O")
+                                // FIX: Process 'R' tokens identically to 'M' and 'O' markers!
+                                // This immunizes your directories against previous background overwrites.
+                                if (token == "M" || token == "O" || token == "R")
                                 {
                                     stageCoords.Add((currentRowX, c));
                                 }
