@@ -79,16 +79,25 @@ namespace cSharpRaylib
                     ref invertBackground, ref triggerTextExport // Or ref exportTextFlag if that's what your baseline calls it
                 );
 
-                // --- PROTECTED SINGLE-SHOT SECOVERY RE-INITIALIZATION ---
+                // ============================================================================
+                // PROGRAM.CS - VARIABLE SCOPE ALIGNMENT PASS (Around Line 80)
+                // ============================================================================
+                // --- PROTECTED SINGLE-SHOT RECOVERY RE-INITIALIZATION ---
                 int cityIndex = RoomToCityMap[currentRoom] & 0x0F;
                 CityData activeCity = cities[cityIndex];
+
+                // FIX: Lifted from lower down in the file to resolve the CS0841 scoping error!
+                string currentStageName = (currentRoom < StageNames.Length) ? StageNames[currentRoom] : "Unknown Castle";
 
                 // Only executes once upon explicit room change key triggers
                 if (currentRoom != lastRoomID)
                 {
                     try
                     {
-                        // Safely inject our hybrid split gate processor
+                        // 1. PHASE 1 LOGGER: Force a single-shot diagnostic dump to disk on stage transition
+                        SessionLogger.LogStageTransition(currentRoom, currentStageName, cityIndex, activeCity.Elevators);
+
+                        // 2. Keep your original baseline premapper line completely untouched right below it
                         ElevatorPremapper.ApplyOverrides(currentRoom, activeCity.Elevators);
                         lastRoomID = currentRoom;
                     }
@@ -118,8 +127,6 @@ namespace cSharpRaylib
                     MapRenderer.Draw3DWorkspace(activeCity, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, displayGems, displayElevators);
                 }
 
-                // 5. HUD CONTROL OVERLAY AND LABELS PASS
-                string currentStageName = (currentRoom < StageNames.Length) ? StageNames[currentRoom] : "Unknown Castle";
 
                 InputHandler.DrawControlOverlay(
                     is3DMode, renderStyleMode, displayPathOverlays, displayGems, displayElevators,
