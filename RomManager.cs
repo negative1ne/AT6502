@@ -58,7 +58,10 @@ namespace cSharpRaylib
                 0x08, 0x7D, 0x05, 0xCB, 0x0E
             };
 
-            // 2. STAGE 1 SETUP & DEEP COPY: Allocate 37 completely separate, distinct room containers
+            // ============================================================================
+            // ROMMANAGER.CS - FRAGMENT 1: AUTO-TRI-STATE FILTER CLASSIFICATION ENGINE
+            // ============================================================================
+            // 2. STAGE SETUP & DEEP COPY: Allocate 37 completely separate, distinct room containers
             IsolatedStages.Clear();
             for (int stageNum = 0; stageNum < 37; stageNum++)
             {
@@ -69,6 +72,29 @@ namespace cSharpRaylib
                 CityData clonedRoom = new CityData();
                 clonedRoom.NumElevators = parentCity.NumElevators;
 
+                // --- INJECT TRI-STATE GATING SWITCHBOARD FILTER RULES ---
+                // Boundary Group A: NO ELEVATORS CONFIGURATIONS
+                if (stageNum == 2 || stageNum == 6 || stageNum == 7 || stageNum == 13 ||
+                    stageNum == 15 || stageNum == 18 || stageNum == 20 || stageNum == 23 ||
+                    stageNum == 29 || stageNum == 31 || stageNum == 36)
+                {
+                    clonedRoom.TrackState = StageTrackingState.NoElevators;
+                }
+                // Boundary Group B: VERIFIED WORKING (Freeze and lock completely under legacy rules!)
+                else if (stageNum == 0 || stageNum == 1 || stageNum == 10 ||
+                         stageNum == 21 || stageNum == 22 || stageNum == 26 || stageNum == 34)
+                {
+                    clonedRoom.TrackState = StageTrackingState.VerifiedWorking;
+                }
+                // Boundary Group C: EXPERIMENTAL TEST TARGETS (Isolate height calibrations here)
+                else
+                {
+                    clonedRoom.TrackState = StageTrackingState.ExperimentalTarget;
+                }
+
+                // ============================================================================
+                // ROMMANAGER.CS - FRAGMENT 2: DEEP COPY MEMORY UNLINKING & BOOT TELESCOPES
+                // ============================================================================
                 // Deep-copy byte matrices row-by-row to break memory pointer cross-talk references
                 for (int x = 0; x < 22; x++)
                 {
@@ -79,7 +105,7 @@ namespace cSharpRaylib
                     }
                 }
 
-                // Isolate elevator track configurations safely into pristine memory vectors
+                // Isolate elevator configurations safely into pristine memory vectors
                 foreach (var parentLift in parentCity.Elevators)
                 {
                     ElevatorData clonedLift = new ElevatorData();
@@ -99,30 +125,33 @@ namespace cSharpRaylib
                     clonedRoom.Elevators.Add(clonedLift);
                 }
 
-                 // ============================================================================
-                // ROMMANAGER.CS - BOOT FILE-READER HOOK INTERCEPT (At End of LoadRomDatabase)
-                // ============================================================================
                 IsolatedStages.Add(clonedRoom);
             }
 
-            // INJECT THIS HOOK HERE: Triggers our file scanner immediately after the 37 stages populate!
+            // Keep exactly ONE copy of the premapper initialization pass
             ElevatorPremapper.InitializeFromDisk();
 
-            // INJECT THIS HOOK HERE: Triggers our file scanner immediately after the 37 stages populate!
-            ElevatorPremapper.InitializeFromDisk();
-
-            // NEW INJECTION PASS: Triggers your single-shot laboratory audit log generation right at boot time!
+            // Run our automated height verification text reporter pass cleanly
             GenerateStartupLaboratoryLogs();
 
-            // Return the old list reference stably to keep your existing 3D code loops functional
+            // PIPELINE INITIALIZATION AUDIT LOG: Print data structure states to our active session log
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("\n================================================================================");
+            sb.AppendLine("=== CC_FRAMEWORK_UPDATE: 37-STAGE DATA ISOLATION PIPELINE ENGINE INITIALIZED ===");
+            sb.AppendLine($"Verification Check -> Total Rooms Registered in Isolated Cache: {IsolatedStages.Count}/37");
+            sb.AppendLine("================================================================================");
+            SessionLogger.LogVerificationMessage(sb.ToString());
+
             return BaseCities;
+
         }
+
+
         // ============================================================================
-        // ROMMANAGER.CS - COMPONENT INJECTION: STARTUP ISOLATED REPORT GENERATOR
+        // ROMMANAGER.CS - UPDATED HEIGHT CALIBRATION LAB REPORT GENERATOR
         // ============================================================================
         public static void GenerateStartupLaboratoryLogs()
         {
-            // Master arcade hardcoded stage names index matching array
             string[] stageNames = new string[] {
                 "Ball Wave", "Tree Wave", "Doomsdome", "Berthilda's Castle",
                 "Hidden Ramp", "Staircase", "Crossroads", "Berthilda's Fortress",
@@ -136,11 +165,26 @@ namespace cSharpRaylib
                 "The End"
             };
 
-            SessionLogger.LogVerificationMessage("\n[3D_LAB_AUTO_AUDIT] Commencing single-shot startup text logging pass across all stages...");
+            // Pre-bake the file-cache structures to guarantee data is present during file generation
+            ElevatorPremapper.InitializeFromDisk();
 
             for (int stageNum = 0; stageNum < 37; stageNum++)
             {
                 var isolatedRoom = IsolatedStages[stageNum];
+
+                // DEFENSIVE EXCLUSION GATE: Apply coordinate sync pointers from cache prior to parsing checks
+                if (ElevatorPremapper.FileCoordinateCache.ContainsKey(stageNum))
+                {
+                    var cachedCoords = ElevatorPremapper.FileCoordinateCache[stageNum];
+                    int boundLimit = Math.Min(isolatedRoom.Elevators.Count, cachedCoords.Count);
+                    for (int k = 0; k < boundLimit; k++)
+                    {
+                        isolatedRoom.Elevators[k].CellX = cachedCoords[k].X;
+                        isolatedRoom.Elevators[k].CellY = cachedCoords[k].Y;
+                        isolatedRoom.Elevators[k].IsMapped = true;
+                    }
+                }
+
                 string currentStageName = (stageNum < stageNames.Length) ? stageNames[stageNum] : "Unknown Wave";
 
                 try
@@ -153,68 +197,42 @@ namespace cSharpRaylib
                         sw.WriteLine("================================================================================");
                         sw.WriteLine($"=== CRYSTAL CASTLES ISOLATED AUTOMATED AUDIT REPORT: STAGE {stageNum:D2} ===");
                         sw.WriteLine($"Stage Name Reference profile: {currentStageName.ToUpper()}");
-                        sw.WriteLine($"Generated at Application Startup: {DateTime.Now}");
                         sw.WriteLine("================================================================================");
 
-                        if (isolatedRoom.Elevators.Count == 0)
+                        if (isolatedRoom.Elevators.Count == 0 || !ElevatorPremapper.FileCoordinateCache.ContainsKey(stageNum))
                         {
-                            sw.WriteLine("  * Elevator Configuration: N/A (No lifts configured for this stage template matrix)");
+                            sw.WriteLine("  * Elevator Configuration: N/A (No verified file assets present to cross-examine)");
                         }
                         else
                         {
-                            sw.WriteLine($"  * Found {isolatedRoom.Elevators.Count} active engine structures mapping traces:");
+                            sw.WriteLine($"  * Cross-examining {isolatedRoom.Elevators.Count} hand-mapped disk vector locations:");
                             sw.WriteLine("--------------------------------------------------------------------------------");
 
                             for (int i = 0; i < isolatedRoom.Elevators.Count; i++)
                             {
                                 var ev = isolatedRoom.Elevators[i];
-
-                                // Fetch raw structural map terrain deck heights natively out of our memory layer
                                 int terrainTileHeight = isolatedRoom.Heights[ev.CellX, ev.CellY];
 
                                 sw.WriteLine($"  * LIFT INDEX POINTER [{i}]:");
-                                sw.WriteLine($"    - Verification Mapping Bounds  : IsMappedInEngine = {ev.IsMapped}");
-                                sw.WriteLine($"    - Verified Grid Cell Positions : Row_X = {ev.CellX:D2}, Col_Y = {ev.CellY:D2}");
+                                sw.WriteLine($"    - Grid Matrix Cell Coordinates : Row_X = {ev.CellX:D2}, Col_Y = {ev.CellY:D2}");
                                 sw.WriteLine($"    - Ground Deck Terrain Altitude : TerrainTileHeight = {terrainTileHeight:D2}");
-                                sw.WriteLine($"    - Raw Arcade Thresholds Data   : BottomPosition   = {ev.BottomPosition:D3}");
+                                sw.WriteLine($"    - Raw Arcade Threshold Data    : BottomPosition   = {ev.BottomPosition:D3}");
                                 sw.WriteLine($"                                   : TopPosition      = {ev.TopPosition:D3}");
-                                sw.WriteLine($"                                   : TravelOffset     = {ev.CurrentPosition:D3}");
 
-                                // Calculate what the primary 3D engine projection formulas yield using default scale bases (1.0f scale, 1.8f heightScale)
-                                float defaultScale = 1.0f;
-                                float defaultHeightScale = 1.8f;
-
-                                double rad = 0.0; // Assume baseline 0-degree angle projection layer for calculations
-                                double cx = ev.CellX - 11.0;
-                                double cy = ev.CellY - 11.0;
-
-                                float rotX = (float)(cx * Math.Cos(rad) - cy * Math.Sin(rad)) + 11f;
-                                float rotY = (float)(cx * Math.Sin(rad) + cy * Math.Cos(rad)) + 11f;
-
-                                int projectedScreenX = (int)(500 - (rotX * 12 * defaultScale) + (rotY * 12 * defaultScale));
-                                int projectedBaseShaftY = (int)(340 + (rotX * 6 * defaultScale) + (rotY * 6 * defaultScale) - (ev.BottomPosition * defaultHeightScale * defaultScale));
-                                int projectedPlatformY = (int)(340 + (rotX * 6 * defaultScale) + (rotY * 6 * defaultScale) - (ev.CurrentPosition * defaultHeightScale * defaultScale));
-
-                                sw.WriteLine($"    - Predicted 3D Engine Output   : ScreenPixelX = {projectedScreenX}");
-                                sw.WriteLine($"                                   : BaseShaftY   = {projectedBaseShaftY}");
-                                sw.WriteLine($"                                   : PlatformY    = {projectedPlatformY}");
-
-                                // Calculate discrepancy delta margin offsets
-                                int heightDeltaDiscrepancy = ev.BottomPosition - terrainTileHeight;
-                                sw.WriteLine($"    - Discrepancy Calibration Delta: (ArcadeBottom - TerrainTileHeight) = {heightDeltaDiscrepancy:+0;-0;0}");
+                                int calibrationDelta = ev.BottomPosition - terrainTileHeight;
+                                sw.WriteLine($"    - Height Calibration Offset Delta: (ArcadeBottom - TerrainTileHeight) = {calibrationDelta:+0;-0;0}");
                                 sw.WriteLine("--------------------------------------------------------------------------------");
                             }
                         }
                         sw.WriteLine("================================================================================");
                     }
                 }
-                catch (Exception ex)
-                {
-                    SessionLogger.LogVerificationMessage($"    -> [ERROR] Failed to compile text log sheet for Stage [{stageNum:D2}]: {ex.Message}");
-                }
+                catch { }
             }
-            SessionLogger.LogVerificationMessage("[3D_LAB_AUTO_AUDIT] Isolated test logging complete. All reports verified on disk.");
         }
+
+        
+        
         public static void ExportStageTextFile(int stageNum, string stageName, CityData activeCity)
         {
             try

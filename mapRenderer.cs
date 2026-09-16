@@ -77,9 +77,15 @@ namespace cSharpRaylib
             }
         }
 
+        // ============================================================================
+        // MAPRENDERER.CS - UPDATED 3D WORKSPACE WITH GOLD ELEVATOR BASE BLOCKS
+        // ============================================================================
         public static void Draw3DWorkspace(CityData activeCity, Color[] activeTheme, float scale, float heightScale,
             int offsetX, int offsetY, int rotationAngle, float tiltFactor, int renderStyle, bool showPaths, bool displayGems, bool displayElevators)
         {
+            // Define our high-visibility Gold base theme matrix slots
+            Color[] goldBasePalette = new Color[] { Color.Gold, Color.Orange, Color.DarkBrown };
+
             for (int x = 0; x < 22; x++)
             {
                 for (int y = 0; y < 22; y++)
@@ -96,21 +102,32 @@ namespace cSharpRaylib
                         }
                     }
 
-                    // If it is an elevator cell and elevator visibility is turned on,
-                    // we skip drawing the landscape terrain block entirely. This exposes
-                    // the red elevator rail line shaft all the way down to the ground plane.
-                    if (isElevatorCell && displayElevators) continue;
-
-                    if (currentHeight == 0) continue;
+                    if (currentHeight == 0 && !isElevatorCell) continue;
 
                     byte cellAttr = activeCity.Attributes[x, y];
 
-                    LevelTransform.DrawIsometricBlock(
-                        x, y, currentHeight, activeTheme, scale, heightScale, offsetX, offsetY,
-                        rotationAngle, tiltFactor, renderStyle, showPaths, cellAttr
-                    );
+                    // ENHANCEMENT: If it is an elevator cell, draw a permanent flat 
+                    // Gold base tile on the deck to clearly anchor the track location!
+                    if (isElevatorCell && displayElevators)
+                    {
+                        // Set the elevator base tile height to match the terrain deck block height natively
+                        int baseTileHeight = Math.Max(1, currentHeight);
 
-                    if (displayGems && ((cellAttr & 0x10) == 0x10))
+                        LevelTransform.DrawIsometricBlock(
+                            x, y, baseTileHeight, goldBasePalette, scale, heightScale, offsetX, offsetY,
+                            rotationAngle, tiltFactor, renderStyle, false, cellAttr
+                        );
+                    }
+                    else if (currentHeight > 0)
+                    {
+                        // Draw standard static landscape blocks normally
+                        LevelTransform.DrawIsometricBlock(
+                            x, y, currentHeight, activeTheme, scale, heightScale, offsetX, offsetY,
+                            rotationAngle, tiltFactor, renderStyle, showPaths, cellAttr
+                        );
+                    }
+
+                    if (displayGems && ((cellAttr & 0x10) == 0x10) && !(isElevatorCell && displayElevators))
                     {
                         LevelTransform.Draw3DGem(x, y, currentHeight, scale, heightScale, offsetX, offsetY, rotationAngle, tiltFactor, Color.Yellow);
                     }

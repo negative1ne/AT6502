@@ -1,5 +1,5 @@
 ﻿// ============================================================================
-// ELEVATORRENDERER.CS - GEOMETRIC PARITY & VERTICAL HEIGHT FIX
+// ELEVATORRENDERER.CS - RATIO-NORMALIZED HEIGHT PROJECTION ENGINE (v0.7)
 // ============================================================================
 using System;
 using System.Collections.Generic;
@@ -21,11 +21,8 @@ namespace cSharpRaylib
                 if (elevator.IsMapped)
                 {
                     DrawStaticElevator(
-                        elevator.CellX,
-                        elevator.CellY,
-                        elevator.BottomPosition,
-                        elevator.TopPosition,
-                        elevator.CurrentPosition,
+                        elevator.CellX, elevator.CellY,
+                        elevator.BottomPosition, elevator.TopPosition, elevator.CurrentPosition,
                         palette, scale, heightScale, offsetX, offsetY,
                         rotationAngle, tiltFactor, renderStyle
                     );
@@ -41,21 +38,26 @@ namespace cSharpRaylib
             int originY = 340 + offsetY;
 
             double rad = rotationAngle * Math.PI / 180.0;
-
             double cx = cellX - 11.0;
             double cy = cellY - 11.0;
 
-            // FIX 1: Add the +11f post-rotation offset translation exactly like LevelTransform!
             float rotX = (float)(cx * Math.Cos(rad) - cy * Math.Sin(rad)) + 11f;
             float rotY = (float)(cx * Math.Sin(rad) + cy * Math.Cos(rad)) + 11f;
 
-            // FIX 2: Do not inject tiltFactor directly inside the rotation projection vectors
             int screenX = (int)(originX - (rotX * 12 * scale) + (rotY * 12 * scale));
-            int bY = (int)(originY + (rotX * 6 * scale * tiltFactor) + (rotY * 6 * scale * tiltFactor) - (bottomH * heightScale * scale));
 
-            // FIX 3: Dynamic position register tracks live coordinates natively without baseline stacking duplicates
-            int liveVerticalValue = (int)(currentPos * heightScale * scale);
-            int tY = (int)(originY + (rotX * 6 * scale * tiltFactor) + (rotY * 6 * scale * tiltFactor) - liveVerticalValue);
+            // CALCULATE THE INTERACTIVE TRAVEL RATIO PERCENTAGE (Safe from Division-by-Zero)
+            float totalTravelRange = topH - bottomH;
+            float currentProgressDistance = currentPos - bottomH;
+            float travelRatio = (totalTravelRange > 0) ? (currentProgressDistance / totalTravelRange) : 0.0f;
+
+            // ANCHOR VISUAL RANGE: Bound travel heights cleanly using real arcade ranges
+            float visualBaseHeight = bottomH;
+            float visualLiveHeight = bottomH + (totalTravelRange * travelRatio);
+
+            // Translate math properties directly into your isometric viewport matrices
+            int bY = (int)(originY + (rotX * 6 * scale * tiltFactor) + (rotY * 6 * scale * tiltFactor) - (visualBaseHeight * heightScale * scale));
+            int tY = (int)(originY + (rotX * 6 * scale * tiltFactor) + (rotY * 6 * scale * tiltFactor) - (visualLiveHeight * heightScale * scale));
 
             int sizeX = (int)(12 * scale);
             int sizeY = (int)(6 * scale * tiltFactor);

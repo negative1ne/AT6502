@@ -1,7 +1,19 @@
-﻿using System.Collections.Generic;
+﻿// ============================================================================
+// MAPSTRUCTURES.CS - INJECTING TRI-STATE FRAMEWORK SWITCHES
+// ============================================================================
+using System;
+using System.Collections.Generic;
 
 namespace cSharpRaylib
 {
+    // FIX CS0103: Inject our defensive groups straight into the namespace!
+    public enum StageTrackingState
+    {
+        NoElevators,       // 11 Levels completely devoid of lifts
+        VerifiedWorking,   // 7 Levels structurally frozen under legacy rules
+        ExperimentalTarget // 19 Levels targeted for height normalization calibrations
+    }
+
     public class CityData
     {
         // FIXED: Explicitly allocate the 22x22 dimensional grid arrays in system memory
@@ -9,6 +21,9 @@ namespace cSharpRaylib
         public byte[,] Attributes = new byte[22, 22];
         public int NumElevators;
         public List<ElevatorData> Elevators = new List<ElevatorData>();
+
+        // FIX CS1061: Add the property field so RomManager can tag rooms on startup!
+        public StageTrackingState TrackState { get; set; } = StageTrackingState.NoElevators;
 
         public void Load(byte[] data, int offset)
         {

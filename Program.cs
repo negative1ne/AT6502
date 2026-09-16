@@ -89,6 +89,9 @@ namespace cSharpRaylib
                         var isolatedTargetRoom = RomManager.IsolatedStages[currentRoom];
 
                         ElevatorPremapper.ApplyOverrides(currentRoom, isolatedTargetRoom.Elevators);
+
+                      
+
                         SessionLogger.LogStageTransition(currentRoom, currentStageName, cityIndex, isolatedTargetRoom.Elevators);
 
                         StringBuilder verificationBuffer = new StringBuilder();
@@ -152,21 +155,27 @@ namespace cSharpRaylib
                     }
                 }
 
+                
+
+                
+                // ============================================================================
+                // PROGRAM.CS - CENTRALIZED DECOUPLED INDEPENDENT STAGE UPDATE LOOP
+                // ============================================================================
+                // Fetch our un-linked, isolated room structure instance cache natively
                 var currentActiveIsolatedRoom = RomManager.IsolatedStages[currentRoom];
 
-                int safeBoundLimit = Math.Min(activeCity.Elevators.Count, currentActiveIsolatedRoom.Elevators.Count);
-                for (int i = 0; i < safeBoundLimit; i++)
+                // TRI-STATE GATING GATEWAY: Process animations ONLY if the stage contains active lifts
+                if (currentActiveIsolatedRoom.TrackState != StageTrackingState.NoElevators)
                 {
-                    var romLift = activeCity.Elevators[i];
-                    var isolatedLift = currentActiveIsolatedRoom.Elevators[i];
+                    // Every stage now runs its own independent animation clock!
+                    // This permanently cuts out the parent ROM memory cross-talk leaks.
+                    for (int i = 0; i < currentActiveIsolatedRoom.Elevators.Count; i++)
+                    {
+                        var independentLift = currentActiveIsolatedRoom.Elevators[i];
 
-                    romLift.Update();
-
-                    isolatedLift.HorizontalPosition = romLift.HorizontalPosition;
-                    isolatedLift.VerticalPosition = romLift.VerticalPosition;
-                    isolatedLift.CurrentPosition = romLift.CurrentPosition;
-                    isolatedLift.Mode = romLift.Mode;
-                    isolatedLift.CurrentSitTime = romLift.CurrentSitTime;
+                        // Advance the lift state machine parameters using its localized memory counters
+                        independentLift.Update();
+                    }
                 }
 
                 Raylib.BeginTextureMode(targetBuffer);
