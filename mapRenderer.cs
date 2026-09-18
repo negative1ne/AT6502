@@ -192,6 +192,41 @@ namespace cSharpRaylib
                     }
                 }
             }
+            // ============================================================================
+            // PHASE 3 CORRECTION: REAL-TIME GLOWING ISOMETRIC TARGET BLOCK HIGHLIGHT OVERLAY
+            // ============================================================================
+            if (InputHandler.IsProbeInsideWorkspace)
+            {
+                int targetX = InputHandler.ProbeGridX;
+                int targetY = InputHandler.ProbeGridY;
+
+                if (targetX >= 0 && targetX < 22 && targetY >= 0 && targetY < 22)
+                {
+                    // Aligned specifically to match your method context variables exactly
+                    int currentAltitude = activeCity.Heights[targetX, targetY];
+                    byte cellAttributes = activeCity.Attributes[targetX, targetY];
+
+                    // Glowing palette for the wireframe selector box lines
+                    Color[] probeIndicatorPalette = new Color[] { Color.Yellow, Color.Lime, Color.Gold };
+
+                    // Force draw the wireframe block outline using the active function inputs
+                    LevelTransform.DrawIsometricBlock(
+                        targetX,
+                        targetY,
+                        currentAltitude,
+                        probeIndicatorPalette,
+                        scale,           // Syncs with live function scale parameter
+                        heightScale,     // Syncs with live function heightScale parameter
+                        offsetX,         // Syncs with live function offsetX parameter
+                        offsetY,         // Syncs with live function offsetY parameter
+                        rotationAngle,   // Syncs with live function rotationAngle parameter
+                        tiltFactor,      // Syncs with live function tiltFactor parameter
+                        2,               // Enforce Style Mode 2: Clean wireframe bounding edge box highlight lines
+                        true,            // Force pathway parsing rules validation check
+                        cellAttributes
+                    );
+                }
+            }
         }
 
         private static void DrawVerifiedGemMarker3D(int x, int y, int tileHeight, float scale, float heightScale,

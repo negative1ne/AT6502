@@ -80,7 +80,22 @@ namespace cSharpRaylib
                     ref renderStyleMode, ref displayPathOverlays, ref displayGems, ref showDanLegacyOverlay,
                     ref invertBackground, ref triggerTextExport, ref trigger3DLabWindow
                 );
+                // ============================================================================
+                // PHASE 2 REALIGNED: PASS CAMERA SCALES AND TRANSFORMS STABLY TO PREVENT DRIFT
+                // ============================================================================
+                System.Numerics.Vector2 frameworkMouseVec = Raylib.GetMousePosition();
 
+                // Pass live workspace variables directly down to evaluate inverse matrix bounds cleanly
+                InputHandler.TrackMouseProbeCoordinates(
+                    frameworkMouseVec.X / scaleMultiplier,
+                    frameworkMouseVec.Y / scaleMultiplier,
+                    globalScale,
+                    panOffsetX,
+                    panOffsetY,
+                    rotationAngle,
+                    tiltFactor
+                );
+                // ============================================================================
                 int cityIndex = RoomToCityMap[currentRoom] & 0x0F;
                 CityData activeCity = cities[cityIndex];
                 string currentStageName = (currentRoom < StageNames.Length) ? StageNames[currentRoom] : "Unknown Castle";

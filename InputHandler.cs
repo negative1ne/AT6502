@@ -1,8 +1,9 @@
 ﻿// ============================================================================
-// INPUTHANDLER.CS - INTEGRATED DUAL-WINDOW ENGINE ROUTER (SANDBOX EXTENSION)
+// INPUTHANDLER.CS - INTEGRATED DUAL-WINDOW ENGINE ROUTER (v0.81 SYNCHRONIZED)
 // ============================================================================
-using System;
 using Raylib_cs;
+using System;
+using System.Numerics;
 using Color = Raylib_cs.Color;
 
 namespace cSharpRaylib
@@ -81,6 +82,9 @@ namespace cSharpRaylib
             }
         }
 
+        // ============================================================================
+        // RESTORED MAIN CONTROL HUD OVERLAY WITH INTEGRATED PHASE 2 MOUSE BINDING
+        // ============================================================================
         public static void DrawControlOverlay(bool is3DMode, int renderStyle, bool pathsOn, bool gemsOn, bool legacyOverlayOn,
         bool isInverted, float globalScale, int currentRoom, string stageName, int totalElevators, Color[] activeTheme)
         {
@@ -114,7 +118,6 @@ namespace cSharpRaylib
             Raylib.DrawText($"P          : Pathways [{(pathsOn ? "ON" : "OFF")}]", 25, startTextY + 58, 11, textClr);
             Raylib.DrawText($"G          : Gems     [{(gemsOn ? "ON" : "OFF")}]", 25, startTextY + 76, 11, textClr);
 
-            // HUD UPDATE: Clearly displays status of the legacy blue blueprint overlay injection
             Raylib.DrawText($"B          : Dan Legacy [{(legacyOverlayOn ? "ON" : "OFF")}]", 25, startTextY + 96, 11, Color.SkyBlue);
             Raylib.DrawText($"V          : Invert   [{(isInverted ? "WHITE" : "BLACK")}]", 25, startTextY + 114, 11, Color.Yellow);
             Raylib.DrawText($"X          : Launch 3D Lab", 25, startTextY + 132, 11, Color.Lime);
@@ -131,58 +134,118 @@ namespace cSharpRaylib
                 Raylib.DrawText($"M          : Style [{styleName}]", 25, startTextY + 170, 11, Color.Orange);
                 Raylib.DrawText("R          : Reset View", 25, startTextY + 188, 11, textClr);
 
-                Raylib.DrawRectangle(15, rectY + 280, 210, 110, cardBg);
-                Raylib.DrawRectangleLines(15, rectY + 280, 210, 110, cardBorder);
+                // ============================================================================
+                // FIX BANNER: INPUTHANDLER.CS - INTEGRATED METRIC RADAR COCKPIT (v0.81)
+                // ============================================================================
+                var diagnosticActiveRoom = RomManager.IsolatedStages[currentRoom];
 
-                Raylib.DrawText("3D PARAMETERS", 25, rectY + 287, 12, Color.Gold);
-                Raylib.DrawText("A / D   : Rotate Grid", 25, rectY + 307, 11, isInverted ? Color.DarkGray : Color.LightGray);
-                Raylib.DrawText("Q / E   : Perspective Tilt", 25, rectY + 325, 11, isInverted ? Color.DarkGray : Color.LightGray);
-                Raylib.DrawText("W / S   : Scale Height", 25, rectY + 343, 11, isInverted ? Color.DarkGray : Color.LightGray);
-                Raylib.DrawText("I/K/J/L : Pan Camera", 25, rectY + 361, 11, isInverted ? Color.DarkGray : Color.LightGray);
+                if (diagnosticActiveRoom.Elevators != null)
+                {
+                    int terrainMismatches = MapRenderer.GetRomHeightDiscrepancyCount(diagnosticActiveRoom, currentRoom);
+                    Color radarColor = (terrainMismatches == 0) ? Color.Lime : Color.Yellow;
 
-                
+                    // Expanded height bounds box container from 110 to 135 to display mouse coordinates safely
+                    Raylib.DrawRectangle(15, rectY + 280, 210, 135, cardBg);
+                    Raylib.DrawRectangleLines(15, rectY + 280, 210, 135, cardBorder);
+
+                    Raylib.DrawText("LIVE REPOSITORY MONITOR", 25, rectY + 287, 12, Color.Gold);
+                    Raylib.DrawText($"  * Layout Drift: {terrainMismatches} cells mismatched", 25, rectY + 307, 11, radarColor);
+
+                    if (diagnosticActiveRoom.Elevators.Count > 0)
+                    {
+                        var monitorLift = diagnosticActiveRoom.Elevators[0];
+                        Color debugColor = monitorLift.IsMapped ? Color.Lime : Color.Red;
+
+                        Raylib.DrawText($"  * Is Mapped Flag : {monitorLift.IsMapped}", 25, rectY + 327, 11, debugColor);
+                        Raylib.DrawText($"  * Physics Mode   : Mode_{monitorLift.Mode}", 25, rectY + 345, 11, textClr);
+                    }
+                    else
+                    {
+                        Raylib.DrawText("  * Lift Mechanics : Zero Active Elevators", 25, rectY + 327, 11, Color.DarkGray);
+                    }
+
+                    // ============================================================================
+                    // PHASE 2 TELEMETRY SUB-PANEL INTEGRATION ENTRY POINT
+                    // ============================================================================
+                    if (IsProbeInsideWorkspace)
+                    {
+                        Raylib.DrawText($"  * Probe Target : X={ProbeGridX:D2} Y={ProbeGridY:D2}", 25, rectY + 365, 11, Color.Yellow);
+                    }
+                    else
+                    {
+                        Raylib.DrawText("  * Probe Target : OUT OF BOUNDS", 25, rectY + 365, 11, Color.DarkGray);
+                    }
+                }
             }
-            // ============================================================================
-            // FIX BANNER: INPUTHANDLER.CS - INTEGRATED METRIC RADAR COCKPIT (v0.81)
-            // ============================================================================
-            var diagnosticActiveRoom = RomManager.IsolatedStages[currentRoom];
+        }
+        // ============================================================================
+        // v0.81 REAL-TIME ISOMETRIC RE-PROJECTION CALIBRATION SCANNER (FIXED DRIFT)
+        // ============================================================================
+        private static Vector2 _probeMouseScreenPos;
 
-            if (diagnosticActiveRoom.Elevators != null)
+        public static int ProbeGridX { get; private set; } = -1;
+        public static int ProbeGridY { get; private set; } = -1;
+        public static bool IsProbeInsideWorkspace { get; private set; } = false;
+
+        public static void TrackMouseProbeCoordinates(float screenX, float screenY,
+            float scale, int offsetX, int offsetY, int rotationAngle, float tiltFactor)
+        {
+            _probeMouseScreenPos.X = screenX;
+            _probeMouseScreenPos.Y = screenY;
+
+            // Direct mapping of your engine's physical block projection origins
+            int originX = 500 + offsetX;
+            int originY = 340 + offsetY;
+
+            float closestDistance = float.MaxValue;
+            int bestX = -1;
+            int bestY = -1;
+
+            double rad = rotationAngle * Math.PI / 180.0;
+
+            // Scan the virtual coordinate topology space to reverse-map the grid bounding box anchors
+            for (int x = 0; x < 22; x++)
             {
-                // Dynamic look up of live height matrix discrepancies against the raw parent ROM bytes
-                int terrainMismatches = MapRenderer.GetRomHeightDiscrepancyCount(diagnosticActiveRoom, currentRoom);
-                Color radarColor = (terrainMismatches == 0) ? Color.Lime : Color.Yellow;
-
-                // Expand background block height container slightly (from 110 to 130) to house the radar stats cleanly
-                Raylib.DrawRectangle(15, rectY + 280, 210, 130, cardBg);
-                Raylib.DrawRectangleLines(15, rectY + 280, 210, 130, cardBorder);
-
-                Raylib.DrawText("LIVE REPOSITORY MONITOR", 25, rectY + 287, 12, Color.Gold);
-                Raylib.DrawText($"  * Layout Drift: {terrainMismatches} cells mismatched", 25, rectY + 307, 11, radarColor);
-
-                // ============================================================================
-                // REPAIRED HUD COUNTER: PROTECT EMPTY LIFT ARRAYS FROM CRASHES
-                // ============================================================================
-                if (diagnosticActiveRoom.Elevators.Count > 0)
+                for (int y = 0; y < 22; y++)
                 {
-                    // Safe reference pass: inspect the first lift element without risking array bounds breaches
-                    var monitorLift = diagnosticActiveRoom.Elevators[0];
-                    Color debugColor = monitorLift.IsMapped ? Color.Lime : Color.Red;
+                    double cx = x - 11.0;
+                    double cy = y - 11.0;
 
-                    Raylib.DrawText($"  * Is Mapped Flag : {monitorLift.IsMapped}", 25, rectY + 327, 11, debugColor);
-                    Raylib.DrawText($"  * Physics Mode   : Mode_{monitorLift.Mode}", 25, rectY + 345, 11, textClr);
-                    Raylib.DrawText($"  * Height Position: {monitorLift.CurrentPosition} / {monitorLift.TopPosition}", 25, rectY + 363, 11, textClr);
-                    Raylib.DrawText($"  * Frame Sit Clock: {monitorLift.CurrentSitTime} / {monitorLift.WaitTime}", 25, rectY + 381, 11, textClr);
-                }
-                else
-                {
-                    Raylib.DrawText("  * Lift Mechanics : Zero Active Elevators", 25, rectY + 327, 11, Color.DarkGray);
+                    float rotX = (float)(cx * Math.Cos(rad) - cy * Math.Sin(rad)) + 11f;
+                    float rotY = (float)(cx * Math.Sin(rad) + cy * Math.Cos(rad)) + 11f;
+
+                    // Projected center anchor for this cell face matching LevelTransform logic
+                    float cellProjectedX = originX - (rotX * 12 * scale) + (rotY * 12 * scale);
+                    float cellProjectedY = originY + (rotX * 6 * scale * tiltFactor) + (rotY * 6 * scale * tiltFactor);
+
+                    float dx = screenX - cellProjectedX;
+                    float dy = screenY - cellProjectedY;
+                    float currentDist = (dx * dx) + (dy * dy);
+
+                    // Track the nearest geometrical matrix cell intersection footprint
+                    if (currentDist < closestDistance)
+                    {
+                        closestDistance = currentDist;
+                        bestX = x;
+                        bestY = y;
+                    }
                 }
             }
-            // ============================================================================
-            // END FIX BANNER: TELEMETRY RADAR CONVERGENCE SUCCESSFULLY OPERATIONAL
-            // ============================================================================
+
+            // Verify if the cursor falls within a logical distance boundary constraint threshold
+            float thresholdDistance = 24.0f * scale;
+            if (bestX != -1 && bestY != -1 && closestDistance < (thresholdDistance * thresholdDistance))
+            {
+                ProbeGridX = bestX;
+                ProbeGridY = bestY;
+                IsProbeInsideWorkspace = true;
+            }
+            else
+            {
+                ProbeGridX = -1;
+                ProbeGridY = -1;
+                IsProbeInsideWorkspace = false;
+            }
         }
     }
 }
-
