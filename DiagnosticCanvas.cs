@@ -69,19 +69,30 @@ namespace cSharpRaylib
                 }
 
                 // ============================================================================
-                // DIAGNOSTICCANVAS.CS - RE-MAPPED ISOLATED FILE EXPORT SHORTCUT
+                // DIAGNOSTICCANVAS.CS - RE-MAPPED ISOLATED FILE EXPORT SHORTCUT (v0.80 STREAMS)
                 // ============================================================================
                 // --- LIVE E-KEY MODULE INTERFACE TO EXPORT VERIFIED DETAILS ---
-                // FIX: Changed from KeyboardKey.D to KeyboardKey.E to protect your backups from overwrites
                 if (Raylib.IsKeyPressed(KeyboardKey.E))
                 {
+                    string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                    string targetElevatorFolder = Path.Combine(baseDir, "data", "elevator");
+
+                    // Defensive check to guarantee the subfolder directory structure exists on disk
+                    if (!Directory.Exists(targetElevatorFolder))
+                    {
+                        Directory.CreateDirectory(targetElevatorFolder);
+                    }
+
                     try
                     {
-                        string currentStageName = stageNames[currentRoom];
+                        string rawStageName = stageNames[currentRoom].ToLower().Replace(" ", "_").Replace("'", "");
+                        // v0.80 FILE GENERATION: Standardizes output names to match 'elevators_stage_[num]_levelname.txt'
+                        string v080Filename = $"elevators_stage_{currentRoom:D2}_{rawStageName}.txt";
+                        string exportFullPath = Path.Combine(targetElevatorFolder, v080Filename);
 
-                        using (StreamWriter writer = new StreamWriter(currentStageName, false, Encoding.UTF8))
+                        using (StreamWriter writer = new StreamWriter(exportFullPath, false, Encoding.UTF8))
                         {
-                            writer.WriteLine($"=== DIAGNOSTIC GRID SHEET: STAGE {currentRoom:D2} ({currentStageName.ToUpper()}) ===");
+                            writer.WriteLine($"=== DIAGNOSTIC GRID SHEET: STAGE {currentRoom:D2} ({stageNames[currentRoom].ToUpper()}) ===");
                             writer.WriteLine($"Mode Target Context Profile: {(spaceMapView ? "FLAT UN-ROTATED SPACE DATA VIEW" : "ISOMETRIC PROJECTION SCREEN VIEW")}");
                             writer.WriteLine("[Legend: NN = Height, O = Premapper Box, R = ROM Footprint, M = Perfect Match, . = Empty Space]\n");
 
@@ -139,11 +150,12 @@ namespace cSharpRaylib
                     // --- 2. NEW DETACHED PASSIVE FILE IMPORT VERIFIER LOG ---
                     try
                     {
+                        string rawStageName = stageNames[currentRoom].ToLower().Replace(" ", "_").Replace("'", "");
                         string importDebugFilename = $"file_import_stage_{currentRoom:D2}.txt";
-                        string importDebugPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, importDebugFilename);
+                        string importDebugPath = Path.Combine(targetElevatorFolder, importDebugFilename);
 
-                        string searchPattern = $"Diagnostic_Dump_Stage_{currentRoom:D2}_*.txt";
-                        string[] matchingFiles = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, searchPattern);
+                        string searchPattern = $"elevators_stage_{currentRoom:D2}_*.txt";
+                        string[] matchingFiles = Directory.GetFiles(targetElevatorFolder, searchPattern);
 
                         using (StreamWriter debugWriter = new StreamWriter(importDebugPath, false, Encoding.UTF8))
                         {
@@ -151,7 +163,7 @@ namespace cSharpRaylib
                             debugWriter.WriteLine($"=== DEFENSIVE FILE IMPORT AUDIT REPORT: STAGE {currentRoom:D2} ===");
                             debugWriter.WriteLine($"Time of execution pass: {DateTime.Now}");
                             debugWriter.WriteLine("================================================================================");
-                            debugWriter.WriteLine($" Target Directory Scan: {AppDomain.CurrentDomain.BaseDirectory}");
+                            debugWriter.WriteLine($" Target Directory Scan: {targetElevatorFolder}");
                             debugWriter.WriteLine($" Pattern Search Target: {searchPattern}");
 
                             bool fileExists = matchingFiles.Length > 0;
@@ -178,6 +190,9 @@ namespace cSharpRaylib
                     }
                     catch (Exception) { }
                 }
+
+
+
 
                 // ------------------------------------------------------------
                 // 1) RESOLVE ON-SCREEN GRID COORDINATES & MOUSE CLICK MECHANICS
@@ -224,7 +239,7 @@ namespace cSharpRaylib
                 }
                 Raylib.BeginDrawing();
                 Raylib.ClearBackground(Color.Black);
-               
+
                 // --- ITEM 1: RENDER FIXED CO-ORDINATE DISPLAY PANEL ONSCREEN ---
                 Raylib.DrawRectangle(100, 30, 380, 40, Color.DarkBlue);
                 Raylib.DrawRectangleLines(100, 30, 380, 40, Color.White);
