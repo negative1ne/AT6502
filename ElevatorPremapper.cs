@@ -84,7 +84,7 @@ namespace cSharpRaylib
         }
 
         // ============================================================================
-        // ELEVATORPREMAPPER.CS - DYNAMIC ALTITUDE SYNC OVERRIDES (v0.80 STREAMS)
+        // ELEVATORPREMAPPER.CS - EXPANDED MOTION WINDOW CALIBRATION (v0.80)
         // ============================================================================
         public static void ApplyOverrides(int stageNum, List<ElevatorData> elevators)
         {
@@ -95,8 +95,6 @@ namespace cSharpRaylib
             {
                 var targetCoords = FileCoordinateCache[stageNum];
                 int loopLimit = System.Math.Min(elevators.Count, targetCoords.Count);
-
-                // Fetch our un-linked, isolated room structure instance cache natively
                 var isolatedRoom = RomManager.IsolatedStages[stageNum];
 
                 for (int i = 0; i < loopLimit; i++)
@@ -105,19 +103,20 @@ namespace cSharpRaylib
                     elevators[i].CellY = targetCoords[i].Y;
                     elevators[i].IsMapped = true;
 
-                    // DYNAMIC CALIBRATION: Fetch ground altitude directly from your hand-edited map files
+                    // Pull home altitude directly from your v0.80 hand-edited text map
                     int terrainTileHeight = isolatedRoom.Heights[elevators[i].CellX, elevators[i].CellY];
 
-                    // Recalibrate arcade boundary offsets to sit cleanly on your new structural deck
-                    int baseArcadeTravelRange = System.Math.Abs(elevators[i].TopPosition - elevators[i].BottomPosition);
-                    if (baseArcadeTravelRange == 0) baseArcadeTravelRange = 40; // Guard against flat ROM footprints
+                    // Read original ROM range delta, but establish a strict minimum 32-unit tracking track
+                    int originalRomDelta = System.Math.Abs(elevators[i].TopPosition - elevators[i].BottomPosition);
+                    int forcedMotionRange = System.Math.Max(32, originalRomDelta);
 
+                    // Re-bind physics boundaries directly to our new dynamic deck coordinates
                     elevators[i].BottomPosition = terrainTileHeight;
-                    elevators[i].TopPosition = terrainTileHeight + baseArcadeTravelRange;
+                    elevators[i].TopPosition = terrainTileHeight + forcedMotionRange;
 
-                    // Force start position setup pointers to launch from the baseline deck safely
+                    // Launch setup pointers cleanly from home base deck
                     elevators[i].CurrentPosition = elevators[i].BottomPosition;
-                    elevators[i].Mode = 0; // Reset state machine status flags to initial upward path track
+                    elevators[i].Mode = 0; // Set to climb upward instantly on load
                     elevators[i].CurrentSitTime = 0;
                 }
             }

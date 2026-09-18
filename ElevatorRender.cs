@@ -1,5 +1,5 @@
 ﻿// ============================================================================
-// ELEVATORRENDERER.CS - RATIO-NORMALIZED HEIGHT PROJECTION ENGINE (v0.7)
+// ELEVATORRENDERER.CS - RATIO-NORMALIZED HEIGHT PROJECTION ENGINE (v0.80 FIXED)
 // ============================================================================
 using System;
 using System.Collections.Generic;
@@ -28,7 +28,7 @@ namespace cSharpRaylib
                     );
                 }
             }
-        }
+        } // <--- Ensure Render3DElevators method closes cleanly right here
 
         private static void DrawStaticElevator(int cellX, int cellY, int bottomH, int topH, int currentPos, Color[] palette,
             float scale, float heightScale, int offsetX, int offsetY,
@@ -51,13 +51,16 @@ namespace cSharpRaylib
             float currentProgressDistance = currentPos - bottomH;
             float travelRatio = (totalTravelRange > 0) ? (currentProgressDistance / totalTravelRange) : 0.0f;
 
-            // ANCHOR VISUAL RANGE: Bound travel heights cleanly using real arcade ranges
+            // v0.80 HEIGHT MATCH: Track real-time position increment ticks smoothly
             float visualBaseHeight = bottomH;
-            float visualLiveHeight = bottomH + (totalTravelRange * travelRatio);
+            float visualLiveHeight = currentPos;
 
-            // Translate math properties directly into your isometric viewport matrices
-            int bY = (int)(originY + (rotX * 6 * scale * tiltFactor) + (rotY * 6 * scale * tiltFactor) - (visualBaseHeight * heightScale * scale));
-            int tY = (int)(originY + (rotX * 6 * scale * tiltFactor) + (rotY * 6 * scale * tiltFactor) - (visualLiveHeight * heightScale * scale));
+            // Calculate baseline screen position using your true landscape deck scale factors
+            int terrainBaseY = (int)(originY + (rotX * 6 * scale * tiltFactor) + (rotY * 6 * scale * tiltFactor));
+
+            // Extrude the screen tracking coordinates using a standardized altitude ratio modifier
+            int bY = (int)(terrainBaseY - (visualBaseHeight * heightScale * scale * 0.1f));
+            int tY = (int)(terrainBaseY - (visualLiveHeight * heightScale * scale * 0.1f));
 
             int sizeX = (int)(12 * scale);
             int sizeY = (int)(6 * scale * tiltFactor);
