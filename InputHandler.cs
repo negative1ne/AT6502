@@ -1,5 +1,5 @@
 ﻿// ============================================================================
-// INPUTHANDLER.CS - INTEGRATED DUAL-WINDOW ENGINE ROUTER
+// INPUTHANDLER.CS - INTEGRATED DUAL-WINDOW ENGINE ROUTER (SANDBOX EXTENSION)
 // ============================================================================
 using System;
 using Raylib_cs;
@@ -13,7 +13,7 @@ namespace cSharpRaylib
             ref int currentRoom, ref bool is3DMode, ref float globalScale,
             ref float heightMultiplier, ref int panOffsetX, ref int panOffsetY,
             ref int rotationAngle, ref float tiltFactor, ref int renderStyleMode,
-            ref bool displayPathOverlays, ref bool displayGems, ref bool displayElevators,
+            ref bool displayPathOverlays, ref bool displayGems, ref bool showDanLegacyOverlay,
             ref bool invertBackground, ref bool exportTextFlag, ref bool trigger3DLabFlag)
         {
             // Room Selection Transitions
@@ -32,7 +32,9 @@ namespace cSharpRaylib
             if (Raylib.IsKeyPressed(KeyboardKey.M)) { renderStyleMode = (renderStyleMode + 1) % 3; }
             if (Raylib.IsKeyPressed(KeyboardKey.P)) { displayPathOverlays = !displayPathOverlays; }
             if (Raylib.IsKeyPressed(KeyboardKey.G)) { displayGems = !displayGems; }
-            if (Raylib.IsKeyPressed(KeyboardKey.B)) { displayElevators = !displayElevators; }
+
+            // SANDBOX EXPERIMENT: Repurposed 'B' key to handle Dan's legacy 3D math projections
+            if (Raylib.IsKeyPressed(KeyboardKey.B)) { showDanLegacyOverlay = !showDanLegacyOverlay; }
 
             // CANVAS INVERSION HOOK (V Key)
             if (Raylib.IsKeyPressed(KeyboardKey.V)) { invertBackground = !invertBackground; }
@@ -74,12 +76,12 @@ namespace cSharpRaylib
                 renderStyleMode = 0;
                 displayPathOverlays = false;
                 displayGems = true;
-                displayElevators = true;
+                showDanLegacyOverlay = false;
                 invertBackground = false;
             }
         }
 
-        public static void DrawControlOverlay(bool is3DMode, int renderStyle, bool pathsOn, bool gemsOn, bool elevatorsOn,
+        public static void DrawControlOverlay(bool is3DMode, int renderStyle, bool pathsOn, bool gemsOn, bool legacyOverlayOn,
         bool isInverted, float globalScale, int currentRoom, string stageName, int totalElevators, Color[] activeTheme)
         {
             Color cardBg = isInverted ? new Color(230, 230, 230, 220) : new Color(20, 20, 20, 200);
@@ -111,7 +113,9 @@ namespace cSharpRaylib
             Raylib.DrawText("Up / Down  : Toggle 2D/3D", 25, startTextY + 40, 11, textClr);
             Raylib.DrawText($"P          : Pathways [{(pathsOn ? "ON" : "OFF")}]", 25, startTextY + 58, 11, textClr);
             Raylib.DrawText($"G          : Gems     [{(gemsOn ? "ON" : "OFF")}]", 25, startTextY + 76, 11, textClr);
-            Raylib.DrawText($"B          : Lifts    [{(elevatorsOn ? "ON" : "OFF")}]", 25, startTextY + 96, 11, Color.Orange);
+
+            // HUD UPDATE: Clearly displays status of the legacy blue blueprint overlay injection
+            Raylib.DrawText($"B          : Dan Legacy [{(legacyOverlayOn ? "ON" : "OFF")}]", 25, startTextY + 96, 11, Color.SkyBlue);
             Raylib.DrawText($"V          : Invert   [{(isInverted ? "WHITE" : "BLACK")}]", 25, startTextY + 114, 11, Color.Yellow);
             Raylib.DrawText($"X          : Launch 3D Lab", 25, startTextY + 132, 11, Color.Lime);
             Raylib.DrawText($"+ / -      : Zoom [{globalScale:F2}]", 25, startTextY + 150, 11, textClr);

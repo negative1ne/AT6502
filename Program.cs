@@ -1,5 +1,5 @@
 ﻿// ============================================================================
-// PROGRAM.CS - CORE GRAPHICS UPDATE AND LABORATORY ROUTING
+// PROGRAM.CS - CORE GRAPHICS UPDATE AND LABORATORY ROUTING (SANDBOX ENGINE)
 // ============================================================================
 using Raylib_cs;
 using System;
@@ -63,18 +63,21 @@ namespace cSharpRaylib
             int renderStyleMode = 0;
             bool displayPathOverlays = false;
             bool displayGems = true;
-            bool displayElevators = true;
+
+            // ADJUSTMENT: Repurposed old flag storage track over to our legacy view register
+            bool showDanLegacyOverlay = false;
+
             bool invertBackground = false;
             bool triggerTextExport = false;
-            bool trigger3DLabWindow = false; // INJECT FLAG HERE
+            bool trigger3DLabWindow = false;
 
             while (!Raylib.WindowShouldClose())
             {
-                // Pass parameter values stably with our new laboratory layout argument track safely mapped out
+                // Pass parameters stably with your active sandbox toggle state tracking hook mapped out
                 InputHandler.HandleKeys(
                     ref currentRoom, ref is3DMode, ref globalScale, ref heightMultiplier,
                     ref panOffsetX, ref panOffsetY, ref rotationAngle, ref tiltFactor,
-                    ref renderStyleMode, ref displayPathOverlays, ref displayGems, ref displayElevators,
+                    ref renderStyleMode, ref displayPathOverlays, ref displayGems, ref showDanLegacyOverlay,
                     ref invertBackground, ref triggerTextExport, ref trigger3DLabWindow
                 );
 
@@ -87,65 +90,8 @@ namespace cSharpRaylib
                     try
                     {
                         var isolatedTargetRoom = RomManager.IsolatedStages[currentRoom];
-
                         ElevatorPremapper.ApplyOverrides(currentRoom, isolatedTargetRoom.Elevators);
-
-                      
-
                         SessionLogger.LogStageTransition(currentRoom, currentStageName, cityIndex, isolatedTargetRoom.Elevators);
-
-                        StringBuilder verificationBuffer = new StringBuilder();
-                        verificationBuffer.AppendLine($"[DATA_VERIFICATION] Cross-examining 37-Stage Deep-Copy structural array for Wave [{currentRoom:D2}]...");
-
-                        bool matricesAreIdentical = true;
-                        for (int x = 0; x < 22; x++)
-                        {
-                            for (int y = 0; y < 22; y++)
-                            {
-                                if (isolatedTargetRoom.Heights[x, y] != activeCity.Heights[x, y] ||
-                                    isolatedTargetRoom.Attributes[x, y] != activeCity.Attributes[x, y])
-                                {
-                                    matricesAreIdentical = false;
-                                }
-                            }
-                        }
-
-                        string resultMarkerStr = matricesAreIdentical ? "✅ VERIFIED MATCH: Deep-copy layout block matches parent city exactly." : "🛑 ALERT: Structural matrix drift detected inside copy layer!";
-                        verificationBuffer.AppendLine($"    -> {resultMarkerStr}");
-                        verificationBuffer.AppendLine($"    -> Parent City Array Elevators: {activeCity.Elevators.Count} | Isolated Array Elevators: {isolatedTargetRoom.Elevators.Count}");
-
-                        verificationBuffer.AppendLine("\n[VIEWPORT_CROSS_CHECK] Analyzing coordinate synchronization with primary 2D viewports...");
-                        for (int i = 0; i < isolatedTargetRoom.Elevators.Count; i++)
-                        {
-                            var ev = isolatedTargetRoom.Elevators[i];
-                            if (ev.IsMapped)
-                            {
-                                verificationBuffer.AppendLine($"    - Elevator [{i}]: File Matrix Location Cell = ({ev.CellX:D2},{ev.CellY:D2}) | Terrain Height = {isolatedTargetRoom.Heights[ev.CellX, ev.CellY]:D2}");
-                            }
-                        }
-
-                        verificationBuffer.AppendLine("\n[3D_PROJECT_AUDIT] Tracing Isometric 3D Space Projection Coordinates...");
-                        for (int i = 0; i < isolatedTargetRoom.Elevators.Count; i++)
-                        {
-                            var ev = isolatedTargetRoom.Elevators[i];
-                            if (ev.IsMapped)
-                            {
-                                int cx = ev.CellX;
-                                int cy = ev.CellY;
-                                int th = isolatedTargetRoom.Heights[cx, cy];
-
-                                int projectedIsoX = 200 - (cx * 4) + (cy * 8);
-                                int projectedIsoY = 100 + (cx * 4) + (cy * 2) - th;
-
-                                verificationBuffer.AppendLine($"    - Elevator [{i}] Geometry Profile:");
-                                verificationBuffer.AppendLine($"      * Hard ROM Anchors -> ArcadeX = {ev.HorizontalPosition:D3}, ArcadeY = {ev.VerticalPosition:D3}");
-                                verificationBuffer.AppendLine($"      * Predicted 3D Box -> TargetX = {projectedIsoX:D3}, TargetY = {projectedIsoY:D3} | Ground Deck Altitude = {th:D2}");
-                                verificationBuffer.AppendLine($"      * Motion Threshold -> BottomPos = {ev.BottomPosition} | TopPos = {ev.TopPosition} | TravelOffset = {ev.CurrentPosition}");
-                            }
-                        }
-                        verificationBuffer.AppendLine("================================================================================");
-
-                        SessionLogger.LogVerificationMessage(verificationBuffer.ToString());
 
                         lastRoomID = currentRoom;
                     }
@@ -155,26 +101,13 @@ namespace cSharpRaylib
                     }
                 }
 
-                
-
-                
-                // ============================================================================
-                // PROGRAM.CS - CENTRALIZED DECOUPLED INDEPENDENT STAGE UPDATE LOOP
-                // ============================================================================
-                // Fetch our un-linked, isolated room structure instance cache natively
                 var currentActiveIsolatedRoom = RomManager.IsolatedStages[currentRoom];
 
-                // TRI-STATE GATING GATEWAY: Process animations ONLY if the stage contains active lifts
                 if (currentActiveIsolatedRoom.TrackState != StageTrackingState.NoElevators)
                 {
-                    // Every stage now runs its own independent animation clock!
-                    // This permanently cuts out the parent ROM memory cross-talk leaks.
                     for (int i = 0; i < currentActiveIsolatedRoom.Elevators.Count; i++)
                     {
-                        var independentLift = currentActiveIsolatedRoom.Elevators[i];
-
-                        // Advance the lift state machine parameters using its localized memory counters
-                        independentLift.Update();
+                        currentActiveIsolatedRoom.Elevators[i].Update();
                     }
                 }
 
@@ -186,16 +119,18 @@ namespace cSharpRaylib
 
                 if (!is3DMode)
                 {
-                    MapRenderer.Draw2DBlueprint(drawingRoom, activeTheme, displayPathOverlays, displayGems, displayElevators);
+                    // Pass the blueprint rendering call normally (we use standard display flags here)
+                    MapRenderer.Draw2DBlueprint(drawingRoom, activeTheme, displayPathOverlays, displayGems, true);
                 }
                 else
                 {
-                    MapRenderer.Draw3DWorkspace(drawingRoom, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, displayGems, displayElevators);
+                    // Pass current sandbox configuration metrics cleanly to the target layout modules
+                    MapRenderer.Draw3DWorkspace(drawingRoom, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, displayGems, true);
                     ElevatorRenderer.Render3DElevators(drawingRoom.Elevators, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode);
                 }
 
                 InputHandler.DrawControlOverlay(
-                    is3DMode, renderStyleMode, displayPathOverlays, displayGems, displayElevators,
+                    is3DMode, renderStyleMode, displayPathOverlays, displayGems, showDanLegacyOverlay,
                     invertBackground, globalScale, currentRoom, currentStageName, drawingRoom.Elevators.Count, activeTheme
                 );
 
@@ -205,16 +140,14 @@ namespace cSharpRaylib
                     triggerTextExport = false;
                 }
 
-                // RUN DUAL INTERACTIVE SWITCHBOARD HOOK: 
                 if (trigger3DLabWindow)
                 {
-                    System.Diagnostics.Debug.WriteLine("[SANDBOX] Diverting processing stream to 3D Diagnostic Canvas...");
                     DiagnosticCanvas.LaunchDebugWindow(currentRoom, StageNames, RoomToCityMap, cities);
                     trigger3DLabWindow = false;
                 }
 
                 Raylib.EndTextureMode();
-                // --- HARDWARE CANVAS BLIT UP-SCALING PASS ---
+
                 Raylib.BeginDrawing();
                 Raylib.ClearBackground(Color.Black);
 
