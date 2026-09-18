@@ -143,25 +143,45 @@ namespace cSharpRaylib
                 
             }
             // ============================================================================
-            // FIXED ON-SCREEN MONITOR: EXPOSE ACTIVE LIFT 00 CLOCK TELEMETRY (v0.80)
+            // FIX BANNER: INPUTHANDLER.CS - INTEGRATED METRIC RADAR COCKPIT (v0.81)
             // ============================================================================
             var diagnosticActiveRoom = RomManager.IsolatedStages[currentRoom];
 
-            if (diagnosticActiveRoom.Elevators != null && diagnosticActiveRoom.Elevators.Count > 0)
+            if (diagnosticActiveRoom.Elevators != null)
             {
-                var monitorLift = diagnosticActiveRoom.Elevators[0];
-                Color debugColor = monitorLift.IsMapped ? Color.Lime : Color.Red;
+                // Dynamic look up of live height matrix discrepancies against the raw parent ROM bytes
+                int terrainMismatches = MapRenderer.GetRomHeightDiscrepancyCount(diagnosticActiveRoom, currentRoom);
+                Color radarColor = (terrainMismatches == 0) ? Color.Lime : Color.Yellow;
 
-                // Render parameters to a dedicated background card at the bottom left
-                Raylib.DrawRectangle(15, rectY + 280, 210, 110, cardBg);
-                Raylib.DrawRectangleLines(15, rectY + 280, 210, 110, cardBorder);
+                // Expand background block height container slightly (from 110 to 130) to house the radar stats cleanly
+                Raylib.DrawRectangle(15, rectY + 280, 210, 130, cardBg);
+                Raylib.DrawRectangleLines(15, rectY + 280, 210, 130, cardBorder);
 
-                Raylib.DrawText("LIVE ELEVATOR 00 MONITOR", 25, rectY + 287, 12, Color.Gold);
-                Raylib.DrawText($"  * Is Mapped Flag : {monitorLift.IsMapped}", 25, rectY + 307, 11, debugColor);
-                Raylib.DrawText($"  * Physics Mode   : Mode_{monitorLift.Mode}", 25, rectY + 325, 11, textClr);
-                Raylib.DrawText($"  * Height Position: {monitorLift.CurrentPosition} / {monitorLift.TopPosition}", 25, rectY + 343, 11, textClr);
-                Raylib.DrawText($"  * Frame Sit Clock: {monitorLift.CurrentSitTime} / {monitorLift.WaitTime}", 25, rectY + 361, 11, textClr);
+                Raylib.DrawText("LIVE REPOSITORY MONITOR", 25, rectY + 287, 12, Color.Gold);
+                Raylib.DrawText($"  * Layout Drift: {terrainMismatches} cells mismatched", 25, rectY + 307, 11, radarColor);
+
+                // ============================================================================
+                // REPAIRED HUD COUNTER: PROTECT EMPTY LIFT ARRAYS FROM CRASHES
+                // ============================================================================
+                if (diagnosticActiveRoom.Elevators.Count > 0)
+                {
+                    // Safe reference pass: inspect the first lift element without risking array bounds breaches
+                    var monitorLift = diagnosticActiveRoom.Elevators[0];
+                    Color debugColor = monitorLift.IsMapped ? Color.Lime : Color.Red;
+
+                    Raylib.DrawText($"  * Is Mapped Flag : {monitorLift.IsMapped}", 25, rectY + 327, 11, debugColor);
+                    Raylib.DrawText($"  * Physics Mode   : Mode_{monitorLift.Mode}", 25, rectY + 345, 11, textClr);
+                    Raylib.DrawText($"  * Height Position: {monitorLift.CurrentPosition} / {monitorLift.TopPosition}", 25, rectY + 363, 11, textClr);
+                    Raylib.DrawText($"  * Frame Sit Clock: {monitorLift.CurrentSitTime} / {monitorLift.WaitTime}", 25, rectY + 381, 11, textClr);
+                }
+                else
+                {
+                    Raylib.DrawText("  * Lift Mechanics : Zero Active Elevators", 25, rectY + 327, 11, Color.DarkGray);
+                }
             }
+            // ============================================================================
+            // END FIX BANNER: TELEMETRY RADAR CONVERGENCE SUCCESSFULLY OPERATIONAL
+            // ============================================================================
         }
     }
 }

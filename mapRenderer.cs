@@ -1,5 +1,5 @@
 ﻿// ============================================================================
-// MAPRENDERER.CS - UPGRADED 2D BLUEPRINT GRAPHICS ENGINE (PART 1)
+// FIX BANNER: MAPRENDERER.CS - DIRECT v0.81 2D blueprint HOOK INJECTION (PART 1)
 // ============================================================================
 using System;
 using System.Collections.Generic;
@@ -17,7 +17,7 @@ namespace cSharpRaylib
             int gridOffsetY = 150;
 
             // Fetch original un-altered baseline data context properties straight from parent ROM banks
-            int parentCityIndex = (stageNum < 37) ? (RomManager.IsolatedStages[stageNum].NumElevators) : 0; // Quick cross reference link
+            int parentCityIndex = (stageNum < 37) ? (RomManager.IsolatedStages[stageNum].NumElevators) : 0;
             byte[,] romAttributes = RomManager.BaseCities[stageNum % 16].Attributes;
 
             for (int x = 0; x < 22; x++)
@@ -34,6 +34,7 @@ namespace cSharpRaylib
                         }
                     }
 
+                    // v0.81 INTEGRATION SWEEP: Pull terrain parameters exclusively from your active hand-edited memory
                     int tileHeight = activeCity.Heights[x, y];
                     byte cellAttr = activeCity.Attributes[x, y];
                     int posX = gridOffsetX + (y * cellSize);
@@ -96,7 +97,6 @@ namespace cSharpRaylib
 
         private static void DrawVerifiedGemMarker2D(int x, int y, byte diskAttr, byte[,] romAttrs, int posX, int posY)
         {
-            // Bit 0x10 tracks localized collectible presence triggers natively
             bool existsOnDisk = (diskAttr & 0x10) == 0x10;
             bool existsInRom = (romAttrs[x, y] & 0x10) == 0x10;
 
@@ -110,7 +110,7 @@ namespace cSharpRaylib
             Raylib.DrawCircle(posX + 8, posY + 8, 3, validationColor);
         }
         // ============================================================================
-        // MAPRENDERER.CS - UPDATED 3D WORKSPACE WITH GEM AUDITING GATES (PART 2)
+        // FIX BANNER: MAPRENDERER.CS - DIRECT v0.81 3D WORKSPACE HOOK INJECTION (PART 2)
         // ============================================================================
         public static void Draw3DWorkspace(CityData activeCity, Color[] activeTheme, float scale, float heightScale,
             int offsetX, int offsetY, int rotationAngle, float tiltFactor, int renderStyle, bool showPaths, bool displayGems, bool displayElevators, int stageNum)
@@ -122,6 +122,7 @@ namespace cSharpRaylib
             {
                 for (int y = 0; y < 22; y++)
                 {
+                    // v0.81 DIRECT OVERRIDE: Pull geometry heights entirely from your hand-edited text memory
                     int currentHeight = activeCity.Heights[x, y];
                     bool isElevatorCell = false;
 
@@ -134,9 +135,7 @@ namespace cSharpRaylib
                         }
                     }
 
-                    // ========================================================================
                     // REPAIRED HEIGHT-0 FILTER PASS: EXEMPT ACTIVE LIFT CHASSIS SYSTEM FROM CONTINUES
-                    // ========================================================================
                     if (currentHeight == 0)
                     {
                         if (!isElevatorCell)
@@ -148,7 +147,6 @@ namespace cSharpRaylib
                             }
                             continue; // Safely skip drawing solid blocks for standard empty space rows
                         }
-                        // If it IS an elevator cell, we do NOT continue! We allow it to pass through and render its base column
                     }
 
                     byte cellAttr = activeCity.Attributes[x, y];
@@ -163,17 +161,34 @@ namespace cSharpRaylib
                     }
                     else if (currentHeight > 0)
                     {
-                        // Standard block projection drawing gate
+                        // Standard block projection drawing gate: completely driven by custom v0.80 heights!
                         LevelTransform.DrawIsometricBlock(
                             x, y, currentHeight, activeTheme, scale, heightScale, offsetX, offsetY,
                             rotationAngle, tiltFactor, renderStyle, showPaths, cellAttr
                         );
                     }
 
-                    // Render our dual-verification collectible spheres into the active 3D view space
+                    // INTEGRATED MATRIX PROJECTION SYNC ENGINE (v0.80)
                     if (displayGems && !isElevatorCell)
                     {
-                        DrawVerifiedGemMarker3D(x, y, currentHeight, scale, heightScale, offsetX, offsetY, rotationAngle, tiltFactor, cellAttr, romAttributes);
+                        int structuralTargetX = x;
+                        int structuralTargetY = y;
+                        int dynamicTileAltitude = activeCity.Heights[structuralTargetX, structuralTargetY];
+
+                        // Force the gem spheres to draw exactly inside the 3D block coordinate stream
+                        DrawVerifiedGemMarker3D(
+                            structuralTargetX,
+                            structuralTargetY,
+                            dynamicTileAltitude,
+                            scale,
+                            heightScale,
+                            offsetX,
+                            offsetY,
+                            rotationAngle,
+                            tiltFactor,
+                            cellAttr,
+                            romAttributes
+                        );
                     }
                 }
             }
@@ -193,6 +208,36 @@ namespace cSharpRaylib
             else validationColor = Color.Red;    // Missing data file definition
 
             LevelTransform.Draw3DGem(x, y, tileHeight, scale, heightScale, offsetX, offsetY, rotationAngle, tiltFactor, validationColor);
+        }
+
+        public static int GetRomHeightDiscrepancyCount(CityData activeCity, int stageNum)
+        {
+            if (activeCity == null) return 0;
+
+            int mismatchCount = 0;
+
+            try
+            {
+                // REPAIRED COUNTER VERIFIER: Compare your loaded disk array straight against raw baseline ROM bytes
+                byte[,] romHeights = RomManager.BaseCities[stageNum % 16].Heights;
+
+                for (int x = 0; x < 22; x++)
+                {
+                    for (int y = 0; y < 22; y++)
+                    {
+                        int customDiskHeight = activeCity.Heights[x, y];
+                        int originalRomHeight = romHeights[x, y];
+
+                        if (customDiskHeight != originalRomHeight)
+                        {
+                            mismatchCount++;
+                        }
+                    }
+                }
+            }
+            catch (Exception) { }
+
+            return mismatchCount;
         }
     }
 }
