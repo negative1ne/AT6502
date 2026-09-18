@@ -1,5 +1,5 @@
 ﻿// ============================================================================
-// ELEVATORPREMAPPER.CS - RESTORED VERIFIED DISK MATRIX SLURPER (v0.80 PATHS)
+// ELEVATORPREMAPPER.CS - SIMPLIFIED TEXT TOKEN STRUCT SLURPER (v0.80)
 // ============================================================================
 using System;
 using System.IO;
@@ -18,7 +18,6 @@ namespace cSharpRaylib
             if (_isInitialized) return;
 
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            // v0.80 UPDATE: Direct point-of-entry into your active elevators subfolder
             string elevatorFolder = Path.Combine(baseDir, "data", "elevator");
 
             if (!Directory.Exists(elevatorFolder))
@@ -31,7 +30,6 @@ namespace cSharpRaylib
             {
                 List<(int X, int Y)> stageCoords = new List<(int X, int Y)>();
 
-                // v0.80 FORMAT COMPLIANCE: Match your explicit 'elevators_stage_[num]_levelname.txt' format rules
                 string v080Pattern = $"elevators_stage_{stageNum:D2}_*.txt";
                 string flatPattern = $"elevators_stage_{stageNum:D2}.txt";
 
@@ -43,27 +41,30 @@ namespace cSharpRaylib
                     try
                     {
                         string[] lines = File.ReadAllLines(files[0]);
-                        for (int r = 0; r < lines.Length; r++)
+                        foreach (string line in lines)
                         {
-                            string currentLine = lines[r];
+                            if (string.IsNullOrWhiteSpace(line)) continue;
 
-                            // Guard conditions to skip file headers, legends, or layout dividers cleanly
-                            if (string.IsNullOrWhiteSpace(currentLine) || currentLine.Contains("===") || currentLine.Contains("Context") || currentLine.Contains("[Legend")) continue;
-
-                            string[] stringTokens = currentLine.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-                            // Account for header tracking offsets to properly align the 22x22 grid boundaries
-                            int currentRowX = r - 4;
-                            if (currentRowX < 0 || currentRowX >= 22) continue;
-
-                            for (int c = 0; c < stringTokens.Length && c < 22; c++)
+                            // v0.80 SIMPLIFIED STRIPPER: Isolate rows containing coordinate entries
+                            if (line.Contains("MappedCell=("))
                             {
-                                string token = stringTokens[c].Trim();
+                                // Split at the opening parenthesis token to isolate values block
+                                string[] mainParts = line.Split(new string[] { "MappedCell=(" }, StringSplitOptions.None);
+                                if (mainParts.Length < 2) continue;
 
-                                // Parse our clean custom validation flags ("M" = Match, "O" = Override, "R" = ROM Anchor)
-                                if (token == "M" || token == "O" || token == "R")
+                                // Split at closing parenthesis to discard trailing metadata characters
+                                string coordBlock = mainParts[1].Split(')')[0];
+                                string[] coordinates = coordBlock.Split(',');
+
+                                if (coordinates.Length == 2 &&
+                                    int.TryParse(coordinates[0].Trim(), out int rowX) &&
+                                    int.TryParse(coordinates[1].Trim(), out int colY))
                                 {
-                                    stageCoords.Add((currentRowX, c));
+                                    // Protect the matrix cache from unexpected text-editing overflow limits
+                                    if (rowX >= 0 && rowX < 22 && colY >= 0 && colY < 22)
+                                    {
+                                        stageCoords.Add((rowX, colY));
+                                    }
                                 }
                             }
                         }
@@ -75,13 +76,16 @@ namespace cSharpRaylib
                     }
                     catch
                     {
-                        // Defensive block boundary to protect execution during file reading issues
+                        // Defensive block boundary to keep engine compilation loops running smoothly
                     }
                 }
             }
             _isInitialized = true;
         }
 
+        // ============================================================================
+        // ELEVATORPREMAPPER.CS - DYNAMIC ALTITUDE SYNC OVERRIDES (v0.80 STREAMS)
+        // ============================================================================
         public static void ApplyOverrides(int stageNum, List<ElevatorData> elevators)
         {
             if (elevators == null || elevators.Count == 0) return;
@@ -92,11 +96,29 @@ namespace cSharpRaylib
                 var targetCoords = FileCoordinateCache[stageNum];
                 int loopLimit = System.Math.Min(elevators.Count, targetCoords.Count);
 
+                // Fetch our un-linked, isolated room structure instance cache natively
+                var isolatedRoom = RomManager.IsolatedStages[stageNum];
+
                 for (int i = 0; i < loopLimit; i++)
                 {
                     elevators[i].CellX = targetCoords[i].X;
                     elevators[i].CellY = targetCoords[i].Y;
                     elevators[i].IsMapped = true;
+
+                    // DYNAMIC CALIBRATION: Fetch ground altitude directly from your hand-edited map files
+                    int terrainTileHeight = isolatedRoom.Heights[elevators[i].CellX, elevators[i].CellY];
+
+                    // Recalibrate arcade boundary offsets to sit cleanly on your new structural deck
+                    int baseArcadeTravelRange = System.Math.Abs(elevators[i].TopPosition - elevators[i].BottomPosition);
+                    if (baseArcadeTravelRange == 0) baseArcadeTravelRange = 40; // Guard against flat ROM footprints
+
+                    elevators[i].BottomPosition = terrainTileHeight;
+                    elevators[i].TopPosition = terrainTileHeight + baseArcadeTravelRange;
+
+                    // Force start position setup pointers to launch from the baseline deck safely
+                    elevators[i].CurrentPosition = elevators[i].BottomPosition;
+                    elevators[i].Mode = 0; // Reset state machine status flags to initial upward path track
+                    elevators[i].CurrentSitTime = 0;
                 }
             }
         }

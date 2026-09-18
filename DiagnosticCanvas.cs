@@ -69,7 +69,7 @@ namespace cSharpRaylib
                 }
 
                 // ============================================================================
-                // DIAGNOSTICCANVAS.CS - RE-MAPPED ISOLATED FILE EXPORT SHORTCUT (v0.80 STREAMS)
+                // DIAGNOSTICCANVAS.CS - RE-MAPPED ISOLATED FILE EXPORT SHORTCUT (v0.80 DATA)
                 // ============================================================================
                 // --- LIVE E-KEY MODULE INTERFACE TO EXPORT VERIFIED DETAILS ---
                 if (Raylib.IsKeyPressed(KeyboardKey.E))
@@ -86,59 +86,28 @@ namespace cSharpRaylib
                     try
                     {
                         string rawStageName = stageNames[currentRoom].ToLower().Replace(" ", "_").Replace("'", "");
-                        // v0.80 FILE GENERATION: Standardizes output names to match 'elevators_stage_[num]_levelname.txt'
+                        // v0.80 DATA PURGE: Standardizes output names to match 'elevators_stage_[num]_levelname.txt'
                         string v080Filename = $"elevators_stage_{currentRoom:D2}_{rawStageName}.txt";
                         string exportFullPath = Path.Combine(targetElevatorFolder, v080Filename);
 
                         using (StreamWriter writer = new StreamWriter(exportFullPath, false, Encoding.UTF8))
                         {
-                            writer.WriteLine($"=== DIAGNOSTIC GRID SHEET: STAGE {currentRoom:D2} ({stageNames[currentRoom].ToUpper()}) ===");
-                            writer.WriteLine($"Mode Target Context Profile: {(spaceMapView ? "FLAT UN-ROTATED SPACE DATA VIEW" : "ISOMETRIC PROJECTION SCREEN VIEW")}");
-                            writer.WriteLine("[Legend: NN = Height, O = Premapper Box, R = ROM Footprint, M = Perfect Match, . = Empty Space]\n");
+                            writer.WriteLine($"=== CRYSTAL CASTLES ELEVATOR CONFIG: STAGE {currentRoom:D2} ({stageNames[currentRoom].ToUpper()}) ===");
+                            writer.WriteLine($"Pipeline Version Target Profile: v0.80 DATA ENGINE ISOLATION");
 
-                            for (int x = 0; x < 22; x++)
+                            // Count exactly how many lifts are physically mapped and initialized
+                            int activeLiftCount = 0;
+                            foreach (var ev in mockList) if (ev.IsMapped) activeLiftCount++;
+                            writer.WriteLine($"Active Configured Lift Count: {activeLiftCount}\n");
+
+                            // v0.80 LEAN TRACKING RULE: Bypass full 22x22 map prints. Stream out simple coordinate rows.
+                            for (int i = 0; i < mockList.Count; i++)
                             {
-                                StringBuilder rowLine = new StringBuilder();
-                                for (int y = 0; y < 22; y++)
+                                var ev = mockList[i];
+                                if (ev.IsMapped)
                                 {
-                                    bool isPremapped = false;
-                                    foreach (var ev in mockList)
-                                    {
-                                        if (ev.IsMapped && ev.CellX == x && ev.CellY == y) isPremapped = true;
-                                    }
-
-                                    bool isRomFootprint = false;
-                                    if (spaceMapView)
-                                    {
-                                        foreach (var raw in mockList)
-                                        {
-                                            int cellX = raw.HorizontalPosition % 22;
-                                            int cellY = raw.VerticalPosition % 22;
-                                            if (cellX == x && cellY == y) isRomFootprint = true;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        int xp = 200 - (x * 4) + (y * 8);
-                                        int yp = 100 + (x * 4) + (y * 2) - activeCity.Heights[x, y];
-
-                                        foreach (var raw in mockList)
-                                        {
-                                            int footprintX = raw.HorizontalPosition + 112;
-                                            int footprintY = raw.VerticalPosition - 28 - raw.BottomPosition;
-                                            if (footprintX == xp && footprintY == yp) isRomFootprint = true;
-                                        }
-                                    }
-
-                                    int h = activeCity.Heights[x, y];
-
-                                    if (isPremapped && isRomFootprint) rowLine.Append(" M  ");
-                                    else if (isPremapped) rowLine.Append(" O  ");
-                                    else if (isRomFootprint) rowLine.Append(" R  ");
-                                    else if (h == 0) rowLine.Append("  . ");
-                                    else rowLine.Append($" {h:D2} ");
+                                    writer.WriteLine($"Lift_Index_{i:D2}: MappedCell=({ev.CellX:D2},{ev.CellY:D2})");
                                 }
-                                writer.WriteLine(rowLine.ToString());
                             }
                         }
                     }

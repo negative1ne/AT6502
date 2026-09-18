@@ -139,6 +139,28 @@ namespace cSharpRaylib
                 Raylib.DrawText("Q / E   : Perspective Tilt", 25, rectY + 325, 11, isInverted ? Color.DarkGray : Color.LightGray);
                 Raylib.DrawText("W / S   : Scale Height", 25, rectY + 343, 11, isInverted ? Color.DarkGray : Color.LightGray);
                 Raylib.DrawText("I/K/J/L : Pan Camera", 25, rectY + 361, 11, isInverted ? Color.DarkGray : Color.LightGray);
+
+                
+            }
+            // ============================================================================
+            // FIXED ON-SCREEN MONITOR: EXPOSE ACTIVE LIFT 00 CLOCK TELEMETRY (v0.80)
+            // ============================================================================
+            var diagnosticActiveRoom = RomManager.IsolatedStages[currentRoom];
+
+            if (diagnosticActiveRoom.Elevators != null && diagnosticActiveRoom.Elevators.Count > 0)
+            {
+                var monitorLift = diagnosticActiveRoom.Elevators[0];
+                Color debugColor = monitorLift.IsMapped ? Color.Lime : Color.Red;
+
+                // Render parameters to a dedicated background card at the bottom left
+                Raylib.DrawRectangle(15, rectY + 280, 210, 110, cardBg);
+                Raylib.DrawRectangleLines(15, rectY + 280, 210, 110, cardBorder);
+
+                Raylib.DrawText("LIVE ELEVATOR 00 MONITOR", 25, rectY + 287, 12, Color.Gold);
+                Raylib.DrawText($"  * Is Mapped Flag : {monitorLift.IsMapped}", 25, rectY + 307, 11, debugColor);
+                Raylib.DrawText($"  * Physics Mode   : Mode_{monitorLift.Mode}", 25, rectY + 325, 11, textClr);
+                Raylib.DrawText($"  * Height Position: {monitorLift.CurrentPosition} / {monitorLift.TopPosition}", 25, rectY + 343, 11, textClr);
+                Raylib.DrawText($"  * Frame Sit Clock: {monitorLift.CurrentSitTime} / {monitorLift.WaitTime}", 25, rectY + 361, 11, textClr);
             }
         }
     }

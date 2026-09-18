@@ -119,14 +119,13 @@ namespace cSharpRaylib
 
                 if (!is3DMode)
                 {
-                    // Pass the blueprint rendering call normally (we use standard display flags here)
-                    MapRenderer.Draw2DBlueprint(drawingRoom, activeTheme, displayPathOverlays, displayGems, true);
+                    // FIX CS7036: Pass the active currentRoom counter as our stage index argument
+                    MapRenderer.Draw2DBlueprint(drawingRoom, activeTheme, displayPathOverlays, displayGems, true, currentRoom);
                 }
                 else
                 {
                     // Pass current sandbox configuration metrics cleanly to the target layout modules
-                    MapRenderer.Draw3DWorkspace(drawingRoom, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, displayGems, true);
-                    ElevatorRenderer.Render3DElevators(drawingRoom.Elevators, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode);
+                    MapRenderer.Draw3DWorkspace(drawingRoom, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, displayGems, true, currentRoom);
                 }
 
                 InputHandler.DrawControlOverlay(

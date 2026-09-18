@@ -83,50 +83,60 @@ namespace cSharpRaylib
             return offset;
         }
 
-        // The unified state machine mechanics engine calculation block we verified
+        // ============================================================================
+        // MAPSTRUCTURES.CS / ELEVATORDATA - CLEAN FRAME-DRIVEN PHYSICS ENGINE (v0.80)
+        // ============================================================================
         public void Update()
         {
-            const int SitTimeInc = 3;
+            // Safety check: Skip movement checks completely if the lift isn't bound to your text grid
+            if (!this.IsMapped) return;
 
-            switch (Mode)
+            // TARGET MOTION STATE MACHINE RULES:
+            // Mode 0: Platform traveling UP toward TopPosition
+            // Mode 1: Platform sitting/waiting at TopPosition
+            // Mode 2: Platform traveling DOWN toward BottomPosition
+            // Mode 3: Platform sitting/waiting at BottomPosition
+
+            switch (this.Mode)
             {
-                case 0: // Stationary at bottom boundary
-                    CurrentSitTime += SitTimeInc;
-                    if (CurrentSitTime > WaitTime)
+                case 0: // Moving UP
+                    this.CurrentPosition += 1; // Smooth linear upward translation step per frame
+                    if (this.CurrentPosition >= this.TopPosition)
                     {
-                        CurrentSitTime = 0;
-                        Mode = 1; // Change tracking state to Up
+                        this.CurrentPosition = this.TopPosition;
+                        this.Mode = 1; // Transition to waiting at top deck
+                        this.CurrentSitTime = 0;
                     }
                     break;
 
-                case 1: // Moving up column path
-                    CurrentPosition++;
-                    if (CurrentPosition >= TopPosition)
+                case 1: // Waiting at Top
+                    this.CurrentSitTime++;
+                    if (this.CurrentSitTime >= this.WaitTime)
                     {
-                        CurrentPosition = TopPosition;
-                        Mode = 2; // Arrived at top ridge limit
+                        this.Mode = 2; // Begin moving back down
                     }
                     break;
 
-                case 2: // Stationary at top boundary
-                    CurrentSitTime += SitTimeInc;
-                    if (CurrentSitTime > WaitTime)
+                case 2: // Moving DOWN
+                    this.CurrentPosition -= 1; // Smooth linear downward translation step per frame
+                    if (this.CurrentPosition <= this.BottomPosition)
                     {
-                        CurrentSitTime = 0;
-                        Mode = 3; // Change tracking state to Down
+                        this.CurrentPosition = this.BottomPosition;
+                        this.Mode = 3; // Transition to waiting at bottom ground deck
+                        this.CurrentSitTime = 0;
                     }
                     break;
 
-                case 3: // Moving down column path
-                    CurrentPosition--;
-                    if (CurrentPosition <= BottomPosition)
+                case 3: // Waiting at Bottom
+                    this.CurrentSitTime++;
+                    if (this.CurrentSitTime >= this.WaitTime)
                     {
-                        CurrentPosition = BottomPosition;
-                        Mode = 0; // Arrived back at bottom
+                        this.Mode = 0; // Recycle loop: begin moving up again
                     }
                     break;
             }
         }
     }
+    
   
 }

@@ -1,5 +1,5 @@
 ﻿// ============================================================================
-// ROMMANAGER.CS - COMPLETE COMPONENT UPGRADE (37-STAGE DEEP COPY FACTORY)
+// ROMMANAGER.CS - DEEP COPY FACTORY WITH DISK GEOMETRY INGESTION (PART 1)
 // ============================================================================
 using System;
 using System.IO;
@@ -11,10 +11,7 @@ namespace cSharpRaylib
 {
     public static class RomManager
     {
-        // STEP 3: Retain the old 16-room structure exactly as-is to preserve working viewports
         public static List<CityData> BaseCities = new List<CityData>();
-
-        // STEP 1: Implement the pristine, isolated 37-stage deep-copy database array container
         public static List<CityData> IsolatedStages = new List<CityData>();
 
         public static List<CityData> LoadRomDatabase()
@@ -40,7 +37,6 @@ namespace cSharpRaylib
             file1.CopyTo(combinedData, 0);
             file2.CopyTo(combinedData, file1.Length);
 
-            // 1. Populate the old 16 base cities natively from the file layout bytes
             BaseCities.Clear();
             for (int i = 0; i < 16; i++)
             {
@@ -49,7 +45,6 @@ namespace cSharpRaylib
                 BaseCities.Add(city);
             }
 
-            // Master arcade hardcoded wave matching array matrix pointers
             byte[] RoomToCityMap = new byte[] {
                 0x00, 0x02, 0x09, 0xC3, 0x46, 0x71, 0x0C, 0xC7,
                 0x06, 0x0D, 0x45, 0xCB, 0x04, 0x0A, 0x06, 0x4F,
@@ -58,44 +53,36 @@ namespace cSharpRaylib
                 0x08, 0x7D, 0x05, 0xCB, 0x0E
             };
 
-            // ============================================================================
-            // ROMMANAGER.CS - FRAGMENT 1: AUTO-TRI-STATE FILTER CLASSIFICATION ENGINE
-            // ============================================================================
-            // 2. STAGE SETUP & DEEP COPY: Allocate 37 completely separate, distinct room containers
             IsolatedStages.Clear();
             for (int stageNum = 0; stageNum < 37; stageNum++)
             {
                 int parentCityIndex = RoomToCityMap[stageNum] & 0x0F;
                 CityData parentCity = BaseCities[parentCityIndex];
 
-                // Create a completely detached, un-linked object container instance in RAM
                 CityData clonedRoom = new CityData();
                 clonedRoom.NumElevators = parentCity.NumElevators;
 
-                // --- INJECT TRI-STATE GATING SWITCHBOARD FILTER RULES ---
-                // Boundary Group A: NO ELEVATORS CONFIGURATIONS
-                if (stageNum == 2 || stageNum == 6 || stageNum == 7 || stageNum == 13 ||
-                    stageNum == 15 || stageNum == 18 || stageNum == 20 || stageNum == 23 ||
-                    stageNum == 29 || stageNum == 31 || stageNum == 36)
+                // ============================================================================
+                // REPAIRED SYSTEM GATE: ACTIVATE TICK CLOCKS FOR SINGLE-ELEVATOR ROOM LINES
+                // ============================================================================
+                // Only completely lock out stages that truly possess zero elevators in their structural level architecture
+                if (stageNum == 36) // The End (Stage 36) is the only true layout with zero structural elevator elements
                 {
                     clonedRoom.TrackState = StageTrackingState.NoElevators;
                 }
-                // Boundary Group B: VERIFIED WORKING (Freeze and lock completely under legacy rules!)
-                else if (stageNum == 0 || stageNum == 1 || stageNum == 10 ||
+                else if (stageNum == 0 || stageNum == 1 || stageNum == 2 || stageNum == 4 ||
+                         stageNum == 5 || stageNum == 6 || stageNum == 7 || stageNum == 10 ||
                          stageNum == 21 || stageNum == 22 || stageNum == 26 || stageNum == 34)
                 {
+                    // Elevate single-elevator rooms (2, 6, 7) directly into the verified ticking engine loop channel
                     clonedRoom.TrackState = StageTrackingState.VerifiedWorking;
                 }
-                // Boundary Group C: EXPERIMENTAL TEST TARGETS (Isolate height calibrations here)
                 else
                 {
                     clonedRoom.TrackState = StageTrackingState.ExperimentalTarget;
                 }
 
-                // ============================================================================
-                // ROMMANAGER.CS - FRAGMENT 2: DEEP COPY MEMORY UNLINKING & BOOT TELESCOPES
-                // ============================================================================
-                // Deep-copy byte matrices row-by-row to break memory pointer cross-talk references
+                // Default deep-copy arrays step from standard ROM banks
                 for (int x = 0; x < 22; x++)
                 {
                     for (int y = 0; y < 22; y++)
@@ -105,7 +92,10 @@ namespace cSharpRaylib
                     }
                 }
 
-                // Isolate elevator configurations safely into pristine memory vectors
+                // INJECT DEFENSIVE INGESTION: Siphon custom v0.80 disk maps if present
+                InjectCustomHeightsFromDisk(stageNum, clonedRoom.Heights);
+                InjectCustomGemsFromDisk(stageNum, clonedRoom.Attributes);
+
                 foreach (var parentLift in parentCity.Elevators)
                 {
                     ElevatorData clonedLift = new ElevatorData();
@@ -128,29 +118,118 @@ namespace cSharpRaylib
                 IsolatedStages.Add(clonedRoom);
             }
 
-            // Keep exactly ONE copy of the premapper initialization pass
             ElevatorPremapper.InitializeFromDisk();
-
-            // Run our automated height verification text reporter pass cleanly
             GenerateStartupLaboratoryLogs();
 
-            // PIPELINE INITIALIZATION AUDIT LOG: Print data structure states to our active session log
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine("\n================================================================================");
-            sb.AppendLine("=== CC_FRAMEWORK_UPDATE: 37-STAGE DATA ISOLATION PIPELINE ENGINE INITIALIZED ===");
-            sb.AppendLine($"Verification Check -> Total Rooms Registered in Isolated Cache: {IsolatedStages.Count}/37");
-            sb.AppendLine("================================================================================");
-            SessionLogger.LogVerificationMessage(sb.ToString());
-
             return BaseCities;
+        }
+        // ============================================================================
+        // ROMMANAGER.CS - FIXED TOKEN STRIPPER ENGINE (PART 2)
+        // ============================================================================
+        private static void InjectCustomHeightsFromDisk(int stageNum, byte[,] heightsTargetMatrix)
+        {
+            string mapsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "maps");
+            if (!Directory.Exists(mapsFolder)) return;
 
+            // Defensive matching pattern sets: supports both v0.8 standardized and legacy formats
+            string v080Pattern = $"Map_stage_{stageNum:D2}_*.txt";
+            string legacyPattern = $"Diagnostic_Dump_Stage_{stageNum:D2}_*.txt";
+
+            string[] files = Directory.GetFiles(mapsFolder, v080Pattern);
+            if (files.Length == 0) files = Directory.GetFiles(mapsFolder, legacyPattern);
+            if (files.Length == 0) return;
+
+            try
+            {
+                string[] lines = File.ReadAllLines(files[0]);
+                int currentGridRow = 0;
+
+                foreach (string line in lines)
+                {
+                    if (string.IsNullOrWhiteSpace(line) || line.Contains("===") || line.Contains("-") || line.Contains("[Legend")) continue;
+
+                    string[] tokens = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (tokens.Length < 22) continue; // Safety checkpoint check to skip non-grid text headers
+
+                    for (int colY = 0; colY < 22 && colY < tokens.Length; colY++)
+                    {
+                        string tokenValue = tokens[colY].Trim();
+                        // Translate empty tracking padding markers ".." back to baseline altitude height 0 natively
+                        if (tokenValue == ".." || tokenValue == ".")
+                        {
+                            heightsTargetMatrix[currentGridRow, colY] = 0;
+                        }
+                        else if (byte.TryParse(tokenValue, out byte parsedHeight))
+                        {
+                            heightsTargetMatrix[currentGridRow, colY] = parsedHeight;
+                        }
+                    }
+
+                    currentGridRow++;
+                    if (currentGridRow >= 22) break; // Hard limit array boundary shield check
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to inject custom heights matrix pass: {ex.Message}");
+            }
         }
 
+        private static void InjectCustomGemsFromDisk(int stageNum, byte[,] attributesTargetMatrix)
+        {
+            string gemsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "gems");
+            if (!Directory.Exists(gemsFolder)) return;
 
-        // ============================================================================
-        // ROMMANAGER.CS - UPDATED HEIGHT CALIBRATION LAB REPORT GENERATOR
-        // ============================================================================
-        public static void GenerateStartupLaboratoryLogs()
+            // Handles standardized naming formats alongside simple string front trims
+            string v080Pattern = $"Gems_Stage_{stageNum:D2}_*.txt";
+            string legacyPattern = $"Diagnostic_Gems_Stage_{stageNum:D2}_*.txt";
+
+            string[] files = Directory.GetFiles(gemsFolder, v080Pattern);
+            if (files.Length == 0) files = Directory.GetFiles(gemsFolder, legacyPattern);
+            if (files.Length == 0) return;
+
+            try
+            {
+                string[] lines = File.ReadAllLines(files[0]);
+                int currentGridRow = 0;
+
+                // Clear out existing default gems layout allocations from the selected block target row to inject clean files
+                for (int x = 0; x < 22; x++)
+                    for (int y = 0; y < 22; y++)
+                        attributesTargetMatrix[x, y] &= 0xEF; // Strip the 0x10 gem presence bit flag natively
+
+                foreach (string line in lines)
+                {
+                    if (string.IsNullOrWhiteSpace(line) || line.Contains("===") || line.Contains("-") || line.Contains("[Legend")) continue;
+
+                    string[] tokens = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (tokens.Length < 22) continue;
+
+                    for (int colY = 0; colY < 22 && colY < tokens.Length; colY++)
+                    {
+                        string tokenValue = tokens[colY].Trim();
+                        // If token matches an active collectible gem marker dot "*", flip the 0x10 attribute state bit
+                        if (tokenValue == "*")
+                        {
+                            attributesTargetMatrix[currentGridRow, colY] |= 0x10;
+                        }
+                    }
+
+                    currentGridRow++;
+                    if (currentGridRow >= 22) break;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to inject custom gems matrix pass: {ex.Message}");
+            }
+        }
+    
+
+// ============================================================================
+// ROMMANAGER.CS - UPDATED HEIGHT CALIBRATION LAB REPORT GENERATOR
+// ============================================================================
+public static void GenerateStartupLaboratoryLogs()
         {
             string[] stageNames = new string[] {
                 "Ball Wave", "Tree Wave", "Doomsdome", "Berthilda's Castle",
