@@ -1,5 +1,5 @@
-﻿/// ============================================================================
-// FIX BANNER: MAPRENDERER.CS - PART 1: 2D BLUEPRINT VIEWPORT ENGINE (v0.85)
+﻿// ============================================================================
+// FIX BANNER: MAPRENDERER.CS - PART 1: MAIN VIEWPORT SESSION MARKERS (v0.85)
 // ============================================================================
 using System;
 using System.Collections.Generic;
@@ -37,19 +37,18 @@ namespace cSharpRaylib
                     int posX = gridOffsetX + (y * cellSize);
                     int posY = gridOffsetY + (x * cellSize);
 
-                    // 1. FLAT PASSTHROUGH CHASSIS FILTER: Handle Height 0 Passageway Outlines First
+                    // 1. VOID FILTER PASS
                     if (tileHeight == 0 && !isElevatorCell)
                     {
                         if (displayPathOverlays && ((cellAttr & 0x04) == 0x04))
                         {
                             Raylib.DrawRectangleLines(posX, posY, cellSize - 1, cellSize - 1, Color.DarkGray);
                         }
-
                         if (displayGems) DrawVerifiedGemMarker2D(x, y, cellAttr, romAttributes, posX, posY);
                         continue;
                     }
 
-                    // 2. STANDARD LANDSCAPE BLOCK DRAWING (Only processes if height > 0)
+                    // 2. DYNAMIC CELL RENDERING DETERMINATION
                     int baseShade = Math.Min(100 + (tileHeight * 12), 255);
                     Color blockColor;
 
@@ -74,19 +73,23 @@ namespace cSharpRaylib
 
                     Raylib.DrawRectangle(posX, posY, cellSize - 1, cellSize - 1, blockColor);
 
-                    if (displayGems && !(isElevatorCell && displayElevators))
-                    {
-                        DrawVerifiedGemMarker2D(x, y, cellAttr, romAttributes, posX, posY);
-                    }
-
+                    // v0.85 MASTER INTERACTIVE OVERLAY RULE
                     if (isElevatorCell && displayElevators)
                     {
                         Raylib.DrawText("E", posX + 4, posY + 1, 12, Color.White);
                     }
+                    // Read the shared global matrix to display session progress markers live
+                    else if (Program.MainLoggedCells[x, y])
+                    {
+                        Raylib.DrawText("L", posX + 4, posY + 1, 12, Color.Orange);
+                    }
+                    else if (displayGems)
+                    {
+                        DrawVerifiedGemMarker2D(x, y, cellAttr, romAttributes, posX, posY);
+                    }
                 }
             }
 
-            // High-visibility blue indicator box overlay pass
             if (InputHandler.IsProbeInsideWorkspace && !displayPathOverlays)
             {
                 int probeX = InputHandler.ProbeGridX;
@@ -100,8 +103,9 @@ namespace cSharpRaylib
                 }
             }
         }
+         
         // ============================================================================
-        // MAPRENDERER.CS - PART 2: 3D ISOMETRIC WORKSPACE LAYER (v0.85)
+        // MAPRENDERER.CS APPENDIX FIX: RESTORE 3D WORKSPACE METHOD HOOK (v0.85)
         // ============================================================================
         public static void Draw3DWorkspace(CityData activeCity, Color[] activeTheme, float scale, float heightScale,
             int offsetX, int offsetY, int rotationAngle, float tiltFactor, int renderStyle, bool showPaths, bool displayGems, bool displayElevators, int stageNum)
@@ -125,7 +129,6 @@ namespace cSharpRaylib
                         }
                     }
 
-                    // 1. ISOMETRIC VOID FILTER PASS
                     if (currentHeight == 0 && !isElevatorCell)
                     {
                         if (displayGems)
@@ -137,7 +140,6 @@ namespace cSharpRaylib
 
                     byte cellAttr = activeCity.Attributes[x, y];
 
-                    // 2. LIVE PLATFORM EXTENSION GRAPHICS DRAWS
                     if (isElevatorCell && displayElevators)
                     {
                         int baseTileHeight = Math.Max(1, currentHeight);
@@ -161,7 +163,6 @@ namespace cSharpRaylib
                 }
             }
 
-            // High-contrast Neon Blue indicator focus layer pass
             if (InputHandler.IsProbeInsideWorkspace)
             {
                 int targetX = InputHandler.ProbeGridX;
@@ -179,8 +180,10 @@ namespace cSharpRaylib
                     );
                 }
             }
-        }// ============================================================================
-        // MAPRENDERER.CS - PART 3: GEM DISPLAY MARKERS & TELEMETRY LEDGER (v0.85)
+        
+        }
+        // ============================================================================
+        // MAPRENDERER.CS - PART 2: DISPLAY HOOKS & DISCREPANCY COMPARATORS (v0.85)
         // ============================================================================
         private static void DrawVerifiedGemMarker2D(int x, int y, byte diskAttr, byte[,] romAttrs, int posX, int posY)
         {
