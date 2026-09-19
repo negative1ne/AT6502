@@ -80,21 +80,7 @@ namespace cSharpRaylib
                     ref renderStyleMode, ref displayPathOverlays, ref displayGems, ref showDanLegacyOverlay,
                     ref invertBackground, ref triggerTextExport, ref trigger3DLabWindow
                 );
-                // ============================================================================
-                // PHASE 2 REALIGNED: PASS CAMERA SCALES AND TRANSFORMS STABLY TO PREVENT DRIFT
-                // ============================================================================
-                System.Numerics.Vector2 frameworkMouseVec = Raylib.GetMousePosition();
-
-                // Pass live workspace variables directly down to evaluate inverse matrix bounds cleanly
-                InputHandler.TrackMouseProbeCoordinates(
-                    frameworkMouseVec.X / scaleMultiplier,
-                    frameworkMouseVec.Y / scaleMultiplier,
-                    globalScale,
-                    panOffsetX,
-                    panOffsetY,
-                    rotationAngle,
-                    tiltFactor
-                );
+                
                 // ============================================================================
                 int cityIndex = RoomToCityMap[currentRoom] & 0x0F;
                 CityData activeCity = cities[cityIndex];
@@ -131,7 +117,31 @@ namespace cSharpRaylib
 
                 Color[] activeTheme = stagePalettes.ContainsKey(currentRoom) ? stagePalettes[currentRoom] : stagePalettes[0];
                 var drawingRoom = RomManager.IsolatedStages[currentRoom];
+                // ============================================================================
+                // INJECT DYNAMIC LEVEL TRACKER COUNTER TO DRIVE ADVANCED DIRECT LOGGING
+                // ============================================================================
+                System.Numerics.Vector2 frameworkMouseVec = Raylib.GetMousePosition();
 
+                InputHandler.TrackMouseProbeCoordinates(
+                    frameworkMouseVec.X / scaleMultiplier,
+                    frameworkMouseVec.Y / scaleMultiplier,
+                    globalScale,
+                    panOffsetX,
+                    panOffsetY,
+                    rotationAngle,
+                    tiltFactor,
+                    drawingRoom,
+                    is3DMode,
+                    currentRoom // The 10th parameter linking file generators dynamically
+                );
+                // ============================================================================
+                
+
+                if (!is3DMode)
+                {
+                    // FIX CS7036: Pass the active currentRoom counter as our stage index argument
+                    MapRenderer.Draw2DBlueprint(drawingRoom, activeTheme, displayPathOverlays, displayGems, true, currentRoom);
+                }
                 if (!is3DMode)
                 {
                     // FIX CS7036: Pass the active currentRoom counter as our stage index argument

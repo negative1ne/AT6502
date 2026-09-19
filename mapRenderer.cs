@@ -93,6 +93,22 @@ namespace cSharpRaylib
                     }
                 }
             }
+            // ============================================================================
+            // v0.81 REFINED: BLUE HIGHLIGHT LAYERS OVER 2D BLUEPRINT VIEWPORTS
+            // ============================================================================
+            if (InputHandler.IsProbeInsideWorkspace && !displayPathOverlays)
+            {
+                int probeX = InputHandler.ProbeGridX;
+                int probeY = InputHandler.ProbeGridY;
+
+                if (probeX >= 0 && probeX < 22 && probeY >= 0 && probeY < 22)
+                {
+                    int highlightX = 380 + (probeY * 16);
+                    int highlightY = 150 + (probeX * 16);
+                    // Swapped from Color.Yellow to Color.SkyBlue for deep visibility contrast
+                    Raylib.DrawRectangleLines(highlightX, highlightY, 15, 15, Color.SkyBlue);
+                }
+            }
         }
 
         private static void DrawVerifiedGemMarker2D(int x, int y, byte diskAttr, byte[,] romAttrs, int posX, int posY)
@@ -193,7 +209,7 @@ namespace cSharpRaylib
                 }
             }
             // ============================================================================
-            // PHASE 3 CORRECTION: REAL-TIME GLOWING ISOMETRIC TARGET BLOCK HIGHLIGHT OVERLAY
+            // v0.81 REFINED: BLUE HIGHLIGHT LAYERS OVER 3D ISOMETRIC VIEWPORTS
             // ============================================================================
             if (InputHandler.IsProbeInsideWorkspace)
             {
@@ -202,27 +218,25 @@ namespace cSharpRaylib
 
                 if (targetX >= 0 && targetX < 22 && targetY >= 0 && targetY < 22)
                 {
-                    // Aligned specifically to match your method context variables exactly
                     int currentAltitude = activeCity.Heights[targetX, targetY];
                     byte cellAttributes = activeCity.Attributes[targetX, targetY];
 
-                    // Glowing palette for the wireframe selector box lines
-                    Color[] probeIndicatorPalette = new Color[] { Color.Yellow, Color.Lime, Color.Gold };
+                    // Swapped palette indices over to a high-contrast Neon Blue theme matrix
+                    Color[] probeIndicatorPalette = new Color[] { Color.SkyBlue, Color.Blue, Color.DarkBlue };
 
-                    // Force draw the wireframe block outline using the active function inputs
                     LevelTransform.DrawIsometricBlock(
                         targetX,
                         targetY,
                         currentAltitude,
                         probeIndicatorPalette,
-                        scale,           // Syncs with live function scale parameter
-                        heightScale,     // Syncs with live function heightScale parameter
-                        offsetX,         // Syncs with live function offsetX parameter
-                        offsetY,         // Syncs with live function offsetY parameter
-                        rotationAngle,   // Syncs with live function rotationAngle parameter
-                        tiltFactor,      // Syncs with live function tiltFactor parameter
-                        2,               // Enforce Style Mode 2: Clean wireframe bounding edge box highlight lines
-                        true,            // Force pathway parsing rules validation check
+                        scale,
+                        heightScale,
+                        offsetX,
+                        offsetY,
+                        rotationAngle,
+                        tiltFactor,
+                        2,
+                        true,
                         cellAttributes
                     );
                 }
