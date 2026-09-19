@@ -1,21 +1,18 @@
-﻿using System;
+﻿// ============================================================================
+// FIX BANNER: DIAGNOSTICCANVAS.CS - INTERACTIVE AUDIT WORKSPACE (v0.85)
+// ============================================================================
+using System;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
 using Raylib_cs;
 using Color = Raylib_cs.Color;
 
-// ============================================================================
-// DIAGNOSTICCANVAS.CS - INJECT STATE MANAGEMENT VARIABLES AT THE TOP
-// ============================================================================
 namespace cSharpRaylib
 {
     public static class DiagnosticCanvas
     {
-        // Tracks which elevator list item index is currently stuck to the mouse cursor
         private static int _selectedElevatorIndex = -1;
-
-        // Target list configuration limit matching your multi-stage expansions
         private const int MaxElevatorLimit = 10;
 
         public static void LaunchDebugWindow(int startingRoom, string[] stageNames, byte[] roomToCityMap, List<CityData> cities)
@@ -23,23 +20,23 @@ namespace cSharpRaylib
             const int winW = 1000;
             const int winH = 1000;
 
-            Raylib.InitWindow(winW, winH, "Diagnostic Grid Laboratory — Interactive View Suite");
+            Raylib.InitWindow(winW, winH, "Diagnostic Grid Laboratory — Interactive View Suite [v0.85]");
             Raylib.SetTargetFPS(60);
 
             int currentRoom = startingRoom;
             bool shouldUpdateStage = true;
-            bool spaceMapView = false; // NEW: Toggle flag to bypass screen math calculations
+            bool spaceMapView = false;
 
             List<ElevatorData> mockList = new List<ElevatorData>();
             CityData activeCity = null;
 
+            // v0.85 TRACKING LATCH MATRIX: Flags cells checked during the active view session
+            bool[,] sessionLoggedCells = new bool[22, 22];
+
             while (!Raylib.WindowShouldClose())
             {
-                // Level cycling navigation triggers
                 if (Raylib.IsKeyPressed(KeyboardKey.Right)) { currentRoom = (currentRoom + 1) % 37; shouldUpdateStage = true; }
                 if (Raylib.IsKeyPressed(KeyboardKey.Left)) { currentRoom = (currentRoom - 1 + 37) % 37; shouldUpdateStage = true; }
-
-                // NEW: Press S to swap between Projection View and Flat Space Map View!
                 if (Raylib.IsKeyPressed(KeyboardKey.S)) { spaceMapView = !spaceMapView; }
 
                 if (shouldUpdateStage)
@@ -54,122 +51,23 @@ namespace cSharpRaylib
                         copy.HorizontalPosition = activeCity.Elevators[i].HorizontalPosition;
                         copy.VerticalPosition = activeCity.Elevators[i].VerticalPosition;
                         copy.BottomPosition = activeCity.Elevators[i].BottomPosition;
-
-                        // SYNC DATA: Pull the active grid assignments from the source cities collection array
+                        copy.TopPosition = activeCity.Elevators[i].TopPosition;
+                        copy.WaitTime = activeCity.Elevators[i].WaitTime;
                         copy.CellX = activeCity.Elevators[i].CellX;
                         copy.CellY = activeCity.Elevators[i].CellY;
                         copy.IsMapped = activeCity.Elevators[i].IsMapped;
-
                         mockList.Add(copy);
                     }
 
-                    // Run our table overrides ONLY if the current room matches a problem stage entry
                     ElevatorPremapper.ApplyOverrides(currentRoom, mockList);
+
+                    // Flush session latches when moving to a new level
+                    Array.Clear(sessionLoggedCells, 0, sessionLoggedCells.Length);
                     shouldUpdateStage = false;
                 }
 
-                // ============================================================================
-                // DIAGNOSTICCANVAS.CS - RE-MAPPED ISOLATED FILE EXPORT SHORTCUT (v0.80 DATA)
-                // ============================================================================
-                // --- LIVE E-KEY MODULE INTERFACE TO EXPORT VERIFIED DETAILS ---
-                if (Raylib.IsKeyPressed(KeyboardKey.E))
-                {
-                    string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                    string targetElevatorFolder = Path.Combine(baseDir, "data", "elevator");
-
-                    // Defensive check to guarantee the subfolder directory structure exists on disk
-                    if (!Directory.Exists(targetElevatorFolder))
-                    {
-                        Directory.CreateDirectory(targetElevatorFolder);
-                    }
-
-                    try
-                    {
-                        string rawStageName = stageNames[currentRoom].ToLower().Replace(" ", "_").Replace("'", "");
-                        // v0.80 DATA PURGE: Standardizes output names to match 'elevators_stage_[num]_levelname.txt'
-                        string v080Filename = $"elevators_stage_{currentRoom:D2}_{rawStageName}.txt";
-                        string exportFullPath = Path.Combine(targetElevatorFolder, v080Filename);
-
-                        using (StreamWriter writer = new StreamWriter(exportFullPath, false, Encoding.UTF8))
-                        {
-                            writer.WriteLine($"=== CRYSTAL CASTLES ELEVATOR CONFIG: STAGE {currentRoom:D2} ({stageNames[currentRoom].ToUpper()}) ===");
-                            writer.WriteLine($"Pipeline Version Target Profile: v0.80 DATA ENGINE ISOLATION");
-
-                            // Count exactly how many lifts are physically mapped and initialized
-                            int activeLiftCount = 0;
-                            foreach (var ev in mockList) if (ev.IsMapped) activeLiftCount++;
-                            writer.WriteLine($"Active Configured Lift Count: {activeLiftCount}\n");
-
-                            // v0.80 LEAN TRACKING RULE: Bypass full 22x22 map prints. Stream out simple coordinate rows.
-                            for (int i = 0; i < mockList.Count; i++)
-                            {
-                                var ev = mockList[i];
-                                if (ev.IsMapped)
-                                {
-                                    writer.WriteLine($"Lift_Index_{i:D2}: MappedCell=({ev.CellX:D2},{ev.CellY:D2})");
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Terrain dump failed: {ex.Message}");
-                    }
-
-                    // --- 2. NEW DETACHED PASSIVE FILE IMPORT VERIFIER LOG ---
-                    try
-                    {
-                        string rawStageName = stageNames[currentRoom].ToLower().Replace(" ", "_").Replace("'", "");
-                        string importDebugFilename = $"file_import_stage_{currentRoom:D2}.txt";
-                        string importDebugPath = Path.Combine(targetElevatorFolder, importDebugFilename);
-
-                        string searchPattern = $"elevators_stage_{currentRoom:D2}_*.txt";
-                        string[] matchingFiles = Directory.GetFiles(targetElevatorFolder, searchPattern);
-
-                        using (StreamWriter debugWriter = new StreamWriter(importDebugPath, false, Encoding.UTF8))
-                        {
-                            debugWriter.WriteLine("================================================================================");
-                            debugWriter.WriteLine($"=== DEFENSIVE FILE IMPORT AUDIT REPORT: STAGE {currentRoom:D2} ===");
-                            debugWriter.WriteLine($"Time of execution pass: {DateTime.Now}");
-                            debugWriter.WriteLine("================================================================================");
-                            debugWriter.WriteLine($" Target Directory Scan: {targetElevatorFolder}");
-                            debugWriter.WriteLine($" Pattern Search Target: {searchPattern}");
-
-                            bool fileExists = matchingFiles.Length > 0;
-                            debugWriter.WriteLine($" Source file physically exists on disk: {(fileExists ? "YES (Success)" : "NO (Failed)")}");
-
-                            if (fileExists)
-                            {
-                                debugWriter.WriteLine($" Found exact filename matching pattern: {Path.GetFileName(matchingFiles[0])}");
-                                List<(int RowX, int ColY)> parsedCoords = LoadVerifiedCoordsFromDisk(currentRoom);
-
-                                debugWriter.WriteLine($" Total coordinate positions successfully parsed: {parsedCoords.Count}");
-                                for (int i = 0; i < parsedCoords.Count; i++)
-                                {
-                                    debugWriter.WriteLine($"  * Match Index [{i}]: Mapped to absolute Grid RowX = {parsedCoords[i].RowX:D2}, ColY = {parsedCoords[i].ColY:D2}");
-                                }
-                            }
-                            else
-                            {
-                                debugWriter.WriteLine("\n[ERROR] Diagnostic reader can't find source text layout sheet.");
-                            }
-                            debugWriter.WriteLine("================================================================================");
-                        }
-                        Console.Beep(1800, 100);
-                    }
-                    catch (Exception) { }
-                }
-
-
-
-
-                // ------------------------------------------------------------
-                // 1) RESOLVE ON-SCREEN GRID COORDINATES & MOUSE CLICK MECHANICS
-                // ------------------------------------------------------------
                 int mousePixelX = Raylib.GetMouseX();
                 int mousePixelY = Raylib.GetMouseY();
-
-                // Inverse math matching your startX=100, startY=100, cellSize=36 footprints exactly
                 int calculatedColY = (mousePixelX - 100) / 36;
                 int calculatedRowX = (mousePixelY - 100) / 36;
 
@@ -180,19 +78,19 @@ namespace cSharpRaylib
                 {
                     coordinateTelemetryString = $"ROW (X): {calculatedRowX:D2}  |  COL (Y): {calculatedColY:D2}";
 
-                    // 2) INTEGRATE THE LEVEL EDITOR INTERACTION ENGINE
                     if (Raylib.IsMouseButtonPressed(MouseButton.Left))
                     {
-                        // STATE A: An elevator is currently grabbed. Relocate it and release the mouse lock.
+                        // Latch and trigger all three automated point log audits simultaneously
+                        sessionLoggedCells[calculatedRowX, calculatedColY] = true;
+                        AppendExpandedLabAuditLog(currentRoom, calculatedRowX, calculatedColY, activeCity, mockList);
+
                         if (_selectedElevatorIndex >= 0 && _selectedElevatorIndex < mockList.Count)
                         {
                             mockList[_selectedElevatorIndex].CellX = calculatedRowX;
                             mockList[_selectedElevatorIndex].CellY = calculatedColY;
                             mockList[_selectedElevatorIndex].IsMapped = true;
-
-                            _selectedElevatorIndex = -1; // Release focus cleanly
+                            _selectedElevatorIndex = -1;
                         }
-                        // STATE B: Cursor is free. Scan for an existing yellow/orange elevator cell click hook.
                         else
                         {
                             for (int i = 0; i < mockList.Count; i++)
@@ -206,93 +104,56 @@ namespace cSharpRaylib
                         }
                     }
                 }
+
                 Raylib.BeginDrawing();
                 Raylib.ClearBackground(Color.Black);
 
-                // --- ITEM 1: RENDER FIXED CO-ORDINATE DISPLAY PANEL ONSCREEN ---
                 Raylib.DrawRectangle(100, 30, 380, 40, Color.DarkBlue);
                 Raylib.DrawRectangleLines(100, 30, 380, 40, Color.White);
                 Raylib.DrawText(coordinateTelemetryString, 120, 40, 20, Color.Lime);
 
-                // ============================================================================
-                // DIAGNOSTICCANVAS.CS - HUD INSTRUCTION TEXT UPDATE
-                // ============================================================================
-                Raylib.DrawText($"STAGE: {stageNames[currentRoom].ToUpper()}", 500, 30, 20, Color.Gold);
-
-                // FIX: Updated user messaging instruction labels to match your new isolated key binding
-                Raylib.DrawText("Click Lift to Select -> 2nd Click Moves It  |  S: Toggle Space View", 500, 55, 13, Color.LightGray);
-                Raylib.DrawText("Press 'E' to Export Clean Diagnostic Reports and File Audits Safely", 500, 75, 13, Color.SkyBlue);
-
+                Raylib.DrawText($"STAGE: {stageNames[currentRoom].ToUpper()} [v0.85]", 500, 30, 20, Color.Gold);
+                Raylib.DrawText("Click Cell to Run Unified Audit Pass  |  S: Toggle Space View", 500, 55, 13, Color.LightGray);
 
                 int cellSize = 36;
                 int startX = 100;
                 int startY = 100;
-                // Inside your while loop, right above the "for (int x = 0; x < 22; x++)" block:
-                List<(int RowX, int ColY)> diskMappedElevators = LoadVerifiedCoordsFromDisk(currentRoom);
+
                 for (int x = 0; x < 22; x++)
                 {
                     for (int y = 0; y < 22; y++)
                     {
                         int posX = startX + (y * cellSize);
                         int posY = startY + (x * cellSize);
-
                         int h = activeCity.Heights[x, y];
 
                         Raylib.DrawRectangleLines(posX, posY, cellSize, cellSize, new Color(45, 45, 40, 255));
 
                         if (h > 0)
                         {
-                            // Change layout background visualization color based on active mode
                             Color terrainColor = spaceMapView ? new Color(0, 30, 60, 255) : new Color(0, 50, 0, 255);
                             Raylib.DrawRectangle(posX + 2, posY + 2, cellSize - 4, cellSize - 4, terrainColor);
                         }
 
-                        // --- PASSIVE DIRECT FILE OVERLAP OVERLAY PASS ---
-                        bool existsInTextFile = false;
-                        foreach (var coord in diskMappedElevators)
+                        // v0.85 VISUAL CELL MARKERS PASS
+                        bool isElevatorCell = false;
+                        foreach (var ev in mockList)
                         {
-                            if (coord.RowX == x && coord.ColY == y)
+                            if (ev.IsMapped && ev.CellX == x && ev.CellY == y)
                             {
-                                existsInTextFile = true;
+                                isElevatorCell = true;
                                 break;
                             }
                         }
 
-                        // Map any entries found in the file onto the screen grid cleanly as Orange boxes
-                        if (existsInTextFile)
+                        if (isElevatorCell)
                         {
-                            Raylib.DrawRectangleLines(posX + 4, posY + 4, cellSize - 8, cellSize - 8, Color.Orange);
-                            Raylib.DrawRectangleLines(posX + 5, posY + 5, cellSize - 10, cellSize - 10, Color.Yellow);
+                            Raylib.DrawText("E", posX + 12, posY + 8, 20, Color.White);
                         }
-
-                        // ROM Footprints Layer configuration checks
-                        bool drawRomDot = false;
-
-                        if (spaceMapView)
+                        else if (sessionLoggedCells[x, y])
                         {
-                            foreach (var raw in mockList)
-                            {
-                                int cellX = raw.HorizontalPosition % 22;
-                                int cellY = raw.VerticalPosition % 22;
-                                if (cellX == x && cellY == y) drawRomDot = true;
-                            }
-                        }
-                        else
-                        {
-                            int xp = 200 - (x * 4) + (y * 8);
-                            int yp = 100 + (x * 4) + (y * 2) - h;
-
-                            foreach (var raw in mockList)
-                            {
-                                int footprintX = raw.HorizontalPosition + 112;
-                                int footprintY = raw.VerticalPosition - 28 - raw.BottomPosition;
-                                if (footprintX == xp && footprintY == yp) drawRomDot = true;
-                            }
-                        }
-
-                        if (drawRomDot)
-                        {
-                            Raylib.DrawRectangle(posX + 12, posY + 12, cellSize - 24, cellSize - 24, Color.Red);
+                            // Overlay indicator that cell telemetry was successfully pushed to text log
+                            Raylib.DrawText("L", posX + 13, posY + 8, 20, Color.Orange);
                         }
                     }
                 }
@@ -302,63 +163,74 @@ namespace cSharpRaylib
 
             Raylib.CloseWindow();
         }
-        /// <summary>
-        /// Reads absolute coordinate tuples directly from hand-edited text files.
-        /// Bypasses all engine variables and dictionary limitations.
-        /// </summary>
-        /// <summary>
-        /// Scans your active directory for Diagnostic_Dump files, handles dynamic 
-        /// stage names, and reads coordinates directly from the hand-edited text grid layout.
-        /// </summary>
-        private static List<(int RowX, int ColY)> LoadVerifiedCoordsFromDisk(int stageNum)
-        {
-            List<(int RowX, int ColY)> customCoords = new List<(int RowX, int ColY)>();
-            string targetDir = AppDomain.CurrentDomain.BaseDirectory;
 
+        private static void AppendExpandedLabAuditLog(int stageNum, int cellX, int cellY, CityData city, List<ElevatorData> elevators)
+        {
             try
             {
-                // Find any file in your folder that begins with your specific stage prefix format rules
-                string searchPattern = $"Diagnostic_Dump_Stage_{stageNum:D2}_*.txt";
-                string[] matchingFiles = Directory.GetFiles(targetDir, searchPattern);
+                string stamp = RomManager.ActiveSessionTimestamp;
+                string filename = $"LAB_TEST_LOG_STAGE_{stageNum:D2}_{stamp}.txt";
+                string fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
 
-                // If no matching dump sheet exists yet for this wave, return empty list safely
-                if (matchingFiles.Length == 0) return customCoords;
+                byte romAttr = RomManager.BaseCities[stageNum % 16].Attributes[cellX, cellY];
+                byte diskAttr = city.Attributes[cellX, cellY];
+                int romHeight = RomManager.BaseCities[stageNum % 16].Heights[cellX, cellY];
+                int diskHeight = city.Heights[cellX, cellY];
 
-                string fullPath = matchingFiles[0]; // Isolate the first matching file found
-                string[] lines = File.ReadAllLines(fullPath);
-
-                // Start reading after line 4 to skip the header and legends text lines safely
-                for (int x = 0; x < lines.Length; x++)
+                // ============================================================================
+                // DIAGNOSTICCANVAS.CS - PART 2: EXPANDED STREAM OUTPUT LAYER (v0.85)
+                // ============================================================================
+                using (StreamWriter sw = new StreamWriter(fullPath, true, Encoding.UTF8))
                 {
-                    string line = lines[x];
-                    if (string.IsNullOrWhiteSpace(line) || line.Contains("===") || line.Contains("Mode") || line.Contains("[Legend")) continue;
+                    sw.WriteLine($"[AUDIT POINT RECORDED - TIMESTAMP: {DateTime.Now:HH:mm:ss} | Engine: v0.85]");
+                    sw.WriteLine($"  * Coordinate Vector : Row_X = {cellX:D2} , Col_Y = {cellY:D2}");
 
-                    // Split your 22-column space-separated text characters cleanly
-                    string[] tokens = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    string terrainLabel = (diskHeight == 0) ? "VOID/PASSAGEWAY" : $"SOLID_DECK_PLATFORM (Height:{diskHeight})";
+                    string pathLabel = ((diskAttr & 0x04) == 0x04) ? "ACTIVE_PATHWAY" : "STANDARD_TILES";
+                    sw.WriteLine($"  * Text Classifiers  : [{terrainLabel} | {pathLabel}]");
+                    sw.WriteLine($"  * Altitude Alignment: [Disk: {diskHeight:D2} vs ROM: {romHeight:D2}] -> {(diskHeight == romHeight ? "MATCH" : "DRIFT")}");
 
-                    // Track row coordinates processing index
-                    int currentRowX = customCoords.Count / 22;
-
-                    for (int currentColY = 0; currentColY < tokens.Length && currentColY < 22; currentColY++)
+                    sw.WriteLine("  * Elevator Configuration Ledger:");
+                    bool foundLift = false;
+                    for (int i = 0; i < elevators.Count; i++)
                     {
-                        string token = tokens[currentColY].Trim();
-
-                        // O = Premapper Box, M = Perfect Match, R = ROM Footprint
-                        // If you edited a square to 'O' or 'M' by hand, extract it instantly!
-                        if (token == "O" || token == "M")
+                        var ev = elevators[i];
+                        if (ev.CellX == cellX && ev.CellY == cellY)
                         {
-                            customCoords.Add((x - 4, currentColY)); // Offset header lines index to track 0-21 grid bounds
+                            foundLift = true;
+                            sw.WriteLine($"    - Lift Index [{i}]: Status = VERIFIED_ATTACHED");
+                            sw.WriteLine($"    - Motion State   : Mode_{ev.Mode} | SitTimer = {ev.CurrentSitTime} frames");
+                            sw.WriteLine($"    - Range Limits   : Bottom = {ev.BottomPosition:D3} | Top = {ev.TopPosition:D3} | Live = {ev.CurrentPosition:D3}");
                         }
                     }
-                }
-            }
-            catch (Exception)
-            {
-                // Defensive catch boundary to keep frame rendering loops completely stable
-            }
+                    if (!foundLift) sw.WriteLine("    - Lift System    : No moving elevator elements mapped to this block.");
 
-            return customCoords;
+                    sw.WriteLine("  * Neighborhood Spatial Density Matrix (3x3 Surrounding Heights):");
+                    sw.WriteLine("    [ DISK FILE LAYOUT ]             [ ARCADE ROM MEMORY ]");
+                    for (int dx = -1; dx <= 1; dx++)
+                    {
+                        StringBuilder dRow = new StringBuilder("    ");
+                        StringBuilder rRow = new StringBuilder("    ");
+                        for (int dy = -1; dy <= 1; dy++)
+                        {
+                            int nx = cellX + dx; int ny = cellY + dy;
+                            if (nx >= 0 && nx < 22 && ny >= 0 && ny < 22)
+                            {
+                                dRow.Append($" {city.Heights[nx, ny]:D2} ");
+                                rRow.Append($" {RomManager.BaseCities[stageNum % 16].Heights[nx, ny]:D2} ");
+                            }
+                            else
+                            {
+                                dRow.Append(" XX "); rRow.Append(" XX ");
+                            }
+                        }
+                        sw.WriteLine($"{dRow}        {rRow}");
+                    }
+                    sw.WriteLine("--------------------------------------------------------------------------------\n");
+                }
+                Console.Beep(1800, 100);
+            }
+            catch { }
         }
     }
-
 }

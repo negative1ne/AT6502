@@ -1,5 +1,5 @@
-﻿// ============================================================================
-// FIX BANNER: MAPRENDERER.CS - DIRECT v0.81 2D blueprint HOOK INJECTION (PART 1)
+﻿/// ============================================================================
+// FIX BANNER: MAPRENDERER.CS - PART 1: 2D BLUEPRINT VIEWPORT ENGINE (v0.85)
 // ============================================================================
 using System;
 using System.Collections.Generic;
@@ -16,8 +16,6 @@ namespace cSharpRaylib
             int gridOffsetX = 380;
             int gridOffsetY = 150;
 
-            // Fetch original un-altered baseline data context properties straight from parent ROM banks
-            int parentCityIndex = (stageNum < 37) ? (RomManager.IsolatedStages[stageNum].NumElevators) : 0;
             byte[,] romAttributes = RomManager.BaseCities[stageNum % 16].Attributes;
 
             for (int x = 0; x < 22; x++)
@@ -34,22 +32,19 @@ namespace cSharpRaylib
                         }
                     }
 
-                    // v0.81 INTEGRATION SWEEP: Pull terrain parameters exclusively from your active hand-edited memory
                     int tileHeight = activeCity.Heights[x, y];
                     byte cellAttr = activeCity.Attributes[x, y];
                     int posX = gridOffsetX + (y * cellSize);
                     int posY = gridOffsetY + (x * cellSize);
 
-                    // 1. CHASSIS CORRECTION RULE: Handle Height 0 Passageway Outlines First
+                    // 1. FLAT PASSTHROUGH CHASSIS FILTER: Handle Height 0 Passageway Outlines First
                     if (tileHeight == 0 && !isElevatorCell)
                     {
-                        // If paths are toggled on and this zero-height cell contains tracking bits, outline it cleanly
-                        if (displayPathOverlays && ((cellAttr & 0x34) > 0))
+                        if (displayPathOverlays && ((cellAttr & 0x04) == 0x04))
                         {
                             Raylib.DrawRectangleLines(posX, posY, cellSize - 1, cellSize - 1, Color.DarkGray);
                         }
 
-                        // Render gem cross-check comparisons over height-0 paths if active
                         if (displayGems) DrawVerifiedGemMarker2D(x, y, cellAttr, romAttributes, posX, posY);
                         continue;
                     }
@@ -64,9 +59,7 @@ namespace cSharpRaylib
                     }
                     else if (displayPathOverlays)
                     {
-                        if ((cellAttr & 0x20) == 0x20) blockColor = Color.Purple;
-                        else if ((cellAttr & 0x04) == 0x04) blockColor = Color.Green;
-                        else if ((cellAttr & 0x10) == 0x10) blockColor = Color.Yellow;
+                        if ((cellAttr & 0x04) == 0x04) blockColor = Color.Green;
                         else blockColor = activeTheme[0];
                     }
                     else
@@ -81,7 +74,6 @@ namespace cSharpRaylib
 
                     Raylib.DrawRectangle(posX, posY, cellSize - 1, cellSize - 1, blockColor);
 
-                    // Render collectible verification dots over valid solid deck coordinates
                     if (displayGems && !(isElevatorCell && displayElevators))
                     {
                         DrawVerifiedGemMarker2D(x, y, cellAttr, romAttributes, posX, posY);
@@ -93,9 +85,8 @@ namespace cSharpRaylib
                     }
                 }
             }
-            // ============================================================================
-            // v0.81 REFINED: BLUE HIGHLIGHT LAYERS OVER 2D BLUEPRINT VIEWPORTS
-            // ============================================================================
+
+            // High-visibility blue indicator box overlay pass
             if (InputHandler.IsProbeInsideWorkspace && !displayPathOverlays)
             {
                 int probeX = InputHandler.ProbeGridX;
@@ -103,30 +94,14 @@ namespace cSharpRaylib
 
                 if (probeX >= 0 && probeX < 22 && probeY >= 0 && probeY < 22)
                 {
-                    int highlightX = 380 + (probeY * 16);
-                    int highlightY = 150 + (probeX * 16);
-                    // Swapped from Color.Yellow to Color.SkyBlue for deep visibility contrast
+                    int highlightX = gridOffsetX + (probeY * 16);
+                    int highlightY = gridOffsetY + (probeX * 16);
                     Raylib.DrawRectangleLines(highlightX, highlightY, 15, 15, Color.SkyBlue);
                 }
             }
         }
-
-        private static void DrawVerifiedGemMarker2D(int x, int y, byte diskAttr, byte[,] romAttrs, int posX, int posY)
-        {
-            bool existsOnDisk = (diskAttr & 0x10) == 0x10;
-            bool existsInRom = (romAttrs[x, y] & 0x10) == 0x10;
-
-            if (!existsOnDisk && !existsInRom) return;
-
-            Color validationColor;
-            if (existsOnDisk && existsInRom) validationColor = Color.Yellow; // Perfect match!
-            else if (existsOnDisk) validationColor = Color.Lime;   // Added via disk asset overlay
-            else validationColor = Color.Red;    // Missing from disk file dump
-
-            Raylib.DrawCircle(posX + 8, posY + 8, 3, validationColor);
-        }
         // ============================================================================
-        // FIX BANNER: MAPRENDERER.CS - DIRECT v0.81 3D WORKSPACE HOOK INJECTION (PART 2)
+        // MAPRENDERER.CS - PART 2: 3D ISOMETRIC WORKSPACE LAYER (v0.85)
         // ============================================================================
         public static void Draw3DWorkspace(CityData activeCity, Color[] activeTheme, float scale, float heightScale,
             int offsetX, int offsetY, int rotationAngle, float tiltFactor, int renderStyle, bool showPaths, bool displayGems, bool displayElevators, int stageNum)
@@ -138,7 +113,6 @@ namespace cSharpRaylib
             {
                 for (int y = 0; y < 22; y++)
                 {
-                    // v0.81 DIRECT OVERRIDE: Pull geometry heights entirely from your hand-edited text memory
                     int currentHeight = activeCity.Heights[x, y];
                     bool isElevatorCell = false;
 
@@ -151,22 +125,19 @@ namespace cSharpRaylib
                         }
                     }
 
-                    // REPAIRED HEIGHT-0 FILTER PASS: EXEMPT ACTIVE LIFT CHASSIS SYSTEM FROM CONTINUES
-                    if (currentHeight == 0)
+                    // 1. ISOMETRIC VOID FILTER PASS
+                    if (currentHeight == 0 && !isElevatorCell)
                     {
-                        if (!isElevatorCell)
+                        if (displayGems)
                         {
-                            // If paths are on and it's a standard flat empty walkway tile, draw a subtle gem cross-check
-                            if (displayGems)
-                            {
-                                DrawVerifiedGemMarker3D(x, y, currentHeight, scale, heightScale, offsetX, offsetY, rotationAngle, tiltFactor, activeCity.Attributes[x, y], romAttributes);
-                            }
-                            continue; // Safely skip drawing solid blocks for standard empty space rows
+                            DrawVerifiedGemMarker3D(x, y, currentHeight, scale, heightScale, offsetX, offsetY, rotationAngle, tiltFactor, activeCity.Attributes[x, y], romAttributes);
                         }
+                        continue;
                     }
 
                     byte cellAttr = activeCity.Attributes[x, y];
 
+                    // 2. LIVE PLATFORM EXTENSION GRAPHICS DRAWS
                     if (isElevatorCell && displayElevators)
                     {
                         int baseTileHeight = Math.Max(1, currentHeight);
@@ -177,40 +148,20 @@ namespace cSharpRaylib
                     }
                     else if (currentHeight > 0)
                     {
-                        // Standard block projection drawing gate: completely driven by custom v0.80 heights!
                         LevelTransform.DrawIsometricBlock(
                             x, y, currentHeight, activeTheme, scale, heightScale, offsetX, offsetY,
                             rotationAngle, tiltFactor, renderStyle, showPaths, cellAttr
                         );
                     }
 
-                    // INTEGRATED MATRIX PROJECTION SYNC ENGINE (v0.80)
                     if (displayGems && !isElevatorCell)
                     {
-                        int structuralTargetX = x;
-                        int structuralTargetY = y;
-                        int dynamicTileAltitude = activeCity.Heights[structuralTargetX, structuralTargetY];
-
-                        // Force the gem spheres to draw exactly inside the 3D block coordinate stream
-                        DrawVerifiedGemMarker3D(
-                            structuralTargetX,
-                            structuralTargetY,
-                            dynamicTileAltitude,
-                            scale,
-                            heightScale,
-                            offsetX,
-                            offsetY,
-                            rotationAngle,
-                            tiltFactor,
-                            cellAttr,
-                            romAttributes
-                        );
+                        DrawVerifiedGemMarker3D(x, y, currentHeight, scale, heightScale, offsetX, offsetY, rotationAngle, tiltFactor, cellAttr, romAttributes);
                     }
                 }
             }
-            // ============================================================================
-            // v0.81 REFINED: BLUE HIGHLIGHT LAYERS OVER 3D ISOMETRIC VIEWPORTS
-            // ============================================================================
+
+            // High-contrast Neon Blue indicator focus layer pass
             if (InputHandler.IsProbeInsideWorkspace)
             {
                 int targetX = InputHandler.ProbeGridX;
@@ -220,27 +171,30 @@ namespace cSharpRaylib
                 {
                     int currentAltitude = activeCity.Heights[targetX, targetY];
                     byte cellAttributes = activeCity.Attributes[targetX, targetY];
-
-                    // Swapped palette indices over to a high-contrast Neon Blue theme matrix
                     Color[] probeIndicatorPalette = new Color[] { Color.SkyBlue, Color.Blue, Color.DarkBlue };
 
                     LevelTransform.DrawIsometricBlock(
-                        targetX,
-                        targetY,
-                        currentAltitude,
-                        probeIndicatorPalette,
-                        scale,
-                        heightScale,
-                        offsetX,
-                        offsetY,
-                        rotationAngle,
-                        tiltFactor,
-                        2,
-                        true,
-                        cellAttributes
+                        targetX, targetY, currentAltitude, probeIndicatorPalette,
+                        scale, heightScale, offsetX, offsetY, rotationAngle, tiltFactor, 2, true, cellAttributes
                     );
                 }
             }
+        }// ============================================================================
+        // MAPRENDERER.CS - PART 3: GEM DISPLAY MARKERS & TELEMETRY LEDGER (v0.85)
+        // ============================================================================
+        private static void DrawVerifiedGemMarker2D(int x, int y, byte diskAttr, byte[,] romAttrs, int posX, int posY)
+        {
+            bool existsOnDisk = (diskAttr & 0x10) == 0x10;
+            bool existsInRom = (romAttrs[x, y] & 0x10) == 0x10;
+
+            if (!existsOnDisk && !existsInRom) return;
+
+            Color validationColor;
+            if (existsOnDisk && existsInRom) validationColor = Color.Yellow;
+            else if (existsOnDisk) validationColor = Color.Lime;
+            else validationColor = Color.Red;
+
+            Raylib.DrawCircle(posX + 8, posY + 8, 3, validationColor);
         }
 
         private static void DrawVerifiedGemMarker3D(int x, int y, int tileHeight, float scale, float heightScale,
@@ -252,9 +206,9 @@ namespace cSharpRaylib
             if (!existsOnDisk && !existsInRom) return;
 
             Color validationColor;
-            if (existsOnDisk && existsInRom) validationColor = Color.Yellow; // Perfect validation match
-            else if (existsOnDisk) validationColor = Color.Lime;   // Unique custom workspace gem
-            else validationColor = Color.Red;    // Missing data file definition
+            if (existsOnDisk && existsInRom) validationColor = Color.Yellow;
+            else if (existsOnDisk) validationColor = Color.Lime;
+            else validationColor = Color.Red;
 
             LevelTransform.Draw3DGem(x, y, tileHeight, scale, heightScale, offsetX, offsetY, rotationAngle, tiltFactor, validationColor);
         }
@@ -267,8 +221,8 @@ namespace cSharpRaylib
 
             try
             {
-                // REPAIRED COUNTER VERIFIER: Compare your loaded disk array straight against raw baseline ROM bytes
                 byte[,] romHeights = RomManager.BaseCities[stageNum % 16].Heights;
+                byte[,] romAttributes = RomManager.BaseCities[stageNum % 16].Attributes;
 
                 for (int x = 0; x < 22; x++)
                 {
@@ -277,7 +231,11 @@ namespace cSharpRaylib
                         int customDiskHeight = activeCity.Heights[x, y];
                         int originalRomHeight = romHeights[x, y];
 
-                        if (customDiskHeight != originalRomHeight)
+                        // v0.85 SPATIAL DENSITY LEDGER: Compare heights AND pathing attributes (0x0F lower nibble)
+                        int customDiskLowerNibble = activeCity.Attributes[x, y] & 0x0F;
+                        int originalRomLowerNibble = romAttributes[x, y] & 0x0F;
+
+                        if (customDiskHeight != originalRomHeight || customDiskLowerNibble != originalRomLowerNibble)
                         {
                             mismatchCount++;
                         }
