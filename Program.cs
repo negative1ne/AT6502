@@ -39,6 +39,31 @@ namespace cSharpRaylib
                 "The End"
             };
 
+            // ====================================================================================
+            // INITIALIZATION SEQUENCE DROP-IN BANNER: v0.85 DATA ENGINE ISOLATION
+            // ====================================================================================
+
+            // Step 1: Establish project base directory tracking context
+            string projectBaseDir = AppDomain.CurrentDomain.BaseDirectory;
+
+            // Step 2: Initialize the dual-logging system pipeline immediately at startup
+            CrystalCastles.DataEngine.DataEngineLogger.Initialize(projectBaseDir);
+
+            // Step 3: Log baseline launch confirmation telemetry trace
+            CrystalCastles.DataEngine.DataEngineLogger.LogSession("System Initialization: v0.85 Data Engine Isolation initialized successfully.");
+            CrystalCastles.DataEngine.DataEngineLogger.LogSession($"Project Base Directory verified at: {projectBaseDir}");
+
+            // ====================================================================================
+
+            // ====================================================================================
+            // CONCLUDING PIPELINE EXECUTION HOOK: v0.85 DATA ENGINE ISOLATION
+            // ====================================================================================
+
+            // Step 4: Fire the isolated 5-stage migration sandbox pass immediately
+            CrystalCastles.DataEngine.SandboxTestHarness.ExecuteValidationPass(projectBaseDir);
+
+            // ====================================================================================
+
             List<CityData> cities = RomManager.LoadRomDatabase();
             var stagePalettes = StagePalettes.GetMasterPaletteMatrix();
 

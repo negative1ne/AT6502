@@ -179,8 +179,12 @@ namespace cSharpRaylib
         // ============================================================================
         private static void AppendSelectedCellToLabLog(int stageNum, int cellX, int cellY, CityData city)
         {
-            try
+
+            return;
+
+                try
             {
+                return;
                 string sessionStamp = RomManager.ActiveSessionTimestamp;
                 string filename = $"LAB_TEST_LOG_STAGE_{stageNum:D2}_{sessionStamp}.txt";
                 string fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
@@ -188,7 +192,7 @@ namespace cSharpRaylib
                 if (_lastRecordedStageId != -1 && stageNum != _lastRecordedStageId)
                 {
                     string fallbackOldFile = $"LAB_TEST_LOG_STAGE_{_lastRecordedStageId:D2}_{sessionStamp}.txt";
-                    string fallbackOldPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fallbackOldFile);
+                   string fallbackOldPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fallbackOldFile);
                     if (File.Exists(fallbackOldPath))
                     {
                         File.AppendAllText(fallbackOldPath, $"\n[AUDIT BREAK EVENT] Session Points Logged for Stage {_lastRecordedStageId:D2}: TotalCount = {_globalPointIncrementer}\n================================================================================\n");
@@ -261,7 +265,7 @@ namespace cSharpRaylib
             catch { }
         }
     
-     // ============================================================================
+        // ============================================================================
         // INPUTHANDLER.CS - APPENDIX FIX: RESTORE v0.85 CONTROL OVERLAY HUD
         // ============================================================================
         public static void DrawControlOverlay(bool is3DMode, int renderStyle, bool pathsOn, bool gemsOn, bool legacyOverlayOn,

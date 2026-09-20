@@ -18,10 +18,15 @@ namespace cSharpRaylib
 
         public static void LogStageTransition(int stageNum, string stageName, int cityIndex, List<ElevatorData> elevators)
         {
+            // ============================================================================
+            // FIX BANNER: v0.85 DATA ENGINE ISOLATION DEACTIVATION GATE
+            // ============================================================================
+            return; // Early exit completely silences runtime discrepancy tracking files.
+            // ============================================================================
+
             string runtimeLogPath = GetRuntimeLogPath();
 
-            try
-            {
+            try { 
                 using (StreamWriter sw = new StreamWriter(runtimeLogPath, true, Encoding.UTF8))
                 {
                     sw.WriteLine($"\n================================================================================");
@@ -53,9 +58,15 @@ namespace cSharpRaylib
             catch (Exception) { /* Protect file stream write access collisions */ }
         }
 
-        // REPAIRED SYSTEM GENERIC UTILITY METHOD
+        /// REPAIRED SYSTEM GENERIC UTILITY METHOD
         public static void LogMessage(string message)
         {
+            // ============================================================================
+            // FIX BANNER: v0.85 DATA ENGINE ISOLATION DEACTIVATION GATE
+            // ============================================================================
+            return; // Suppresses generic diagnostic string spam globally.
+            // ============================================================================
+
             try
             {
                 // FIX CS0103: Uses the unified static method path reference to prevent naming compilation faults

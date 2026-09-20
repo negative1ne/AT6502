@@ -298,7 +298,15 @@ namespace cSharpRaylib
 
                 try
                 {
-                    string filename = $"LAB_TEST_LOG_STAGE_{stageNum:D2}_{ActiveSessionTimestamp}.txt";
+                    // ====================================================================================
+                    // FIX BANNER: RomManager.cs & InputHandler.cs SAFE DEACTIVATION GATE (v0.85)
+                    // ====================================================================================
+                    return; // Stops execution dead right here before any file stream is opened!
+                            // ====================================================================================
+
+                    // Left completely untouched below so no downstream variables break:
+                    string stamp = RomManager.ActiveSessionTimestamp;
+                    string filename = $"LAB_TEST_LOG_STAGE_{stageNum:D2}_{stamp}.txt";
                     string fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
 
                     using (StreamWriter sw = new StreamWriter(fullPath, false, Encoding.UTF8))

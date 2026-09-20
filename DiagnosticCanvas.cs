@@ -166,8 +166,21 @@ namespace cSharpRaylib
 
         private static void AppendExpandedLabAuditLog(int stageNum, int cellX, int cellY, CityData city, List<ElevatorData> elevators)
         {
+            // ============================================================================
+            // FIXED BANNER: v0.85 DATA ENGINE ISOLATION DEACTIVATION GATE
+            // ============================================================================
+            return; // Early exit completely disables file generation and beeps globally.
+                    // ============================================================================
+
             try
             {
+                // ====================================================================================
+                // FIX BANNER: RomManager.cs & InputHandler.cs SAFE DEACTIVATION GATE (v0.85)
+                // ====================================================================================
+                return; // Stops execution dead right here before any file stream is opened!
+                        // ====================================================================================
+
+                // Left completely untouched below so no downstream variables break:
                 string stamp = RomManager.ActiveSessionTimestamp;
                 string filename = $"LAB_TEST_LOG_STAGE_{stageNum:D2}_{stamp}.txt";
                 string fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
