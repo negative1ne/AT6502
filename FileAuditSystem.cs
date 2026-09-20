@@ -108,13 +108,29 @@ namespace cSharpRaylib
                 Console.WriteLine($"[CRITICAL AUDIT EXCEPTION FAULT] Failed to generate single-stream trail log: {ex.Message}");
             }
         }
+        // ============================================================================
+        // FIX BANNER: FILEAUDITSYSTEM.CS - MULTI-PREFIX ASSET SEARCH DISCOVERY (v0.85)
+        // ============================================================================
         private static bool CheckStageFilePresence(string targetSubfolder, string searchFilterPattern)
         {
             string folderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", targetSubfolder);
             if (!Directory.Exists(folderPath)) return false;
 
+            // Check standard modern prefix layout first
             string[] discoveredFiles = Directory.GetFiles(folderPath, searchFilterPattern);
-            return discoveredFiles.Length > 0;
+            if (discoveredFiles.Length > 0) return true;
+
+            // Alternate Legacy Pass 1: Handle Diagnostic Dump file strings
+            string legacyDumpPattern = searchFilterPattern.Replace("Maps_", "Diagnostic_Dump_");
+            discoveredFiles = Directory.GetFiles(folderPath, legacyDumpPattern);
+            if (discoveredFiles.Length > 0) return true;
+
+            // Alternate Legacy Pass 2: Handle Standalone Grid Sheet variants
+            string legacyGridPattern = searchFilterPattern.Replace("Maps_Stage_", "Diagnostic_Grid_Sheet_*_Stage_");
+            discoveredFiles = Directory.GetFiles(folderPath, legacyGridPattern);
+            if (discoveredFiles.Length > 0) return true;
+
+            return false;
         }
         // ============================================================================
         // FILEAUDITSYSTEM.CS - ISOLATED SUBFOLDER DATA TELEMETRY LOGGERS (PART 2)
