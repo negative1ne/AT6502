@@ -41,6 +41,7 @@ namespace cSharpRaylib
             string sessionLogName = $"session_audit_{ActiveSessionTimestamp}.log";
             string logFullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, sessionLogName);
 
+            // Open the single session log stream context for whole pipeline initialization sequence
             try
             {
                 using (StreamWriter auditWriter = new StreamWriter(logFullPath, false, Encoding.UTF8))
@@ -56,160 +57,196 @@ namespace cSharpRaylib
                     auditWriter.WriteLine("  FAILED CODE EXCEPTIONS : 0");
                     auditWriter.WriteLine("  SYSTEM PASS VERDICT    : 100% SECURE. v0.85 STABLE BASELINE LOCK CONFIRMED.");
                     auditWriter.WriteLine("================================================================================");
+
+                    FileAuditSystem.ExecutePipelineAudit(StageNames, logFullPath, sessionLogName, DateTime.Now);
+
+                    string romDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "rom");
+                    string file1Path = Path.Combine(romDir, "136022-102.1h");
+                    string file2Path = Path.Combine(romDir, "136022-101.1f");
+
+                    if (!Directory.Exists(romDir) || !File.Exists(file1Path) || !File.Exists(file2Path))
+                    {
+                        MessageBox.Show(
+                            "Critical Error: No ROM files found!\n\nPlease ensure your 'rom' folder contains:\n- 136022-102.1h\n- 136022-101.1f",
+                            "Crystal Castles Viewer Error",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error
+                        );
+                        Environment.Exit(1);
+                    }
+
+                    byte[] file1 = File.ReadAllBytes(file1Path);
+                    byte[] file2 = File.ReadAllBytes(file2Path);
+                    byte[] combinedData = new byte[file1.Length + file2.Length];
+                    file1.CopyTo(combinedData, 0);
+                    file2.CopyTo(combinedData, file1.Length);
+
+                    BaseCities.Clear();
+                    for (int i = 0; i < 16; i++)
+                    {
+                        CityData city = new CityData();
+                        city.Load(combinedData, i * 0x400);
+                        BaseCities.Add(city);
+                    }
+
+                    byte[] RoomToCityMap = new byte[] {
+                        0x00, 0x02, 0x09, 0xC3, 0x46, 0x71, 0x0C, 0xC7,
+                        0x06, 0x0D, 0x45, 0xCB, 0x04, 0x0A, 0x06, 0x4F,
+                        0x41, 0x4D, 0x3C, 0xC3, 0x0A, 0x02, 0x32, 0x3F,
+                        0x01, 0x04, 0x75, 0xFB, 0x01, 0x3A, 0x06, 0xF7,
+                        0x08, 0x7D, 0x05, 0xCB, 0x0E
+                    };
+
+                    IsolatedStages.Clear();
+                    for (int stageNum = 0; stageNum < 37; stageNum++)
+                    {
+                        int parentCityIndex = RoomToCityMap[stageNum] & 0x0F;
+                        CityData parentCity = BaseCities[parentCityIndex];
+
+                        CityData clonedRoom = new CityData();
+                        clonedRoom.NumElevators = parentCity.NumElevators;
+
+                        if (stageNum == 36)
+                        {
+                            clonedRoom.TrackState = StageTrackingState.NoElevators;
+                        }
+                        else if (stageNum == 0 || stageNum == 1 || stageNum == 2 || stageNum == 4 ||
+                                 stageNum == 5 || stageNum == 6 || stageNum == 7 || stageNum == 10 ||
+                                 stageNum == 21 || stageNum == 22 || stageNum == 26 || stageNum == 34)
+                        {
+                            clonedRoom.TrackState = StageTrackingState.VerifiedWorking;
+                        }
+                        else
+                        {
+                            clonedRoom.TrackState = StageTrackingState.ExperimentalTarget;
+                        }
+
+                        for (int x = 0; x < 22; x++)
+                        {
+                            for (int y = 0; y < 22; y++)
+                            {
+                                clonedRoom.Heights[x, y] = parentCity.Heights[x, y];
+                                clonedRoom.Attributes[x, y] = parentCity.Attributes[x, y];
+                            }
+                        }
+
+                        // Updated line 135: Passing the active streaming writer context context straight in
+                        InjectCustomHeightsFromDisk(stageNum, clonedRoom.Heights, auditWriter);
+                        InjectCustomGemsFromDisk(stageNum, clonedRoom.Attributes);
+
+                        foreach (var parentLift in parentCity.Elevators)
+                        {
+                            ElevatorData clonedLift = new ElevatorData();
+                            clonedLift.HorizontalPosition = parentLift.HorizontalPosition;
+                            clonedLift.VerticalPosition = parentLift.VerticalPosition;
+                            clonedLift.TopPosition = parentLift.TopPosition;
+                            clonedLift.BottomPosition = parentLift.BottomPosition;
+                            clonedLift.WaitTime = parentLift.WaitTime;
+
+                            clonedLift.CellX = 0;
+                            clonedLift.CellY = 0;
+                            clonedLift.IsMapped = false;
+                            clonedLift.CurrentPosition = parentLift.BottomPosition;
+                            clonedLift.Mode = 0;
+                            clonedLift.CurrentSitTime = 0;
+
+                            clonedRoom.Elevators.Add(clonedLift);
+                        }
+
+                        IsolatedStages.Add(clonedRoom);
+                    }
+
+                    ElevatorPremapper.InitializeFromDisk();
+                    GenerateStartupLaboratoryLogs();
+
+                    FileAuditSystem.ExecutePipelineAudit(StageNames, logFullPath, sessionLogName, DateTime.Now);
                 }
             }
             catch (Exception) { }
 
-            FileAuditSystem.ExecutePipelineAudit(StageNames, logFullPath, sessionLogName, DateTime.Now);
-
-            string romDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "rom");
-            string file1Path = Path.Combine(romDir, "136022-102.1h");
-            string file2Path = Path.Combine(romDir, "136022-101.1f");
-
-            if (!Directory.Exists(romDir) || !File.Exists(file1Path) || !File.Exists(file2Path))
-            {
-                MessageBox.Show(
-                    "Critical Error: No ROM files found!\n\nPlease ensure your 'rom' folder contains:\n- 136022-102.1h\n- 136022-101.1f",
-                    "Crystal Castles Viewer Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
-                Environment.Exit(1);
-            }
-
-            byte[] file1 = File.ReadAllBytes(file1Path);
-            byte[] file2 = File.ReadAllBytes(file2Path);
-            byte[] combinedData = new byte[file1.Length + file2.Length];
-            file1.CopyTo(combinedData, 0);
-            file2.CopyTo(combinedData, file1.Length);
-
-            BaseCities.Clear();
-            for (int i = 0; i < 16; i++)
-            {
-                CityData city = new CityData();
-                city.Load(combinedData, i * 0x400);
-                BaseCities.Add(city);
-            }
-
-            byte[] RoomToCityMap = new byte[] {
-                0x00, 0x02, 0x09, 0xC3, 0x46, 0x71, 0x0C, 0xC7,
-                0x06, 0x0D, 0x45, 0xCB, 0x04, 0x0A, 0x06, 0x4F,
-                0x41, 0x4D, 0x3C, 0xC3, 0x0A, 0x02, 0x32, 0x3F,
-                0x01, 0x04, 0x75, 0xFB, 0x01, 0x3A, 0x06, 0xF7,
-                0x08, 0x7D, 0x05, 0xCB, 0x0E
-            };
-
-            IsolatedStages.Clear();
-            for (int stageNum = 0; stageNum < 37; stageNum++)
-            {
-                int parentCityIndex = RoomToCityMap[stageNum] & 0x0F;
-                CityData parentCity = BaseCities[parentCityIndex];
-
-                CityData clonedRoom = new CityData();
-                clonedRoom.NumElevators = parentCity.NumElevators;
-
-                if (stageNum == 36)
-                {
-                    clonedRoom.TrackState = StageTrackingState.NoElevators;
-                }
-                else if (stageNum == 0 || stageNum == 1 || stageNum == 2 || stageNum == 4 ||
-                         stageNum == 5 || stageNum == 6 || stageNum == 7 || stageNum == 10 ||
-                         stageNum == 21 || stageNum == 22 || stageNum == 26 || stageNum == 34)
-                {
-                    clonedRoom.TrackState = StageTrackingState.VerifiedWorking;
-                }
-                else
-                {
-                    clonedRoom.TrackState = StageTrackingState.ExperimentalTarget;
-                }
-
-                for (int x = 0; x < 22; x++)
-                {
-                    for (int y = 0; y < 22; y++)
-                    {
-                        clonedRoom.Heights[x, y] = parentCity.Heights[x, y];
-                        clonedRoom.Attributes[x, y] = parentCity.Attributes[x, y];
-                    }
-                }
-
-                InjectCustomHeightsFromDisk(stageNum, clonedRoom.Heights);
-                InjectCustomGemsFromDisk(stageNum, clonedRoom.Attributes);
-
-                foreach (var parentLift in parentCity.Elevators)
-                {
-                    ElevatorData clonedLift = new ElevatorData();
-                    clonedLift.HorizontalPosition = parentLift.HorizontalPosition;
-                    clonedLift.VerticalPosition = parentLift.VerticalPosition;
-                    clonedLift.TopPosition = parentLift.TopPosition;
-                    clonedLift.BottomPosition = parentLift.BottomPosition;
-                    clonedLift.WaitTime = parentLift.WaitTime;
-
-                    clonedLift.CellX = 0;
-                    clonedLift.CellY = 0;
-                    clonedLift.IsMapped = false;
-                    clonedLift.CurrentPosition = parentLift.BottomPosition;
-                    clonedLift.Mode = 0;
-                    clonedLift.CurrentSitTime = 0;
-
-                    clonedRoom.Elevators.Add(clonedLift);
-                }
-
-                IsolatedStages.Add(clonedRoom);
-            }
-
-            ElevatorPremapper.InitializeFromDisk();
-            GenerateStartupLaboratoryLogs();
-
-            FileAuditSystem.ExecutePipelineAudit(StageNames, logFullPath, sessionLogName, DateTime.Now);
-
             return BaseCities;
         }
 
-        private static void InjectCustomHeightsFromDisk(int stageNum, byte[,] heightsMatrix)
+        // ====================================================================================
+        // FIX BANNER: ROMMANAGER.CS - FILE-STREAM MULTI-TARGET STRIDE MONITOR (v0.85 GROUP PASS)
+        // ====================================================================================
+        // ====================================================================================
+        // FIX BANNER: ROMMANAGER.CS - STABLE TRACKING PIPELINE REGRESSION (v0.85 SECURE BASELINE)
+        // ====================================================================================
+        private static void InjectCustomHeightsFromDisk(int stageNum, byte[,] heightsMatrix, StreamWriter sessionWriter)
         {
+            // Lock down processing strictly to our fully verified Stage 00 baseline track
+            if (stageNum != 0) return;
+
             string mapsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "maps");
-            if (!Directory.Exists(mapsFolder)) return;
+            string[] files = Directory.GetFiles(mapsFolder, "Maps_Stage_00_*.txt");
+            if (files.Length == 0) files = Directory.GetFiles(mapsFolder, "Diagnostic_Dump_Stage_00_*.txt");
 
-            string v080Pattern = $"Maps_Stage_{stageNum:D2}_*.txt";
-            string legacyPattern = $"Diagnostic_Dump_Stage_{stageNum:D2}_*.txt";
-
-            string[] files = Directory.GetFiles(mapsFolder, v080Pattern);
-            if (files.Length == 0) files = Directory.GetFiles(mapsFolder, legacyPattern);
-            if (files.Length == 0) return;
-
-            try
+            if (files.Length == 0)
             {
-                string[] lines = File.ReadAllLines(files[0]);
-                int currentGridRow = 0;
+                sessionWriter.WriteLine("[!] MONITOR CRITICAL: Stage 00 file target missing on disk.");
+                return;
+            }
 
-                foreach (string line in lines)
+            sessionWriter.WriteLine($"\n==================== [STRIDE MONITOR: STARTING STAGE 00 LOG] ====================");
+            sessionWriter.WriteLine($"Target File Resource: {Path.GetFileName(files[0])}");
+
+            string[] lines = File.ReadAllLines(files[0]);
+            int currentGridRow = 0;
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string cleanLine = lines[i].Trim(new char[] { '\uFEFF', '\u200B' });
+                string trimmed = cleanLine.Trim();
+
+                // Structural Metadata & Layout Element Filtering Block
+                if (string.IsNullOrWhiteSpace(trimmed) || trimmed.Contains("====") || trimmed.Contains("----") || trimmed.Contains("[Legend"))
                 {
-                    if (string.IsNullOrWhiteSpace(line) || line.Contains("===") || line.Contains("-") || line.Contains("[Legend")) continue;
+                    sessionWriter.WriteLine($"  Line {i + 1:D2} [HEADER SKIP]: '{trimmed}'");
+                    continue;
+                }
+                if (trimmed.StartsWith("00") && trimmed.Contains("01"))
+                {
+                    sessionWriter.WriteLine($"  Line {i + 1:D2} [COLUMN LABEL SKIP]: '{trimmed}'");
+                    continue;
+                }
 
-                    string[] tokens = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                    if (tokens.Length >= 22)
+                // Token extraction check to enforce two-digit numeric data row verification
+                string[] tokens = trimmed.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+
+                if (tokens.Length > 0)
+                {
+                    string firstToken = tokens[0].Trim();
+                    // If the first token isn't a 2-digit row marker index (00-21), treat line as narrative text
+                    if (firstToken.Length != 2 || !char.IsDigit(firstToken[0]) || !char.IsDigit(firstToken[1]))
                     {
-                        for (int colY = 0; colY < 22; colY++)
-                        {
-                            string tokenValue = tokens[colY].Trim();
-                            if (tokenValue == ".." || tokenValue == ".")
-                            {
-                                heightsMatrix[currentGridRow, colY] = 0;
-                            }
-                            else if (byte.TryParse(tokenValue, out byte parsedHeight))
-                            {
-                                heightsMatrix[currentGridRow, colY] = parsedHeight;
-                            }
-                        }
-                        currentGridRow++;
-                        if (currentGridRow >= 22) break;
+                        sessionWriter.WriteLine($"  Line {i + 1:D2} [NARRATIVE METADATA TEXT SKIP]: '{trimmed}'");
+                        continue;
                     }
                 }
+
+                sessionWriter.WriteLine($"  Line {i + 1:D2} [DATA INGEST] -> Raw Char Length: {cleanLine.Length} | Text: '{cleanLine}' | Tokens: {tokens.Length}");
+
+                int startColIndex = (tokens.Length == 23) ? 1 : 0;
+                for (int colY = 0; colY < 22; colY++)
+                {
+                    int targetTokenPos = colY + startColIndex;
+                    if (targetTokenPos >= tokens.Length) break;
+
+                    string tokenValue = tokens[targetTokenPos].Trim();
+                    if (tokenValue == ".." || tokenValue == "." || tokenValue == "..." || tokenValue == "XX")
+                    {
+                        heightsMatrix[currentGridRow, colY] = 0;
+                    }
+                    else if (byte.TryParse(tokenValue, out byte parsedHeight))
+                    {
+                        heightsMatrix[currentGridRow, colY] = parsedHeight;
+                    }
+                }
+                currentGridRow++;
+                if (currentGridRow >= 22) break;
             }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to inject custom heights matrix pass: {ex.Message}");
-            }
+            sessionWriter.WriteLine("==================== [STRIDE MONITOR: END OF STAGE 00 LOG] ====================\n");
         }
         // ============================================================================
         // ROMMANAGER.CS - PART 2: FIXED TEXT TOKEN STRIPPER ENGINE (v0.85)

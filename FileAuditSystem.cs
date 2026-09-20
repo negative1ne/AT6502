@@ -59,6 +59,7 @@ namespace cSharpRaylib
                     {
                         string currentStageCleanName = (i < stageNames.Length) ? stageNames[i] : "Unknown_Wave";
 
+                        // Restore missing variable declarations to resolve CS0103 scope errors
                         bool hasMapFile = CheckStageFilePresence("maps", $"Maps_Stage_{i:D2}_*.txt");
                         bool hasGemFile = CheckStageFilePresence("gems", $"Gems_Stage_{i:D2}_*.txt");
                         bool hasLiftFile = CheckStageFilePresence("elevator", $"elevators_stage_{i:D2}_*.txt");
@@ -67,10 +68,9 @@ namespace cSharpRaylib
                         if (hasGemFile) _successfulGemsCount++;
                         if (hasLiftFile) _successfulLiftsCount++;
 
-                        string mapIndicator = hasMapFile ? "[✓]" : "[X]";
-                        string gemIndicator = hasGemFile ? "[✓]" : "[X]";
-                        string liftIndicator = hasLiftFile ? "[✓]" : "[X]";
-
+                        // ====================================================================================
+                        // FIX BANNER: FILEAUDITSYSTEM.CS - DETECT LIVE DRIFT ASSERTIONS (v0.85 REPAIR)
+                        // ====================================================================================
                         // v0.81 LOG ENHANCEMENT: Query the exact live terrain height variance count for this stage
                         int liveCellDrift = 0;
                         if (hasMapFile && i < RomManager.IsolatedStages.Count)
@@ -78,8 +78,14 @@ namespace cSharpRaylib
                             liveCellDrift = MapRenderer.GetRomHeightDiscrepancyCount(RomManager.IsolatedStages[i], i);
                         }
 
+                        // Assertive Status Key Flag: Output [X] if any cell variance or text drift is active
+                        string mapIndicator = (hasMapFile && liveCellDrift == 0) ? "[✓]" : "[X]";
+                        string gemIndicator = hasGemFile ? "[✓]" : "[X]";
+                        string liftIndicator = hasLiftFile ? "[✓]" : "[X]";
+
                         // Appends the precise numerical layout variance cell count straight into your timestamped .log sheets
                         logger.WriteLine($"Stage [{i:D2}] -> {currentStageCleanName.PadRight(25)} | Maps: {mapIndicator} ({liveCellDrift:D3} Var) | Gems: {gemIndicator} | Elevators: {liftIndicator}");
+                        // ====================================================================================
                     }
                     // ============================================================================
                     // END FIX BANNER: TELEMETRY LEDGER EXPANSION COMPLETE SUCCESS
