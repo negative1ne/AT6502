@@ -1,6 +1,8 @@
-﻿// ============================================================================
-// FIX BANNER: ROMMANAGER.CS - CORE INITIALIZATION ENGINE UPDATE (v0.85)
-// ============================================================================
+﻿// ====================================================================================
+// FIX BANNER: ROMMANAGER.CS - CONSOLIDATED INITIALIZATION REWRITE (SEGMENT 1 OF 1)
+// LOCATION: REPLACES EVERYTHING FROM LINE 1 DOWN TO CLONEDROOM.TRACKSTATE ASSIGNMENT
+// CONSTRAINTS: COMPACT LINE SAFETY CUTOFF | REMOVES DUPLICATE TABLES AND LOG BLOAT
+// ====================================================================================
 using System;
 using System.IO;
 using System.Text;
@@ -13,13 +15,12 @@ namespace cSharpRaylib
     {
         public static List<CityData> BaseCities = new List<CityData>();
         public static List<CityData> IsolatedStages = new List<CityData>();
-
-        // v0.85 GLOBAL SESSION TIMESTRING: Locks runtime trail files to a single identity block
         public static string ActiveSessionTimestamp { get; private set; } = "";
 
         public static List<CityData> LoadRomDatabase()
         {
-            // Lock down the single-launch identity string immediately on startup execution pass
+            CCUnifiedLogger.Initialize(AppDomain.CurrentDomain.BaseDirectory);
+
             if (string.IsNullOrEmpty(ActiveSessionTimestamp))
             {
                 ActiveSessionTimestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -38,255 +39,134 @@ namespace cSharpRaylib
                 "The End"
             };
 
-            string sessionLogName = $"session_audit_{ActiveSessionTimestamp}.log";
-            string logFullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, sessionLogName);
+            // Muted file-stream context completely silences the old 430KB disk bloat
+            StreamWriter auditWriter = null;
 
-            // Open the single session log stream context for whole pipeline initialization sequence
-            try
+            string romDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "rom");
+            string file1Path = Path.Combine(romDir, "136022-102.1h");
+            string file2Path = Path.Combine(romDir, "136022-101.1f");
+
+            if (!Directory.Exists(romDir) || !File.Exists(file1Path) || !File.Exists(file2Path))
             {
-                using (StreamWriter auditWriter = new StreamWriter(logFullPath, false, Encoding.UTF8))
+                MessageBox.Show("Critical Error: ROM assets missing!", "Viewer Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Environment.Exit(1);
+            }
+
+            byte[] file1 = File.ReadAllBytes(file1Path);
+            byte[] file2 = File.ReadAllBytes(file2Path);
+            byte[] combinedData = new byte[file1.Length + file2.Length];
+            file1.CopyTo(combinedData, 0);
+            file2.CopyTo(combinedData, file1.Length);
+
+            BaseCities.Clear();
+            for (int i = 0; i < 16; i++)
+            {
+                CityData city = new CityData();
+                city.Load(combinedData, i * 0x400);
+                BaseCities.Add(city);
+            }
+
+            byte[] RoomToCityMap = new byte[] {
+                0x00, 0x02, 0x09, 0xC3, 0x46, 0x71, 0x0C, 0xC7,
+                0x06, 0x0D, 0x45, 0xCB, 0x04, 0x0A, 0x06, 0x4F,
+                0x41, 0x4D, 0x3C, 0xC3, 0x0A, 0x02, 0x32, 0x3F,
+                0x01, 0x04, 0x75, 0xFB, 0x01, 0x3A, 0x06, 0xF7,
+                0x08, 0x7D, 0x05, 0xCB, 0x0E
+            };
+
+            IsolatedStages.Clear();
+
+            // ====================================================================================
+            // FIX BANNER: ROMMANAGER.CS - CS1061 STRUCTURAL FIELD SYNCHRONIZATION
+            // LOCATION: REPLACES REGIONS AROUND LINE 85-90 IN THE FOR LOOP PASS
+            // ====================================================================================
+            for (int stageNum = 0; stageNum < 37; stageNum++)
+            {
+                int parentCityIndex = RoomToCityMap[stageNum] & 0x0F;
+                CityData parentCity = BaseCities[parentCityIndex];
+
+                CityData clonedRoom = new CityData();
+
+                // DELETED: clonedRoom.StageID = stageNum; (Removed to prevent CS1061 field conflict)
+                clonedRoom.NumElevators = parentCity.NumElevators;
+                // ====================================================================================
+
+                if (stageNum == 36)
                 {
-                    auditWriter.WriteLine("=== CRYSTAL CASTLES ISOLATED SESSION LOG TRACKER ===");
-                    auditWriter.WriteLine($"Launched: {DateTime.Now}");
-                    auditWriter.WriteLine($"Target File Name: {sessionLogName}\n");
-                    auditWriter.WriteLine("================================================================================");
-                    auditWriter.WriteLine("SUMMARY STATISTICS (ENGINE PIPELINE TRACKING ENGINE):");
-                    auditWriter.WriteLine("================================================================================");
-                    auditWriter.WriteLine("  TOTAL STAGES SCANNED   : 37 / 37");
-                    auditWriter.WriteLine("  PASSED ASSERTIONS      : 37");
-                    auditWriter.WriteLine("  FAILED CODE EXCEPTIONS : 0");
-                    auditWriter.WriteLine("  SYSTEM PASS VERDICT    : 100% SECURE. v0.85 STABLE BASELINE LOCK CONFIRMED.");
-                    auditWriter.WriteLine("================================================================================");
+                    clonedRoom.TrackState = StageTrackingState.NoElevators;
+                }
+                else if (stageNum == 0 || stageNum == 1 || stageNum == 2 || stageNum == 4 ||
+                         stageNum == 5 || stageNum == 6 || stageNum == 7 || stageNum == 10 ||
+                         stageNum == 21 || stageNum == 22 || stageNum == 26 || stageNum == 34)
+                {
+                    clonedRoom.TrackState = StageTrackingState.VerifiedWorking;
+                }
+                else
+                {
+                    clonedRoom.TrackState = StageTrackingState.ExperimentalTarget;
+                }
 
-                    string romDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "rom");
-                    string file1Path = Path.Combine(romDir, "136022-102.1h");
-                    string file2Path = Path.Combine(romDir, "136022-101.1f");
-
-                    if (!Directory.Exists(romDir) || !File.Exists(file1Path) || !File.Exists(file2Path))
+                for (int x = 0; x < 22; x++)
+                {
+                    for (int y = 0; y < 22; y++)
                     {
-                        MessageBox.Show(
-                            "Critical Error: No ROM files found!\n\nPlease ensure your 'rom' folder contains:\n- 136022-102.1h\n- 136022-101.1f",
-                            "Crystal Castles Viewer Error",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Error
-                        );
-                        Environment.Exit(1);
-                    }
-
-                    byte[] file1 = File.ReadAllBytes(file1Path);
-                    byte[] file2 = File.ReadAllBytes(file2Path);
-                    byte[] combinedData = new byte[file1.Length + file2.Length];
-                    file1.CopyTo(combinedData, 0);
-                    file2.CopyTo(combinedData, file1.Length);
-
-                    BaseCities.Clear();
-                    for (int i = 0; i < 16; i++)
-                    {
-                        CityData city = new CityData();
-                        city.Load(combinedData, i * 0x400);
-                        BaseCities.Add(city);
-                    }
-
-                    byte[] RoomToCityMap = new byte[] {
-                        0x00, 0x02, 0x09, 0xC3, 0x46, 0x71, 0x0C, 0xC7,
-                        0x06, 0x0D, 0x45, 0xCB, 0x04, 0x0A, 0x06, 0x4F,
-                        0x41, 0x4D, 0x3C, 0xC3, 0x0A, 0x02, 0x32, 0x3F,
-                        0x01, 0x04, 0x75, 0xFB, 0x01, 0x3A, 0x06, 0xF7,
-                        0x08, 0x7D, 0x05, 0xCB, 0x0E
-                    };
-
-                    IsolatedStages.Clear();
-
-                    // Change loop parameter limit explicitly to 37 to natively allocate the 37th room memory slot
-                    for (int stageNum = 0; stageNum < 37; stageNum++)
-                    {
-                        int parentCityIndex = RoomToCityMap[stageNum] & 0x0F;
-                        CityData parentCity = BaseCities[parentCityIndex];
-
-                        CityData clonedRoom = new CityData();
-                        clonedRoom.NumElevators = parentCity.NumElevators;
-
-                        if (stageNum == 36)
-                        {
-                            clonedRoom.TrackState = StageTrackingState.NoElevators;
-                        }
-                        else if (stageNum == 0 || stageNum == 1 || stageNum == 2 || stageNum == 4 ||
-                                 stageNum == 5 || stageNum == 6 || stageNum == 7 || stageNum == 10 ||
-                                 stageNum == 21 || stageNum == 22 || stageNum == 26 || stageNum == 34)
-                        {
-                            clonedRoom.TrackState = StageTrackingState.VerifiedWorking;
-                        }
-                        else
-                        {
-                            clonedRoom.TrackState = StageTrackingState.ExperimentalTarget;
-                        }
-
-                        for (int x = 0; x < 22; x++)
-                        {
-                            for (int y = 0; y < 22; y++)
-                            {
-                                clonedRoom.Heights[x, y] = parentCity.Heights[x, y];
-                                clonedRoom.Attributes[x, y] = parentCity.Attributes[x, y];
-                            }
-                        }
-
-                        // ============================================================================
-                        // FIX BANNER: ROMMANAGER.CS - v0.90 UNIFIED SINGLE-PASS ROUTING INTEGRATION
-                        // ============================================================================
-                        string targetExportFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "unified_data");
-                        string formattedName = StageNames[stageNum].Replace(" ", "_").Replace("'", "").ToUpper();
-                        string outFileName = $"STAGE_{stageNum:D2}_{formattedName}.txt";
-                        string fullUnifiedPath = Path.Combine(targetExportFolder, outFileName);
-
-                        // Invoke our new v0.90 State-Switch Ingestion Loop
-                        var ingestedProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(fullUnifiedPath, auditWriter);
-
-                        // Sync memory layer data properties natively
-                        clonedRoom.Heights = ingestedProfile.Heights;
-                        clonedRoom.Gems = ingestedProfile.Gems;
-
-                        if (Enum.TryParse(ingestedProfile.TrackState.Replace("StageTrackingState.", ""), out StageTrackingState parsedState))
-                        {
-                            clonedRoom.TrackState = parsedState;
-                        }
-
-                        // Map extracted v0.90 elevator elements safely back to old structure variables to preserve downstream loops
-                        clonedRoom.Elevators.Clear();
-                        for (int e = 0; e < ingestedProfile.Lifts.Count; e++)
-                        {
-                            var parsedLift = ingestedProfile.Lifts[e];
-                            ElevatorData clonedLift = new ElevatorData
-                            {
-                                CellX = parsedLift.CellX,
-                                CellY = parsedLift.CellY,
-                                BottomPosition = parsedLift.BottomH,
-                                TopPosition = parsedLift.TopH,
-                                CurrentPosition = parsedLift.BottomH,
-                                IsMapped = true,
-                                Mode = 0,
-                                CurrentSitTime = 0
-                            };
-                            clonedRoom.Elevators.Add(clonedLift);
-                        }
-                        // ============================================================================
-
-                        ElevatorPremapper.ApplyOverrides(stageNum, clonedRoom.Elevators);
-                        IsolatedStages.Add(clonedRoom);
-                    }
-
-                    ElevatorPremapper.InitializeFromDisk();
-                    GenerateStartupLaboratoryLogs();
-
-                    auditWriter.WriteLine("\n================================================================================");
-                    auditWriter.WriteLine("=== CRYSTAL CASTLES v0.85 INGESTION ENGINE MASTER FILE AUDIT REPORT ===");
-                    auditWriter.WriteLine($"Execution Timestamp: {DateTime.Now}");
-                    auditWriter.WriteLine("================================================================================");
-                    auditWriter.WriteLine("[Status Key: [✓] = Custom Disk Asset Verified | [X] = Fallback ROM Data Streams]");
-                    auditWriter.WriteLine("--------------------------------------------------------------------------------");
-
-                    for (int i = 0; i < 37; i++)
-                    {
-                        string currentStageCleanName = (i < StageNames.Length) ? StageNames[i] : "Unknown_Wave";
-
-                        bool hasMapFile = (i == 0 || i == 3 || i == 7 || i == 11 || i == 15 || i == 27);
-                        int liveCellDrift = 0;
-
-                        if (hasMapFile)
-                        {
-                            liveCellDrift = MapRenderer.GetRomHeightDiscrepancyCount(IsolatedStages[i], i);
-                        }
-
-                        string mapIndicator = (hasMapFile && liveCellDrift == 0) ? "[✓]" : "[X]";
-                        auditWriter.WriteLine($"Stage [{i:D2}] -> {currentStageCleanName.PadRight(25)} | Maps: {mapIndicator} ({liveCellDrift:D3} Var)");
-                    }
-                    auditWriter.WriteLine("--------------------------------------------------------------------------------");
-                    auditWriter.WriteLine("================================================================================");
-
-                    // ============================================================================
-                    // FIX BANNER: ROMMANAGER.CS - v0.90 STANDARDIZED DATA EXPORTER INJECTION (v0.90)
-                    // ============================================================================
-                    try
-                    {
-                        string targetExportFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "unified_data");
-                        Directory.CreateDirectory(targetExportFolder);
-
-                        for (int s = 0; s < IsolatedStages.Count && s < StageNames.Length; s++)
-                        {
-                            CityData romStage = IsolatedStages[s];
-                            string formattedName = StageNames[s].Replace(" ", "_").Replace("'", "").ToUpper();
-                            string outFileName = $"STAGE_{s:D2}_{formattedName}.txt";
-                            string fullOutPath = Path.Combine(targetExportFolder, outFileName);
-
-                            StringBuilder fileBuilder = new StringBuilder();
-
-                            fileBuilder.AppendLine("// ============================================================================");
-                            fileBuilder.AppendLine($"// CRYSTAL CASTLES UNIFIED LEVEL ENGINE v0.90 CONFIGURATION SPECIFICATION");
-                            fileBuilder.AppendLine($"// FILE NAME TARGET: {outFileName}");
-                            fileBuilder.AppendLine("// ============================================================================");
-                            fileBuilder.AppendLine("[METADATA]");
-                            fileBuilder.AppendLine($"StageID={s:D2}");
-                            fileBuilder.AppendLine($"StageName={StageNames[s]}");
-
-                            string stateTag = (s == 0 || s == 15 || s == 27) ? "StageTrackingState.VerifiedWorking" : "StageTrackingState.ExperimentalTarget";
-                            if (s == 36) stateTag = "StageTrackingState.NoElevators";
-                            fileBuilder.AppendLine($"TrackState={stateTag}");
-                            fileBuilder.AppendLine("// ============================================================================\n");
-
-                            fileBuilder.AppendLine("[ELEVATORS]");
-                            if (romStage.Elevators.Count == 0 || romStage.NumElevators == 0)
-                            {
-                                fileBuilder.AppendLine("[NONE]");
-                            }
-                            else
-                            {
-                                for (int e = 0; e < romStage.Elevators.Count; e++)
-                                {
-                                    var lift = romStage.Elevators[e];
-                                    fileBuilder.AppendLine($"LIFT_{e}: RowX={lift.CellX:D2} | ColY={lift.CellY:D2} | BottomH={lift.BottomPosition:D3} | TopH={lift.TopPosition:D3} | Direction=UP");
-                                }
-                            }
-                            fileBuilder.AppendLine();
-
-                            fileBuilder.AppendLine("[GEMS]");
-                            fileBuilder.AppendLine("     00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21");
-                            for (int r = 0; r < 22; r++)
-                            {
-                                fileBuilder.Append($"{r:D2}   ");
-                                for (int c = 0; c < 22; c++)
-                                {
-                                    fileBuilder.Append(romStage.Gems[r, c] ? "*  " : ".  ");
-                                }
-                                fileBuilder.AppendLine();
-                            }
-                            fileBuilder.AppendLine();
-
-                            fileBuilder.AppendLine("[MAP]");
-                            fileBuilder.AppendLine("    00  01  02  03  04  05  06  07  08  09  10  11  12  13  14  15  16  17  18  19  20  21");
-                            for (int r = 0; r < 22; r++)
-                            {
-                                fileBuilder.Append($"{r:D2}  ");
-                                for (int c = 0; c < 22; c++)
-                                {
-                                    int h = romStage.Heights[r, c];
-                                    fileBuilder.Append(h == 0 ? "... " : $"{h:D3} ");
-                                }
-                                fileBuilder.AppendLine();
-                            }
-
-                            File.WriteAllText(fullOutPath, fileBuilder.ToString());
-                        }
-                        Console.WriteLine("[PIPELINE MONITOR] v0.90 Baseline Generation Utility executed successfully. 37 master sheets written.");
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Automation baseline exporter fault: {ex.Message}");
+                        clonedRoom.Heights[x, y] = parentCity.Heights[x, y];
+                        clonedRoom.Attributes[x, y] = parentCity.Attributes[x, y];
                     }
                 }
+
+                // ============================================================================
+                // FIX BANNER: ROMMANAGER.CS - v0.90 UNIFIED SINGLE-PASS ROUTING INTEGRATION
+                // ============================================================================
+                string targetExportFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "unified_data");
+                string formattedName = StageNames[stageNum].Replace(" ", "_").Replace("'", "").ToUpper();
+                string outFileName = $"STAGE_{stageNum:D2}_{formattedName}.txt";
+                string fullUnifiedPath = Path.Combine(targetExportFolder, outFileName);
+
+                // Invoke our new v0.90 State-Switch Ingestion Loop (auditWriter passed as null)
+                var ingestedProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(fullUnifiedPath, null);
+
+                // Sync memory layer data properties natively
+                clonedRoom.Heights = ingestedProfile.Heights;
+                clonedRoom.Gems = ingestedProfile.Gems;
+
+                if (Enum.TryParse(ingestedProfile.TrackState.Replace("StageTrackingState.", ""), out StageTrackingState parsedState))
+                {
+                    clonedRoom.TrackState = parsedState;
+                }
+
+                // Map extracted v0.90 elevator elements safely back to old structure variables
+                clonedRoom.Elevators.Clear();
+                for (int e = 0; e < ingestedProfile.Lifts.Count; e++)
+                {
+                    var parsedLift = ingestedProfile.Lifts[e];
+                    ElevatorData clonedLift = new ElevatorData
+                    {
+                        CellX = parsedLift.CellX,
+                        CellY = parsedLift.CellY,
+                        BottomPosition = parsedLift.BottomH,
+                        TopPosition = parsedLift.TopH,
+                        CurrentPosition = parsedLift.BottomH,
+                        IsMapped = true,
+                        Mode = 0,
+                        CurrentSitTime = 0
+                    };
+                    clonedRoom.Elevators.Add(clonedLift);
+                }
+                // ============================================================================
+
+                ElevatorPremapper.ApplyOverrides(stageNum, clonedRoom.Elevators);
+                IsolatedStages.Add(clonedRoom);
             }
-            catch (Exception) { }
+
+            ElevatorPremapper.InitializeFromDisk();
+            GenerateStartupLaboratoryLogs();
 
             return IsolatedStages;
         }
+        // ====================================================================================
+        // END OF SEGMENT 1
+        // ====================================================================================
 
 
         public static void GenerateStartupLaboratoryLogs()

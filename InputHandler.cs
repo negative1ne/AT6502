@@ -1,57 +1,26 @@
 ﻿// ====================================================================================
-// FIX BLOCK 1: INPUTHANDLER.CS - FIELDS ALLOCATION & PERSISTENT LEVEL-RESTORE HOOK
-// LOCATION: TARGET ALL SOURCE MATERIAL FROM LINE 12 DOWN TO LINE 45
+// REBUILD STEP 3 - PART 1: INPUTHANDLER.CS (INPUT MECHANICS & HOTKEY REGISTRY)
+// LOCATION: OVERWRITE EVERYTHING FROM LINE 1 DOWN TO THE END OF HANDLEKEYS MODULE
+// CONSTRAINTS: COMPACT LINE OVERRUN PREVENTER | ZERO EXTERNAL DISK WRITE NOISE
 // ====================================================================================
 using Raylib_cs;
-using System.Numerics;
+using System;
+using System.IO;
 using System.Text;
+using System.Numerics;
 
-// ====================================================================================
-// DIAGNOSTIC PART 1: INPUTHANDLER.CS - FIELDS, KEY-INTERCEPT & EVENT LOGGER ENGINE
-// LOCATION: TARGET REGIONS FROM LINE 12 DOWN TO THE END OF THE HANDLEKEYS FUNCTION
-// ====================================================================================
 namespace cSharpRaylib
 {
     public static class InputHandler
     {
         private static Vector2 _probeMouseScreenPos;
         private static bool _lastIs3DMode = false;
-        private static int _globalPointIncrementer = 0;
-        private static int _lastRecordedStageId = -1;
 
         public static int ProbeGridX { get; private set; } = -1;
         public static int ProbeGridY { get; private set; } = -1;
         public static bool IsProbeInsideWorkspace { get; private set; } = false;
         public static bool IsProbeLockedToGrid { get; private set; } = false;
         public static bool IsStageCommitted { get; private set; } = false;
-
-        private static bool[,,] LevelMarkerArchive = new bool[37, 22, 22];
-        public static bool[] StageCommitStatus { get; private set; } = new bool[37];
-
-        // NEW v0.90 FOCUS-EVENT TELEMETRY TRACKER: Disables 430KB noise, captures raw state flips
-        private static void LogDiagnosticEvent(string eventDescription)
-        {
-            try
-            {
-                string filename = $"session_audit_{RomManager.ActiveSessionTimestamp}.log";
-                string fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
-                using (StreamWriter sw = new StreamWriter(fullPath, true, Encoding.UTF8))
-                {
-                    sw.WriteLine($"[DIAGNOSTIC EVENT - {DateTime.Now:HH:mm:ss.fff}] {eventDescription}");
-                }
-            }
-            catch { }
-        }
-
-        private static int CountActiveRoomMarkers(int roomID)
-        {
-            if (roomID < 0 || roomID >= 37) return 0;
-            int count = 0;
-            for (int x = 0; x < 22; x++)
-                for (int y = 0; y < 22; y++)
-                    if (LevelMarkerArchive[roomID, x, y]) count++;
-            return count;
-        }
 
         public static void HandleKeys(
             ref int currentRoom, ref bool is3DMode, ref float globalScale,
@@ -60,27 +29,8 @@ namespace cSharpRaylib
             ref bool displayPathOverlays, ref bool displayGems, ref bool showDanLegacyOverlay,
             ref bool invertBackground, ref bool exportTextFlag, ref bool trigger3DLabFlag)
         {
-            if (Raylib.IsKeyPressed(KeyboardKey.Right) || Raylib.IsKeyPressed(KeyboardKey.Left))
-            {
-                int oldRoom = currentRoom;
-                int preExitCount = CountActiveRoomMarkers(oldRoom);
-
-                if (Raylib.IsKeyPressed(KeyboardKey.Right)) currentRoom = (currentRoom + 1) % 37;
-                else currentRoom = (currentRoom - 1 + 37) % 37;
-
-                IsStageCommitted = StageCommitStatus[currentRoom];
-                LogDiagnosticEvent($"ROOM_MIGRATION_START: Swapping from Room [{oldRoom:D2}] (Cached Count: {preExitCount}) -> Room [{currentRoom:D2}]");
-
-                RestoreActiveLevelMarkers(currentRoom);
-
-                int postHydrateCount = 0;
-                for (int x = 0; x < 22; x++)
-                    for (int y = 0; y < 22; y++)
-                        if (Program.MainLoggedCells[x, y]) postHydrateCount++;
-
-                LogDiagnosticEvent($"ROOM_MIGRATION_END: Arrived at Room [{currentRoom:D2}]. Canvas Active 'L' Count: {postHydrateCount} | Archive Cache Count: {CountActiveRoomMarkers(currentRoom)}");
-                return;
-            }
+            if (Raylib.IsKeyPressed(KeyboardKey.Right)) { currentRoom = (currentRoom + 1) % 37; IsStageCommitted = false; }
+            if (Raylib.IsKeyPressed(KeyboardKey.Left)) { currentRoom = (currentRoom - 1 + 37) % 37; IsStageCommitted = false; }
 
             if (Raylib.IsKeyDown(KeyboardKey.KpAdd)) globalScale += 0.02f;
             if (Raylib.IsKeyDown(KeyboardKey.KpSubtract)) globalScale -= 0.02f;
@@ -93,15 +43,8 @@ namespace cSharpRaylib
             if (Raylib.IsKeyPressed(KeyboardKey.G)) { displayGems = !displayGems; }
             if (Raylib.IsKeyPressed(KeyboardKey.V)) { invertBackground = !invertBackground; }
 
-            if (Raylib.IsKeyPressed(KeyboardKey.C))
-            {
-                if (currentRoom >= 0 && currentRoom < 37)
-                {
-                    StageCommitStatus[currentRoom] = !StageCommitStatus[currentRoom];
-                    IsStageCommitted = StageCommitStatus[currentRoom];
-                    LogDiagnosticEvent($"COMMIT_KEY_TRIGGERED: Room [{currentRoom:D2}] Write-Lock Flag Set To [{IsStageCommitted.ToString().ToUpper()}] | Total Logged Active Elements: {CountActiveRoomMarkers(currentRoom)}");
-                }
-            }
+            // v0.90 Commit Toggle Hook: Toggles write locks cleanly in core variables
+            if (Raylib.IsKeyPressed(KeyboardKey.C)) { IsStageCommitted = !IsStageCommitted; }
 
             trigger3DLabFlag = false;
             exportTextFlag = false;
@@ -125,36 +68,18 @@ namespace cSharpRaylib
                 globalScale = 1.0f; heightMultiplier = 1.8f; panOffsetX = 0; panOffsetY = 0;
                 rotationAngle = 0; tiltFactor = 1.0f; renderStyleMode = 0;
                 displayPathOverlays = false; displayGems = true; showDanLegacyOverlay = false;
-                invertBackground = false; IsProbeLockedToGrid = false;
-                if (currentRoom >= 0 && currentRoom < 37) StageCommitStatus[currentRoom] = false;
-                IsStageCommitted = false;
-                LogDiagnosticEvent($"RESET_VIEW_EXECUTION: Repositioned coordinates for Room [{currentRoom:D2}] to baseline standards.");
+                invertBackground = false; IsProbeLockedToGrid = false; IsStageCommitted = false;
             }
         }
         // ====================================================================================
         // END OF DIAGNOSTIC PART 1
         // ====================================================================================
 
-        // ====================================================================================
-        // DIAGNOSTIC PART 2: INPUTHANDLER.CS - RESTORE HOOK & DUAL-MIRROR MOUSE CLICK LOGGER
-        // LOCATION: TARGET REGIONS FROM LINE 86 DOWN TO THE 2D VIEWPORT CELL CALCULATION LIMITS
-        // ====================================================================================
-        private static void RestoreActiveLevelMarkers(int targetRoom)
-        {
-            if (targetRoom < 0 || targetRoom >= 37) return;
-            LogDiagnosticEvent($"ARCHIVE_RESTORATION_PASS: Hydrating active drawing canvas memory layer for Room [{targetRoom:D2}].");
-            for (int x = 0; x < 22; x++)
-            {
-                for (int y = 0; y < 22; y++)
-                {
-                    Program.MainLoggedCells[x, y] = LevelMarkerArchive[targetRoom, x, y];
-                }
-            }
-        }
 
         // ====================================================================================
-        // FIX BANNER: INPUTHANDLER.CS - DIRECT MOUSE CLICK PIPELINE CORRECTION
-        // LOCATION: REPLACES SUB-CONDITIONAL CLICK BLOCK IN TrackMouseProbeCoordinates (APPROX LINE 105)
+        // REBUILD STEP 3 - PART 2: INPUTHANDLER.CS (PURE MOUSE PROBE CAPTURE LOGIC)
+        // LOCATION: REPLACES MOUSE INITIALIZATION AND CROSSHAIR LOCK PASSES IN THE INNER HOOKS
+        // CONSTRAINTS: NO CACHED DISK EVENT WRITES | ENFORCES RIGID CANVASES BOUND CLAMPING
         // ====================================================================================
         public static void TrackMouseProbeCoordinates(float screenX, float screenY,
             float scale, int offsetX, int offsetY, int rotationAngle, float tiltFactor,
@@ -162,45 +87,76 @@ namespace cSharpRaylib
         {
             if (is3DMode != _lastIs3DMode) { _lastIs3DMode = is3DMode; return; }
 
-            // Restored direct-action click pipeline: Decouples target locking flags from core data toggles
+            // Pure coordinate locking toggle pass: Completely free of volatile file writes
             if (Raylib.IsMouseButtonPressed(MouseButton.Left) && !IsStageCommitted)
             {
                 if (IsProbeInsideWorkspace || IsProbeLockedToGrid)
                 {
-                    if (activeCity != null)
-                    {
-                        bool preClickState = Program.MainLoggedCells[ProbeGridX, ProbeGridY];
-
-                        // Execute synchronized multi-stage retention writes immediately on click pass
-                        Program.MainLoggedCells[ProbeGridX, ProbeGridY] = !Program.MainLoggedCells[ProbeGridX, ProbeGridY];
-                        LevelMarkerArchive[currentRoom, ProbeGridX, ProbeGridY] = Program.MainLoggedCells[ProbeGridX, ProbeGridY];
-
-                        LogDiagnosticEvent($"MOUSE_CLICK_EVENT: Room [{currentRoom:D2}] Grid Target [X:{ProbeGridX:D2}, Y:{ProbeGridY:D2}] Toggled. " +
-                                           $"CanvasState: ({preClickState.ToString().ToUpper()} -> {Program.MainLoggedCells[ProbeGridX, ProbeGridY].ToString().ToUpper()}) | " +
-                                           $"ArchiveState: ({LevelMarkerArchive[currentRoom, ProbeGridX, ProbeGridY].ToString().ToUpper()}) | " +
-                                           $"Room Persistent Count: {CountActiveRoomMarkers(currentRoom)}");
-                    }
-
-                    // Toggle the viewport positioning lock cleanly after data assignment completes
                     IsProbeLockedToGrid = !IsProbeLockedToGrid;
                 }
             }
 
             if (IsProbeLockedToGrid) return;
+            _probeMouseScreenPos.X = screenX; _probeMouseScreenPos.Y = screenY;
+            if (activeCity == null) return;
+
+            if (!is3DMode)
+            {
+                int gridCellY = ((int)screenX - 380) >= 0 ? ((int)screenX - 380) / 16 : -1;
+                int gridCellX = ((int)screenY - 150) >= 0 ? ((int)screenY - 150) / 16 : -1;
+
+                if (gridCellX >= 0 && gridCellX < 22 && gridCellY >= 0 && gridCellY < 22)
+                {
+                    ProbeGridX = Math.Clamp(gridCellX, 0, 21); ProbeGridY = Math.Clamp(gridCellY, 0, 21); IsProbeInsideWorkspace = true;
+                }
+                else { ProbeGridX = -1; ProbeGridY = -1; IsProbeInsideWorkspace = false; }
+                return;
+            }
+
+            int originX = 500 + offsetX; int originY = 340 + offsetY;
+            float closestDistance = float.MaxValue; int bestX = -1; int bestY = -1;
+            double rad = rotationAngle * Math.PI / 180.0;
+
+            for (int x = 0; x < 22; x++)
+            {
+                for (int y = 0; y < 22; y++)
+                {
+                    double cx = x - 11.0; double cy = y - 11.0;
+                    float rotX = (float)(cx * Math.Cos(rad) - cy * Math.Sin(rad)) + 11f;
+                    float rotY = (float)(cx * Math.Sin(rad) + cy * Math.Cos(rad)) + 11f;
+                    float cellProjectedX = originX - (rotX * 12 * scale) + (rotY * 12 * scale);
+                    float cellProjectedY = originY + (rotX * 6 * scale * tiltFactor) + (rotY * 6 * scale * tiltFactor) - (activeCity.Heights[x, y] * 1.8f * scale);
+                    float currentDist = ((screenX - cellProjectedX) * (screenX - cellProjectedX)) + ((screenY - cellProjectedY) * (screenY - cellProjectedY));
+
+                    if (currentDist < closestDistance) { closestDistance = currentDist; bestX = x; bestY = y; }
+                }
+            }
+
+            if (bestX != -1 && bestY != -1 && closestDistance < (32.0f * scale * 32.0f * scale))
+            {
+                ProbeGridX = Math.Clamp(bestX, 0, 21); ProbeGridY = Math.Clamp(bestY, 0, 21); IsProbeInsideWorkspace = true;
+            }
+            else { ProbeGridX = -1; ProbeGridY = -1; IsProbeInsideWorkspace = false; }
         }
-// ====================================================================================
-// END OF DIRECT MOUSE CLICK PIPELINE CORRECTION
-// ====================================================================================
-// ============================================================================
-// FIX BANNER: INPUTHANDLER.CS - DRAWCONTROLOVERLAY FUNCTION (PART 1 OF 2)
-// CONSTRAINTS: COMPACT LINE SAFETY CUTOFF PROTECTION | MAX 65 LINES
-// ============================================================================
+        // ====================================================================================
+        // END OF PART 2
+        // ====================================================================================
+        // ====================================================================================
+        // END OF DIRECT MOUSE CLICK PIPELINE CORRECTION
+        // ====================================================================================
+        // ============================================================================
+        // REBUILD STEP 3 - PART 3: INPUTHANDLER.CS (ANCHOR STACKING HUD ENGINE)
+        // LOCATION: REPLACES DRAWCONTROLOVERLAY ENTRY ROUTINE DOWN TO FILE END
+        // CONSTRAINTS: COMPACT LINE OVERRUN SAFETY | DYNAMIC DUAL HIGHLIGHT TOGGLES
+        // ============================================================================
         public static void DrawControlOverlay(bool is3DMode, int renderStyle, bool pathsOn, bool gemsOn, bool legacyOverlayOn,
         bool isInverted, float globalScale, int currentRoom, string stageName, int totalElevators, Raylib_cs.Color[] activeTheme)
         {
             Raylib_cs.Color cardBg = isInverted ? new Raylib_cs.Color(230, 230, 230, 220) : new Raylib_cs.Color(20, 20, 20, 200);
             Raylib_cs.Color cardBorder = isInverted ? Raylib_cs.Color.DarkGray : Raylib_cs.Color.LightGray;
             Raylib_cs.Color textClr = isInverted ? Raylib_cs.Color.Black : Raylib_cs.Color.RayWhite;
+
+            // Global Layout Anchor point calculation variables
             Vector2 guiAnchor = new Vector2(15, 10);
 
             Raylib.DrawText("ccSharpRaylib [v0.90]", (int)guiAnchor.X, (int)guiAnchor.Y, 20, textClr);
@@ -208,15 +164,13 @@ namespace cSharpRaylib
 
             if (activeTheme != null && activeTheme.Length >= 3)
             {
-                // Un-indexed array loops to natively separate and display all 3 distinct stage palette chips
                 Raylib.DrawRectangle((int)guiAnchor.X, (int)guiAnchor.Y + 70, 40, 20, activeTheme[0]);
                 Raylib.DrawRectangle((int)guiAnchor.X + 50, (int)guiAnchor.Y + 70, 40, 20, activeTheme[1]);
                 Raylib.DrawRectangle((int)guiAnchor.X + 100, (int)guiAnchor.Y + 70, 40, 20, activeTheme[2]);
             }
             Raylib.DrawText("Active Layout Palette Matrix Slots (v0.90)", (int)guiAnchor.X + 160, (int)guiAnchor.Y + 73, 14, isInverted ? Raylib_cs.Color.DarkGray : Raylib_cs.Color.LightGray);
 
-            int box1Y = (int)guiAnchor.Y + 105;
-            int box1Height = is3DMode ? 265 : 240;
+            int box1Y = (int)guiAnchor.Y + 105; int box1Height = is3DMode ? 265 : 240;
             Raylib.DrawRectangle((int)guiAnchor.X, box1Y, 210, box1Height, cardBg);
             Raylib.DrawRectangleLines((int)guiAnchor.X, box1Y, 210, box1Height, cardBorder);
 
@@ -227,13 +181,13 @@ namespace cSharpRaylib
             Raylib.DrawText($"P          : Pathways [{(pathsOn ? "ON" : "OFF")}]", (int)guiAnchor.X + 10, tY + 58, 11, textClr);
             Raylib.DrawText($"G          : Gems     [{(gemsOn ? "ON" : "OFF")}]", (int)guiAnchor.X + 10, tY + 76, 11, textClr);
             Raylib.DrawText($"V          : Palette Mode Toggle", (int)guiAnchor.X + 10, tY + 96, 11, Raylib_cs.Color.Yellow);
-            Raylib.DrawText($"C          : Commit Stage Data", (int)guiAnchor.X + 10, tY + 114, 11, Raylib_cs.Color.Lime);
-            Raylib.DrawText($"+ / -      : Zoom [{globalScale:F2}]", (int)guiAnchor.X + 10, tY + 132, 11, textClr);
 
-            // ============================================================================
-            // FIX BANNER: INPUTHANDLER.CS - DRAWCONTROLOVERLAY FUNCTION (PART 2 OF 2)
-            // CONSTRAINTS: COMPACT LINE SAFETY CUTOFF PROTECTION | MAX 80 LINES
-            // ============================================================================
+            // Dynamic Brightness Highlighting Switch: Shift from Dim Gray to Bright Neon Green instantly
+            Raylib_cs.Color commitStatusColor = IsStageCommitted ? Raylib_cs.Color.Lime : Raylib_cs.Color.DarkGray;
+            string commitLabelText = IsStageCommitted ? "C          : Commit Data [LOCKED]" : "C          : Commit Data [OFF]";
+            Raylib.DrawText(commitLabelText, (int)guiAnchor.X + 10, tY + 114, 11, commitStatusColor);
+
+            Raylib.DrawText($"+ / -      : Zoom [{globalScale:F2}]", (int)guiAnchor.X + 10, tY + 132, 11, textClr);
             Raylib.DrawText($"E          : Queue Output", (int)guiAnchor.X + 10, tY + 150, 11, Raylib_cs.Color.Gold);
             Raylib.DrawText($"R          : Reset View", (int)guiAnchor.X + 10, tY + 168, 11, textClr);
 
@@ -241,17 +195,12 @@ namespace cSharpRaylib
             if (dRoom == null) return;
             int drift = MapRenderer.GetRomHeightDiscrepancyCount(dRoom, currentRoom);
 
-            // ============================================================================
-            // FIX BANNER: INPUTHANDLER.CS - ELEVATOR LIST INDEX TYPE RE-MAPPING
-            // LOCATION: REPLACES BOX 2 HUD LINES IN DrawControlOverlay (SEGMENT 1 OF 1)
-            // ============================================================================
             int box2Y = box1Y + box1Height + 15;
             Raylib.DrawRectangle((int)guiAnchor.X, box2Y, 210, 100, cardBg);
             Raylib.DrawRectangleLines((int)guiAnchor.X, box2Y, 210, 100, cardBorder);
             Raylib.DrawText("LIVE REPOSITORY MONITOR", (int)guiAnchor.X + 10, box2Y + 7, 12, Raylib_cs.Color.Gold);
             Raylib.DrawText($"  * Layout Drift: {drift} cells", (int)guiAnchor.X + 10, box2Y + 27, 11, drift == 0 ? Raylib_cs.Color.Lime : Raylib_cs.Color.Yellow);
 
-            // Explicitly address index [0] to extract values from the collection instance correctly
             if (dRoom.Elevators.Count > 0)
             {
                 Raylib_cs.Color debugColor = dRoom.Elevators[0].IsMapped ? Raylib_cs.Color.Lime : Raylib_cs.Color.Red;
