@@ -83,7 +83,10 @@ namespace cSharpRaylib
                     {
                         Raylib.DrawText("L", posX + 4, posY + 1, 12, Color.Orange);
                     }
-                    else if (displayGems)
+                    // ============================================================================
+                    // FIX BANNER: MAPRENDERER.CS - 2D BLUEPRINT GEM REFERENCE UNLEASHED (v0.85)
+                    // ============================================================================
+                    else if (displayGems && activeCity.Gems[x, y])
                     {
                         DrawVerifiedGemMarker2D(x, y, cellAttr, romAttributes, posX, posY);
                     }
@@ -156,7 +159,10 @@ namespace cSharpRaylib
                         );
                     }
 
-                    if (displayGems && !isElevatorCell)
+                    // ============================================================================
+                    // FIX BANNER: MAPRENDERER.CS - 3D WORKSPACE GEM REFERENCE UNLEASHED (v0.85)
+                    // ============================================================================
+                    if (displayGems && !isElevatorCell && activeCity.Gems[x, y])
                     {
                         DrawVerifiedGemMarker3D(x, y, currentHeight, scale, heightScale, offsetX, offsetY, rotationAngle, tiltFactor, cellAttr, romAttributes);
                     }

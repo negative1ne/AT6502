@@ -152,9 +152,16 @@ namespace cSharpRaylib
                     ref invertBackground, ref triggerTextExport, ref trigger3DLabWindow
                 );
 
+                // ====================================================================================
+                // FIX BANNER: PROGRAM.CS - BIND VIEWPORT GRAPHICS TO SINGLE SOURCE OF TRUTH (v0.85 SUCCESS)
+                // ====================================================================================
                 int cityIndex = RoomToCityMap[currentRoom] & 0x0F;
-                CityData activeCity = cities[cityIndex];
+
+                // FORCE POINTER ALIGNMENT: Point your rendering engine directly to the unified ingestion array
+                CityData activeCity = RomManager.IsolatedStages[currentRoom];
+
                 string currentStageName = (currentRoom < StageNames.Length) ? StageNames[currentRoom] : "Unknown Castle";
+                // ====================================================================================
 
                 // ====================================================================================
                 // COMPACT IN-MEMORY HOOK: SEAMLESS DATA ENGAGEMENT (v0.85)
@@ -171,24 +178,18 @@ namespace cSharpRaylib
                         string liftFile = Path.Combine(baseDir, "data", "elevator", $"elevators_stage_{currentRoom:D2}_{currentStageName.Replace(" ", "_")}.txt");
 
                         // ====================================================================================
-                        // FIX BANNER: RUNTIME IN-MEMORY HOOK - ATTEMPT 3 DECOUPLED AUDIT PIPELINE (v0.85)
+                        // FIX BANNER: RUNTIME IN-MEMORY HOOK - ACTIVATING DYNAMIC GEMS UNIFICATION (v0.85 SUCCESS)
                         // ====================================================================================
                         if (File.Exists(gemFile))
                         {
                             // Step 1: Ingest the spatial grid dots safely into a localized layout variable
                             bool[,] freshlyLoadedGems = CrystalCastles.DataEngine.CCUnifiedParser.LoadGemFile(gemFile, out _);
 
-                            // Step 2: Temporarily bypass direct structure assignment to guarantee a clean build
-                            // TODO: Re-engage this link once the exact array name inside CityData is identified.
-                            // isolatedTargetRoom.Gems = freshlyLoadedGems; 
+                            // Step 2: CONNECT UNIFIED REFERENCE MATRIX - Pass parsed tokens directly to your new memory slot
+                            isolatedTargetRoom.Gems = freshlyLoadedGems;
                         }
-                        // ====================================================================================
-                        if (File.Exists(liftFile))
-                        {
-                            // Section 3 hook: Overwrites active room elevators collection variables dynamically
-                            var loadedLifts = CrystalCastles.DataEngine.CCUnifiedParser.LoadElevatorFile(liftFile);
-                            // Translate entities back to your active system list format as needed here
-                        }
+                        // ==================================================================================== 
+                    
 
                         ElevatorPremapper.ApplyOverrides(currentRoom, isolatedTargetRoom.Elevators);
                         Array.Clear(MainLoggedCells, 0, MainLoggedCells.Length);

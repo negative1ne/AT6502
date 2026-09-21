@@ -14,13 +14,20 @@ namespace cSharpRaylib
         ExperimentalTarget // 19 Levels targeted for height normalization calibrations
     }
 
+    // ============================================================================
+    // FIX BANNER: MAPSTRUCTURES.CS - CITYDATA MEMORY PROPERTIES EXPANSION (v0.85)
+    // ============================================================================
     public class CityData
     {
-        // FIXED: Explicitly allocate the 22x22 dimensional grid arrays in system memory
         public byte[,] Heights = new byte[22, 22];
         public byte[,] Attributes = new byte[22, 22];
+
+        // Add this explicit 22x22 dimensional tracking matrix layer for custom gems
+        public bool[,] Gems = new bool[22, 22];
+
         public int NumElevators;
         public List<ElevatorData> Elevators = new List<ElevatorData>();
+        
 
         // FIX CS1061: Add the property field so RomManager can tag rooms on startup!
         public StageTrackingState TrackState { get; set; } = StageTrackingState.NoElevators;
