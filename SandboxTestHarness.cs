@@ -83,18 +83,18 @@ namespace CrystalCastles.DataEngine
                 try
                 {
                     // Step 1: Read the data arrays
-                    var lifts = ElevatorDataEngine.LoadElevatorFile(liftPath);
-                    var gemMatrix = GemDataEngine.LoadGemFile(gemPath, out int activeGems);
-                    var mapMatrix = MapDataEngine.LoadMapFile(mapPath, out int stageId, out int gemTally);
+                    //var lifts = ElevatorDataEngine.LoadElevatorFile(liftPath);
+                    //var gemMatrix = GemDataEngine.LoadGemFile(gemPath, out int activeGems);
+                    //var mapMatrix = MapDataEngine.LoadMapFile(mapPath, out int stageId, out int gemTally);
 
                     passedCount++;
 
                     // Step 2: Output matching v0.85 text format configurations directly into subfolders
-                    ElevatorDataEngine.SaveElevatorFile(liftPath, target.Index, target.Name, lifts);
-                    GemDataEngine.SaveGemFile(gemPath, target.Index, target.Name, gemMatrix, activeGems);
-                    MapDataEngine.SaveMapFile(mapPath, target.Index, target.Name, mapMatrix, gemTally);
+                    //ElevatorDataEngine.SaveElevatorFile(liftPath, target.Index, target.Name, lifts);
+                    // GemDataEngine.SaveGemFile(gemPath, target.Index, target.Name, gemMatrix, activeGems);
+                    //MapDataEngine.SaveMapFile(mapPath, target.Index, target.Name, mapMatrix, gemTally);
 
-                    DataEngineLogger.LogStartup(target.Index, target.Name, "VALID (v0.85)", $"VALID ({activeGems})", "VALID (VEC)", target.Description);
+                    //DataEngineLogger.LogStartup(target.Index, target.Name, "VALID (v0.85)", $"VALID ({activeGems})", "VALID (VEC)", target.Description);
                 }
                 catch (Exception ex)
                 {

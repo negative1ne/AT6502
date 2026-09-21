@@ -187,6 +187,25 @@ namespace CrystalCastles.DataEngine
             Console.WriteLine($"[✓] SUCCESS: Elevator configurations loaded -> {Path.GetFileName(filePath)} | Status: {finalStatusReport}");
             return elevators;
         }
+
+    } // ============================================================================
+    // FIX BANNER: CCUNIFIEDPARSER.CS - STRUCT RECOVERY LAYER (v0.85 REPAIR)
+    // ============================================================================
+    // ============================================================================
+    // FIX BANNER: CCUNIFIEDPARSER.CS - COMPLETE STRUCT RECOVERY LAYER (v0.85 FIXED)
+    // ============================================================================
+    public class ElevatorEntity
+    {
+        public int RowX { get; set; }
+        public int ColY { get; set; }
+        public int BottomH { get; set; }
+        public int TopH { get; set; }
+        public string Direction { get; set; } = "UP";
+
+        // Dan's native properties to resolve CS0117 and CS1061 errors
+        public int GridX { get; set; }
+        public int GridY { get; set; }
+        public float Height { get; set; }
     }
 }
 

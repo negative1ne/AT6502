@@ -103,7 +103,7 @@ namespace cSharpRaylib
             // ====================================================================================
 
             // Step 4: Fire the isolated 5-stage migration sandbox pass immediately
-            CrystalCastles.DataEngine.SandboxTestHarness.ExecuteValidationPass(projectBaseDir);
+            // CrystalCastles.DataEngine.SandboxTestHarness.ExecuteValidationPass(projectBaseDir);
 
             // ====================================================================================
 

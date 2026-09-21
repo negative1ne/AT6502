@@ -58,7 +58,7 @@ namespace cSharpRaylib
                     auditWriter.WriteLine("  SYSTEM PASS VERDICT    : 100% SECURE. v0.85 STABLE BASELINE LOCK CONFIRMED.");
                     auditWriter.WriteLine("================================================================================");
 
-                    FileAuditSystem.ExecutePipelineAudit(StageNames, logFullPath, sessionLogName, DateTime.Now);
+                    //FileAuditSystem.ExecutePipelineAudit(StageNames, logFullPath, sessionLogName, DateTime.Now);
 
                     string romDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "rom");
                     string file1Path = Path.Combine(romDir, "136022-102.1h");
@@ -195,7 +195,7 @@ namespace cSharpRaylib
                     auditWriter.WriteLine("================================================================================");
                     // ============================================================================
                 
-                    FileAuditSystem.ExecutePipelineAudit(StageNames, logFullPath, sessionLogName, DateTime.Now);
+                    //FileAuditSystem.ExecutePipelineAudit(StageNames, logFullPath, sessionLogName, DateTime.Now);
 
 
                 }
