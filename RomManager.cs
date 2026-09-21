@@ -132,11 +132,16 @@ namespace cSharpRaylib
                             }
                         }
 
-
-                        // Updated line 135: Passing the active streaming writer context context straight in
+                        // ============================================================================
+                        // FIX BANNER: ROMMANAGER.CS - CONSOLIDATED INGESTION MAPPING PIPELINE (v0.85)
+                        // ============================================================================
+                        // Step 1: Run height overrides flat against the local reference arrays
                         InjectCustomHeightsFromDisk(stageNum, clonedRoom.Heights, auditWriter);
-                        InjectCustomGemsFromDisk(stageNum, clonedRoom.Attributes);
 
+                        // Step 2: PRIORITY SYNC - Pass the clean boolean matrix slot down to receive disk file tokens
+                        InjectCustomGemsFromDisk(stageNum, clonedRoom.Gems, clonedRoom.Attributes);
+
+                        // Step 3: Load parent ROM elevators into the room collection container
                         foreach (var parentLift in parentCity.Elevators)
                         {
                             ElevatorData clonedLift = new ElevatorData();
@@ -156,7 +161,12 @@ namespace cSharpRaylib
                             clonedRoom.Elevators.Add(clonedLift);
                         }
 
+                        // Step 4: Lock down hand-edited lift positions after the collection is ready
+                        ElevatorPremapper.ApplyOverrides(stageNum, clonedRoom.Elevators);
+
+                        // Step 5: Securely append the fully unified level structure to the master tracking list
                         IsolatedStages.Add(clonedRoom);
+                        // ============================================================================
 
                     }
 
@@ -307,9 +317,9 @@ namespace cSharpRaylib
             sessionWriter.WriteLine($"==================== [STRIDE MONITOR: END OF STAGE {stageNum:D2} LOG] ====================\n");
         }
         // ============================================================================
-        // ROMMANAGER.CS - PART 2: FIXED TEXT TOKEN STRIPPER ENGINE (v0.85)
+        // FIX BANNER: ROMMANAGER.CS - INJECTCUSTOMGEMSFROMDISK HEAD RESYNC (v0.85 SUCCESS)
         // ============================================================================
-        private static void InjectCustomGemsFromDisk(int stageNum, byte[,] attributesTargetMatrix)
+        private static void InjectCustomGemsFromDisk(int stageNum, bool[,] gemsMatrix, byte[,] attributesTargetMatrix)
         {
             string gemsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "gems");
             if (!Directory.Exists(gemsFolder)) return;
@@ -330,6 +340,9 @@ namespace cSharpRaylib
                     for (int y = 0; y < 22; y++)
                         attributesTargetMatrix[x, y] &= 0xEF;
 
+                // ============================================================================
+                // FIX BANNER: ROMMANAGER.CS - CONCURRENT GEMS MATRIX INJECTOR (v0.85 SUCCESS)
+                // ============================================================================
                 foreach (string line in lines)
                 {
                     if (string.IsNullOrWhiteSpace(line) || line.Contains("===") || line.Contains("-") || line.Contains("[Legend")) continue;
@@ -342,13 +355,23 @@ namespace cSharpRaylib
                             string tokenValue = tokens[colY].Trim();
                             if (tokenValue == "*")
                             {
+                                // Write 1: Populate your clean boolean array slot for direct rendering
+                                gemsMatrix[currentGridRow, colY] = true;
+
+                                // Write 2: Maintain back-compatibility with the legacy validation checkmarks
                                 attributesTargetMatrix[currentGridRow, colY] |= 0x10;
+                            }
+                            else
+                            {
+                                // Enforce default state safety configuration across space gaps
+                                gemsMatrix[currentGridRow, colY] = false;
                             }
                         }
                         currentGridRow++;
                         if (currentGridRow >= 22) break;
                     }
                 }
+                // ============================================================================
             }
             catch (Exception ex)
             {

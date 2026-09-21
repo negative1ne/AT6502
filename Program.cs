@@ -163,37 +163,20 @@ namespace cSharpRaylib
                 string currentStageName = (currentRoom < StageNames.Length) ? StageNames[currentRoom] : "Unknown Castle";
                 // ====================================================================================
 
-                // ====================================================================================
-                // COMPACT IN-MEMORY HOOK: SEAMLESS DATA ENGAGEMENT (v0.85)
+                /// ====================================================================================
+                // FIX BANNER: PROGRAM.CS - PURGING DECOUPLED REAL-TIME RUNTIME LOADING (v0.85 SUCCESS)
                 // ====================================================================================
                 if (currentRoom != lastRoomID)
                 {
                     try
                     {
-                        var isolatedTargetRoom = RomManager.IsolatedStages[currentRoom];
-
-                        // Target Routing paths relative to active binary directory execution contexts
-                        string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                        string gemFile = Path.Combine(baseDir, "data", "gems", $"Gems_Stage_{currentRoom:D2}_{currentStageName.Replace(" ", "_")}.txt");
-                        string liftFile = Path.Combine(baseDir, "data", "elevator", $"elevators_stage_{currentRoom:D2}_{currentStageName.Replace(" ", "_")}.txt");
-
-                        // ====================================================================================
-                        // FIX BANNER: RUNTIME IN-MEMORY HOOK - ACTIVATING DYNAMIC GEMS UNIFICATION (v0.85 SUCCESS)
-                        // ====================================================================================
-                        if (File.Exists(gemFile))
-                        {
-                            // Step 1: Ingest the spatial grid dots safely into a localized layout variable
-                            bool[,] freshlyLoadedGems = CrystalCastles.DataEngine.CCUnifiedParser.LoadGemFile(gemFile, out _);
-
-                            // Step 2: CONNECT UNIFIED REFERENCE MATRIX - Pass parsed tokens directly to your new memory slot
-                            isolatedTargetRoom.Gems = freshlyLoadedGems;
-                        }
-                        // ==================================================================================== 
-                    
-
-                        ElevatorPremapper.ApplyOverrides(currentRoom, isolatedTargetRoom.Elevators);
+                        // Clear out active interactive cursor probe selection tracking registers
                         Array.Clear(MainLoggedCells, 0, MainLoggedCells.Length);
+
+                        // Force instantaneous reference boundary locking flag update
                         lastRoomID = currentRoom;
+
+                        Console.WriteLine($"[PIPELINE MONITOR] Room swapped successfully to Stage {currentRoom:D2}. Display mapped cleanly from single source of truth.");
                     }
                     catch (Exception ex)
                     {
