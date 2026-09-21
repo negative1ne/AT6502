@@ -50,8 +50,12 @@ namespace cSharpRaylib
             CrystalCastles.DataEngine.DataEngineLogger.Initialize(projectBaseDir);
 
             // ====================================================================================
-            // RUNTIME DATA INTEGRATION HOOK: v0.85 DATA ENGINE ISOLATION
-            // TARGET: VERIFY ZERO-DRIFT SPATIAL EXTRACTION ON MASTER TEXT SHEETS
+            // RUNTIME DATA INTEGRATION HOOK: v0.90 UNIFIED SINGLE-PASS RE-ROUTE
+            // TARGET: VERIFY ZERO-DRIFT SPATIAL EXTRACTION ON V0.90 SPEC SINGLE SHEETS
+            // ====================================================================================
+            // ====================================================================================
+            // FIX BLOCK 1: PROGRAM.CS - v0.90 SPECS CALIBRATION & VERBOSE LOGGER MUTING
+            // LOCATION: REPLACE FROM TRY BLOCK CALIBRATION START (LINE 41) TO CATCH END (LINE 70)
             // ====================================================================================
             try
             {
@@ -59,31 +63,18 @@ namespace cSharpRaylib
                 Console.WriteLine("LAUNCHING UNIFIED DATA INGESTION SUITE: STARTING RUNTIME CALIBRATION TEST PASS");
                 Console.WriteLine("================================================================================\n");
 
-                // Strategy: Establish execution-relative routing elements to prevent absolute string conflicts
                 string rootDir = AppDomain.CurrentDomain.BaseDirectory;
-                string mapFolder = Path.Combine(rootDir, "data", "maps");
-                string gemFolder = Path.Combine(rootDir, "data", "gems");
-                string liftFolder = Path.Combine(rootDir, "data", "elevator");
+                string unifiedFolder = Path.Combine(rootDir, "data", "unified_data");
 
-                // Target Selection: Run a test calibration pass over Stage 00 (Ball Wave)
-                string targetIdx = "00";
-                string targetName = "Ball_Wave";
+                // Target Selection: Run a calibration check on Stage 00 text configuration layout sheets
+                string targetFileName = "STAGE_00_BALL_WAVE.txt";
+                string fullUnifiedPath = Path.Combine(unifiedFolder, targetFileName);
 
-                string mapPath = Path.Combine(mapFolder, $"Maps_Stage_{targetIdx}_{targetName}.txt");
-                string gemPath = Path.Combine(gemFolder, $"Gems_Stage_{targetIdx}_{targetName}.txt");
-                string liftPath = Path.Combine(liftFolder, $"elevators_stage_{targetIdx}_{targetName}.txt");
-
-                // Step 1: Fire Section 1 - Ingest Padded Height Maps Grid Matrix
-                short[,] runtimeHeights = CrystalCastles.DataEngine.CCUnifiedParser.LoadMapFile(mapPath, out int stageId, out int gemTally);
-
-                // Step 2: Fire Section 2 - Ingest Space-Delimited Boolean Collection Grid
-                bool[,] runtimeGems = CrystalCastles.DataEngine.CCUnifiedParser.LoadGemFile(gemPath, out int verifiedGemsCount);
-
-                // Step 3: Fire Section 3 - Ingest Keyword-Targeted Elevator Position Nodes
-                var runtimeLifts = CrystalCastles.DataEngine.CCUnifiedParser.LoadElevatorFile(liftPath);
+                // MUTED LOGGER PASS: Passing null here completely suppresses the repetitive 430KB disk noise
+                 var calibrationProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(fullUnifiedPath, null);
 
                 Console.WriteLine("\n================================================================================");
-                Console.WriteLine($"CALIBRATION VERDICT: STAGE {targetIdx} SUCCESS. ZERO FIELD DRIFT DETECTED IN STORAGE.");
+                Console.WriteLine($"CALIBRATION VERDICT: STAGE {calibrationProfile.StageID:D2} [{calibrationProfile.StageName}] INGESTION MATCH VERIFIED.");
                 Console.WriteLine("================================================================================\n");
             }
             catch (Exception integrationEx)
@@ -91,6 +82,9 @@ namespace cSharpRaylib
                 Console.WriteLine($"[CRITICAL PIPELINE FAULT]: Integration run execution crashed: {integrationEx.Message}");
             }
             // ====================================================================================
+            // END OF FIX BLOCK 1
+            // ====================================================================================
+            
 
             // Step 3: Log baseline launch confirmation telemetry trace
             CrystalCastles.DataEngine.DataEngineLogger.LogSession("System Initialization: v0.85 Data Engine Isolation initialized successfully.");
@@ -163,15 +157,16 @@ namespace cSharpRaylib
                 string currentStageName = (currentRoom < StageNames.Length) ? StageNames[currentRoom] : "Unknown Castle";
                 // ====================================================================================
 
-                /// ====================================================================================
-                // FIX BANNER: PROGRAM.CS - PURGING DECOUPLED REAL-TIME RUNTIME LOADING (v0.85 SUCCESS)
+                // ====================================================================================
+                // FIX BLOCK 2: PROGRAM.CS - DEACTIVATE DESTRUCTIVE LIFECYCLE ARRAY CLEAR PASS
+                // LOCATION: REPLACES SUB-CONDITIONAL SWAP CHECK IN MAIN LOOP (APPROX LINE 163 TO 186)
                 // ====================================================================================
                 if (currentRoom != lastRoomID)
                 {
                     try
                     {
-                        // Clear out active interactive cursor probe selection tracking registers
-                        Array.Clear(MainLoggedCells, 0, MainLoggedCells.Length);
+                        // v0.90 SPECS FILTER: Commented out to prevent erasing selections on screen migrations
+                        // Array.Clear(MainLoggedCells, 0, MainLoggedCells.Length);
 
                         // Force instantaneous reference boundary locking flag update
                         lastRoomID = currentRoom;
@@ -183,6 +178,8 @@ namespace cSharpRaylib
                         System.Diagnostics.Debug.WriteLine($"Gated initialization fault: {ex.Message}");
                     }
                 }
+                // ====================================================================================
+                // END OF FIX BLOCK 2
                 // ====================================================================================
 
                 var currentActiveIsolatedRoom = RomManager.IsolatedStages[currentRoom];

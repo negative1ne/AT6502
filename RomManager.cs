@@ -131,34 +131,44 @@ namespace cSharpRaylib
                         }
 
                         // ============================================================================
-                        // FIX BANNER: ROMMANAGER.CS - MASTER PIPELINE TEXT RE-ROUTE (v0.85 STABLE)
+                        // FIX BANNER: ROMMANAGER.CS - v0.90 UNIFIED SINGLE-PASS ROUTING INTEGRATION
                         // ============================================================================
-                        string baseFolder = AppDomain.CurrentDomain.BaseDirectory;
-                        string cleanStageCleanName = (stageNum < StageNames.Length) ? StageNames[stageNum].Replace(" ", "_") : "Unknown_Wave";
-                        string targetTextMapPath = Path.Combine(baseFolder, "data", "maps", $"Maps_Stage_{stageNum:D2}_{cleanStageCleanName}.txt");
-                        string targetTextGemPath = Path.Combine(baseFolder, "data", "gems", $"Gems_Stage_{stageNum:D2}_{cleanStageCleanName}.txt");
+                        string targetExportFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "unified_data");
+                        string formattedName = StageNames[stageNum].Replace(" ", "_").Replace("'", "").ToUpper();
+                        string outFileName = $"STAGE_{stageNum:D2}_{formattedName}.txt";
+                        string fullUnifiedPath = Path.Combine(targetExportFolder, outFileName);
 
-                        CrystalCastles.DataEngine.CCUnifiedParser.LoadMapFile(targetTextMapPath, clonedRoom.Heights);
-                        CrystalCastles.DataEngine.CCUnifiedParser.LoadGemFile(targetTextGemPath, clonedRoom.Gems, clonedRoom.Attributes);
+                        // Invoke our new v0.90 State-Switch Ingestion Loop
+                        var ingestedProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(fullUnifiedPath, auditWriter);
 
-                        foreach (var parentLift in parentCity.Elevators)
+                        // Sync memory layer data properties natively
+                        clonedRoom.Heights = ingestedProfile.Heights;
+                        clonedRoom.Gems = ingestedProfile.Gems;
+
+                        if (Enum.TryParse(ingestedProfile.TrackState.Replace("StageTrackingState.", ""), out StageTrackingState parsedState))
                         {
-                            ElevatorData clonedLift = new ElevatorData();
-                            clonedLift.HorizontalPosition = parentLift.HorizontalPosition;
-                            clonedLift.VerticalPosition = parentLift.VerticalPosition;
-                            clonedLift.TopPosition = parentLift.TopPosition;
-                            clonedLift.BottomPosition = parentLift.BottomPosition;
-                            clonedLift.WaitTime = parentLift.WaitTime;
+                            clonedRoom.TrackState = parsedState;
+                        }
 
-                            clonedLift.CellX = 0;
-                            clonedLift.CellY = 0;
-                            clonedLift.IsMapped = false;
-                            clonedLift.CurrentPosition = parentLift.BottomPosition;
-                            clonedLift.Mode = 0;
-                            clonedLift.CurrentSitTime = 0;
-
+                        // Map extracted v0.90 elevator elements safely back to old structure variables to preserve downstream loops
+                        clonedRoom.Elevators.Clear();
+                        for (int e = 0; e < ingestedProfile.Lifts.Count; e++)
+                        {
+                            var parsedLift = ingestedProfile.Lifts[e];
+                            ElevatorData clonedLift = new ElevatorData
+                            {
+                                CellX = parsedLift.CellX,
+                                CellY = parsedLift.CellY,
+                                BottomPosition = parsedLift.BottomH,
+                                TopPosition = parsedLift.TopH,
+                                CurrentPosition = parsedLift.BottomH,
+                                IsMapped = true,
+                                Mode = 0,
+                                CurrentSitTime = 0
+                            };
                             clonedRoom.Elevators.Add(clonedLift);
                         }
+                        // ============================================================================
 
                         ElevatorPremapper.ApplyOverrides(stageNum, clonedRoom.Elevators);
                         IsolatedStages.Add(clonedRoom);

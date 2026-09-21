@@ -1,322 +1,265 @@
 ﻿// ====================================================================================
-// CRYSTAL CASTLES UNIFIED INGESTION SUITE [v0.85 DATA ENGINE ISOLATION]
-// MODULE: UNIFIED DATA CORE PARSER (PART 1 - MAPS & GEMS LAYER)
-// CONSTRAINTS: ZERO MEMORY LEAKS | EXPLICIT TELEMETRY TRACING | ENFORCED OUTPUT STRIDE
+// CRYSTAL CASTLES UNIFIED INGESTION SUITE [v0.90 DATA ENGINE CORE]
+// MODULE: UNIFIED DATA CORE PARSER - PART 1 (STATE ENGINE MECHANICS)
+// CONSTRAINTS: SINGLE-PASS DATA INGESTION | VERBOSE STRIDE LEDGER TELEMETRY
 // ====================================================================================
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
+using System.Text;
 
 namespace CrystalCastles.DataEngine
 {
-
+    public enum ParserBlockState
+    {
+        None,
+        Metadata,
+        Elevators,
+        Gems,
+        Map
+    }
 
     public class CCUnifiedParser
     {
         private const int GridSize = 22;
 
-        /// <summary>
-        /// SUB-SECTION 1: Dynamic Map Geometry Loader (Working Parser Core)
-        /// Ingests both legacy 2-char NN and modern 3-char NNN padded file grids.
-        /// </summary>
-        /// 
-        // ============================================================================
-        // FIX BANNER: CCUNIFIEDPARSER.CS - UNIFIED BYTE CONSLIDATION LOOP (v0.85 SUCCESS)
-        // ============================================================================
-        public static void LoadMapFile(string filePath, byte[,] targetHeightsMatrix)
+        public class UnifiedStageProfile
         {
-            if (!File.Exists(filePath)) return;
-
-            try
-            {
-                string[] lines = File.ReadAllLines(filePath);
-                int currentGridRow = 0;
-
-                for (int i = 0; i < lines.Length; i++)
-                {
-                    string cleanLine = lines[i].Trim(new char[] { '\uFEFF', '\u200B' }).Trim();
-
-                    // Structural Metadata header and padding row filters
-                    if (string.IsNullOrWhiteSpace(cleanLine) || cleanLine.Contains("====") || cleanLine.Contains("----") || cleanLine.Contains("[Legend")) continue;
-                    if (cleanLine.StartsWith("00") && cleanLine.Contains("01")) continue;
-
-                    string[] tokens = cleanLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-                    if (tokens.Length > 0)
-                    {
-                        if (tokens.Length != 22)
-                        {
-                            string firstToken = tokens[0].Trim();
-                            if (firstToken.Length != 2 || !char.IsDigit(firstToken[0]) || !char.IsDigit(firstToken[1])) continue;
-                        }
-                    }
-                    else continue;
-
-                    int startColIndex = (tokens.Length == 23) ? 1 : 0;
-                    for (int colY = 0; colY < 22; colY++)
-                    {
-                        int targetTokenPos = colY + startColIndex;
-                        if (targetTokenPos >= tokens.Length) break;
-
-                        string tokenValue = tokens[targetTokenPos].Trim();
-                        if (tokenValue == ".." || tokenValue == "." || tokenValue == "..." || tokenValue == "XX")
-                        {
-                            targetHeightsMatrix[currentGridRow, colY] = 0;
-                        }
-                        else if (byte.TryParse(tokenValue, out byte parsedHeight))
-                        {
-                            targetHeightsMatrix[currentGridRow, colY] = parsedHeight;
-                        }
-                    }
-                    currentGridRow++;
-                    if (currentGridRow >= 22) break;
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Unified text matrix parsing fault: {ex.Message}");
-            }
-        }
-        public static short[,] LoadMapFile(string filePath, out int stageId, out int gemTally)
-        {
-            var matrix = new short[GridSize, GridSize];
-            stageId = 0; gemTally = 0;
-
-            if (!File.Exists(filePath))
-            {
-                Console.WriteLine($"[!] UNIFIED PARSER WARN: Map file missing at target path: {Path.GetFileName(filePath)}");
-                return matrix;
-            }
-
-            string[] lines = File.ReadAllLines(filePath);
-            int currentGridRow = 0;
-
-            foreach (string line in lines)
-            {
-                // Sanitize line for hidden Byte Order Mark (BOM) signatures instantly
-                string cleanLine = line.Trim(new char[] { '\uFEFF', '\u200B' });
-                string trimmed = cleanLine.Trim();
-
-                if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("==") || trimmed.StartsWith("--") || trimmed.StartsWith("[")) continue;
-
-                if (trimmed.Contains("Unique Stage ID Index"))
-                {
-                    int colon = trimmed.IndexOf(':');
-                    if (colon != -1) int.TryParse(trimmed.Substring(colon + 1).Trim().Split(' ')[0], out stageId);
-                    continue;
-                }
-                if (trimmed.Contains("Collectibles Tally"))
-                {
-                    int colon = trimmed.IndexOf(':');
-                    if (colon != -1) int.TryParse(trimmed.Substring(colon + 1).Trim().Split(' ')[0], out gemTally);
-                    continue;
-                }
-                if (trimmed.StartsWith("00") && trimmed.Contains("01")) continue; // Skip column indicators
-                if (currentGridRow >= GridSize) break;
-
-                // Enforce explicit verification gate: ensure line is a data row
-                if (!trimmed.Contains("..") && !trimmed.Contains("...") && !trimmed.Contains("XX") && !char.IsDigit(trimmed[0])) continue;
-
-                string[] tokens = trimmed.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-
-                // Stride Shift Check: Step past left-margin row index labels if they exist in file row string
-                int startCol = (tokens.Length > GridSize && int.TryParse(tokens[0], out _)) ? 1 : 0;
-
-                for (int c = 0; c < GridSize && (c + startCol) < tokens.Length; c++)
-                {
-                    string token = tokens[c + startCol].Trim();
-                    if (token == ".." || token == "..." || token == "XX") matrix[currentGridRow, c] = -1;
-                    else matrix[currentGridRow, c] = short.Parse(token);
-                }
-                currentGridRow++;
-            }
-
-            Console.WriteLine($"[✓] SUCCESS: Map matrix loaded -> {Path.GetFileName(filePath)} | Grid Stride Sync Verified.");
-            return matrix;
+            public int StageID { get; set; }
+            public string StageName { get; set; } = "Unknown Wave";
+            public string TrackState { get; set; } = "StageTrackingState.ExperimentalTarget";
+            public byte[,] Heights { get; set; } = new byte[GridSize, GridSize];
+            public bool[,] Gems { get; set; } = new bool[GridSize, GridSize];
+            public List<UnifiedLiftEntity> Lifts { get; set; } = new List<UnifiedLiftEntity>();
         }
 
-        /// <summary>
-        /// SUB-SECTION 2: Standardized Gem Sheet Loader
-        /// Converts double-character spatial collection grids natively into memory boolean maps.
-        /// </summary>
-        public static bool[,] LoadGemFile(string filePath, out int parsedGemCount)
+        public class UnifiedLiftEntity
         {
-            var matrix = new bool[GridSize, GridSize];
-            parsedGemCount = 0;
-
-            if (!File.Exists(filePath))
-            {
-                Console.WriteLine($"[!] UNIFIED PARSER WARN: Gem file missing at target path: {Path.GetFileName(filePath)}");
-                return matrix;
-            }
-
-            string[] lines = File.ReadAllLines(filePath);
-            int currentGridRow = 0;
-
-            foreach (string line in lines)
-            {
-                string cleanLine = line.Trim(new char[] { '\uFEFF', '\u200B' });
-                string trimmed = cleanLine.Trim();
-
-                if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("==") || trimmed.StartsWith("--") || trimmed.StartsWith("[")) continue;
-                if (trimmed.StartsWith("00") && trimmed.Contains("01")) continue;
-                if (currentGridRow >= GridSize) break;
-
-                if (!trimmed.Contains(".") && !trimmed.Contains("*")) continue;
-
-                string[] cells = trimmed.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-                int startCol = (cells.Length > GridSize && int.TryParse(cells[0], out _)) ? 1 : 0;
-
-                for (int c = 0; c < GridSize && (c + startCol) < cells.Length; c++)
-                {
-                    string token = cells[c + startCol].Trim();
-                    if (token == "**" || token == "*")
-                    {
-                        matrix[currentGridRow, c] = true;
-                        parsedGemCount++;
-                    }
-                }
-                currentGridRow++;
-            }
-
-            Console.WriteLine($"[✓] SUCCESS: Gem matrix loaded -> {Path.GetFileName(filePath)} | Active Count: {parsedGemCount} Found.");
-            return matrix;
-        }
-
-        /// <summary>
-        /// SUB-SECTION 3: Keyword-Targeted Elevator Config Loader
-        /// Streams text sheets, scanning explicitly for "RowX = " to isolate vector vectors.
-        /// </summary>
-        public static List<ElevatorEntity> LoadElevatorFile(string filePath)
-        {
-            var elevators = new List<ElevatorEntity>();
-
-            // Defensive Rule: If a stage naturally lacks elevators, return empty block instantly
-            if (!File.Exists(filePath))
-            {
-                Console.WriteLine($"[✓] UNIFIED PARSER TRACK: Stage has no elevator assets -> {Path.GetFileName(filePath)}. Skipping file stream.");
-                return elevators;
-            }
-
-            string[] lines = File.ReadAllLines(filePath);
-            int parsedLineIndex = 0;
-
-            foreach (string line in lines)
-            {
-                parsedLineIndex++;
-                string trimmed = line.Trim();
-                if (string.IsNullOrEmpty(trimmed)) continue;
-
-                // Explicit Target Lock: Find lines containing coordinate records
-                if (trimmed.Contains("RowX = ") && trimmed.Contains("ColY = "))
-                {
-                    try
-                    {
-                        int xIndex = trimmed.IndexOf("RowX = ");
-                        int yIndex = trimmed.IndexOf("ColY = ");
-
-                        if (xIndex != -1 && yIndex != -1)
-                        {
-                            // Precision Substring Slice: Pull the 2 characters immediately following assignment
-                            string xToken = trimmed.Substring(xIndex + 7, 2).Trim();
-                            string yToken = trimmed.Substring(yIndex + 7, 2).Trim();
-
-                            var entity = new ElevatorEntity
-                            {
-                                GridX = int.Parse(xToken),
-                                GridY = int.Parse(yToken),
-                                Height = 0.00f // Hardcoded baseline elevation initialization for 3D engine prep
-                            };
-
-                            elevators.Add(entity);
-                            Console.WriteLine($"  --> [DATA FOUND]: Extracted Lift Platform Vector at Coordinate: ({entity.GridX:D2}, {entity.GridY:D2})");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[!] UNIFIED PARSER EXCEPTION: Loop parse failed at Line {parsedLineIndex}: {ex.Message}");
-                    }
-                }
-            }
-
-            string finalStatusReport = elevators.Count > 0 ? $"[DATA FOUND - Count: {elevators.Count}]" : "[EMPTY ARRAY RECORDED]";
-            Console.WriteLine($"[✓] SUCCESS: Elevator configurations loaded -> {Path.GetFileName(filePath)} | Status: {finalStatusReport}");
-            return elevators;
-        }
-
-
-
-        // ============================================================================
-        // FIX BANNER: CCUNIFIEDPARSER.CS - UNIFIED GEMS CONSOLIDATION LOOP (v0.85 SUCCESS)
-        // ============================================================================
-        public static void LoadGemFile(string filePath, bool[,] targetGemsMatrix, byte[,] targetAttributesMatrix)
-        {
-            if (!File.Exists(filePath)) return;
-
-            try
-            {
-                string[] lines = File.ReadAllLines(filePath);
-                int currentGridRow = 0;
-
-                foreach (string line in lines)
-                {
-                    if (string.IsNullOrWhiteSpace(line) || line.Contains("===") || line.Contains("-") || line.Contains("[Legend")) continue;
-
-                    string[] tokens = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                    if (tokens.Length >= 22)
-                    {
-                        for (int colY = 0; colY < 22 && colY < tokens.Length; colY++)
-                        {
-                            string tokenValue = tokens[colY].Trim();
-                            if (tokenValue == "*")
-                            {
-                                // Populate the clean boolean array slot for direct viewport rendering
-                                targetGemsMatrix[currentGridRow, colY] = true;
-
-                                // Maintain back-compatibility with the legacy validation flags
-                                targetAttributesMatrix[currentGridRow, colY] |= 0x10;
-                            }
-                            else
-                            {
-                                targetGemsMatrix[currentGridRow, colY] = false;
-                            }
-                        }
-                        currentGridRow++;
-                        if (currentGridRow >= 22) break;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Unified gem matrix parsing fault: {ex.Message}");
-            }
-        }
-
-
-
-
-        // ============================================================================
-        // FIX BANNER: CCUNIFIEDPARSER.CS - STRUCT RECOVERY LAYER (v0.85 REPAIR)
-        // ============================================================================
-        // ============================================================================
-        // FIX BANNER: CCUNIFIEDPARSER.CS - COMPLETE STRUCT RECOVERY LAYER (v0.85 FIXED)
-        // ============================================================================
-        public class ElevatorEntity
-        {
-            public int RowX { get; set; }
-            public int ColY { get; set; }
+            public int CellX { get; set; }
+            public int CellY { get; set; }
             public int BottomH { get; set; }
             public int TopH { get; set; }
             public string Direction { get; set; } = "UP";
+        }
 
-            // Dan's native properties to resolve CS0117 and CS1061 errors
-            public int GridX { get; set; }
-            public int GridY { get; set; }
-            public float Height { get; set; }
+        public static UnifiedStageProfile LoadUnifiedStageFile(string filePath, StreamWriter sessionLogger)
+        {
+            UnifiedStageProfile profile = new UnifiedStageProfile();
+            if (!File.Exists(filePath))
+            {
+                if (sessionLogger != null)
+                {
+                    sessionLogger.WriteLine($"[CRITICAL ERROR] Unified level target missing: {Path.GetFileName(filePath)}");
+                }
+                return profile;
+            }
+
+            string[] lines = File.ReadAllLines(filePath);
+            ParserBlockState currentState = ParserBlockState.None;
+            int currentGemRow = 0;
+            int currentMapRow = 0;
+
+            if (sessionLogger != null)
+            {
+                sessionLogger.WriteLine($"\n==================== [STATE SWITCH DIAGNOSTIC: STAGE {Path.GetFileNameWithoutExtension(filePath)}] ====================");
+                sessionLogger.WriteLine($"Resource: {filePath}");
+            }
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string rawLine = lines[i];
+                string cleanLine = rawLine.Trim(new char[] { '\uFEFF', '\u200B' }).Trim();
+
+                if (string.IsNullOrEmpty(cleanLine) || cleanLine.StartsWith("//")) continue;
+
+                // State Toggle Condition Blocks
+                if (cleanLine.Equals("[METADATA]", StringComparison.OrdinalIgnoreCase))
+                {
+                    currentState = ParserBlockState.Metadata;
+                    if (sessionLogger != null) sessionLogger.WriteLine($"  Line {i + 1:D2} [STATE -> METADATA]: Header Found. Engaging Ingestion Mode.");
+                    continue;
+                }
+                if (cleanLine.Equals("[ELEVATORS]", StringComparison.OrdinalIgnoreCase))
+                {
+                    currentState = ParserBlockState.Elevators;
+                    if (sessionLogger != null) sessionLogger.WriteLine($"  Line {i + 1:D2} [STATE -> ELEVATORS]: Section Found. Parsing Vector Node Registers.");
+                    continue;
+                }
+                if (cleanLine.Equals("[GEMS]", StringComparison.OrdinalIgnoreCase))
+                {
+                    currentState = ParserBlockState.Gems;
+                    if (sessionLogger != null) sessionLogger.WriteLine($"  Line {i + 1:D2} [STATE -> GEMS]: Section Found. Ingesting Spatial Boolean Matrix.");
+                    continue;
+                }
+                if (cleanLine.Equals("[MAP]", StringComparison.OrdinalIgnoreCase))
+                {
+                    currentState = ParserBlockState.Map;
+                    if (sessionLogger != null) sessionLogger.WriteLine($"  Line {i + 1:D2} [STATE -> MAP]: Section Found. Processing 3-Digit Altitude Values.");
+                    continue;
+                }
+
+                // Divert processing lines based on the active mode
+                switch (currentState)
+                {
+                    case ParserBlockState.Metadata:
+                        ParseMetadataLine(cleanLine, profile, i + 1, sessionLogger);
+                        break;
+                    case ParserBlockState.Elevators:
+                        ParseElevatorLine(cleanLine, profile, i + 1, sessionLogger);
+                        break;
+                         case ParserBlockState.Gems:
+                        ParseGemsLine(cleanLine, profile, ref currentGemRow, i + 1, sessionLogger);
+                        break;
+                    case ParserBlockState.Map:
+                        ParseMapLine(cleanLine, profile, ref currentMapRow, i + 1, sessionLogger);
+                        break;
+                }
+            }
+
+            if (sessionLogger != null)
+            {
+                sessionLogger.WriteLine($"[✓] SUCCESS: Unified level processing completed for {profile.StageName}.");
+                sessionLogger.WriteLine($"==================== [STRIDE MONITOR: END OF STAGE {profile.StageID:D2} LOG] ====================\n");
+            }
+
+            return profile;
+        }
+
+        private static void ParseMetadataLine(string line, UnifiedStageProfile profile, int lineNum, StreamWriter logger)
+        {
+            int eqIdx = line.IndexOf('=');
+            if (eqIdx == -1) return;
+
+            string key = line.Substring(0, eqIdx).Trim();
+            string val = line.Substring(eqIdx + 1).Trim();
+
+            if (key.Equals("StageID", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(val, out int id)) profile.StageID = id;
+                if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [DATA INGEST] -> Field: StageID = {profile.StageID:D2}");
+            }
+            else if (key.Equals("StageName", StringComparison.OrdinalIgnoreCase))
+            {
+                profile.StageName = val;
+                if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [DATA INGEST] -> Field: StageName = {profile.StageName}");
+            }
+            else if (key.Equals("TrackState", StringComparison.OrdinalIgnoreCase))
+            {
+                profile.TrackState = val;
+                if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [DATA INGEST] -> Field: TrackState = {profile.TrackState}");
+            }
+        }
+
+        private static void ParseElevatorLine(string line, UnifiedStageProfile profile, int lineNum, StreamWriter logger)
+        {
+            if (line.Equals("[NONE]", StringComparison.OrdinalIgnoreCase))
+            {
+                if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [DEFENSIVE BYPASS] -> Keyword [NONE] Captured. Terminating Elevator Sub-Loop Safely.");
+                return;
+            }
+
+            if (!line.Contains("RowX=") || !line.Contains("ColY=")) return;
+
+            try
+            {
+                int xIdx = line.IndexOf("RowX=") + 5;
+                int yIdx = line.IndexOf("ColY=") + 5;
+                int bhIdx = line.IndexOf("BottomH=") + 8;
+                int thIdx = line.IndexOf("TopH=") + 5;
+
+                var lift = new UnifiedLiftEntity
+                {
+                    CellX = int.Parse(line.Substring(xIdx, 2)),
+                    CellY = int.Parse(line.Substring(yIdx, 2)),
+                    BottomH = int.Parse(line.Substring(bhIdx, 3)),
+                    TopH = int.Parse(line.Substring(thIdx, 3))
+                };
+
+                profile.Lifts.Add(lift);
+                if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [DATA INGEST] -> LIFT_{profile.Lifts.Count - 1}: Bounds Loaded (RowX={lift.CellX:D2} | ColY={lift.CellY:D2} | BottomH={lift.BottomH:D3} | TopH={lift.TopH:D3})");
+            }
+            catch (Exception ex)
+            {
+                if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [!] ELEVATOR PARSE EXCEPTION: {ex.Message}");
+            }
+        }
+
+        private static void ParseGemsLine(string line, UnifiedStageProfile profile, ref int gemRow, int lineNum, StreamWriter logger)
+        {
+            if (line.Contains("00 01 02") || gemRow >= GridSize)
+            {
+                if (logger != null && line.Contains("00 01 02")) logger.WriteLine($"  Line {lineNum:D2} [COLUMN LABEL SKIP]: '{line}'");
+                return;
+            }
+
+            string[] tokens = line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            if (tokens.Length == 0) return;
+
+            int startCol = 0;
+            if (int.TryParse(tokens[0], out int rowPrefix) && rowPrefix == gemRow)
+            {
+                startCol = 1;
+                if (logger != null && gemRow == 0) logger.WriteLine($"  Line {lineNum:D2} [STRIDE SHIFT] -> Line {lineNum:D2} Row Label '{tokens[0]}' Detected. Skipping Left-Margin Stride [Token Offset 1].");
+            }
+
+            int validTokens = tokens.Length - startCol;
+            if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [DATA INGEST] -> Raw Char Length: {line.Length} | Text: '{line}' | Tokens: {tokens.Length}");
+
+            int activeGemsInRow = 0;
+            for (int colY = 0; colY < GridSize && (colY + startCol) < tokens.Length; colY++)
+            {
+                string token = tokens[colY + startCol].Trim();
+                if (token == "*" || token == "**")
+                {
+                    profile.Gems[gemRow, colY] = true;
+                    activeGemsInRow++;
+                }
+                else
+                {
+                    profile.Gems[gemRow, colY] = false;
+                }
+            }
+
+            if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [MATRIX CELL MAP] -> Row {gemRow:D2} Gems Extracted (Active Count: {activeGemsInRow})");
+            gemRow++;
+        }
+
+        private static void ParseMapLine(string line, UnifiedStageProfile profile, ref int mapRow, int lineNum, StreamWriter logger)
+        {
+            if (line.Contains("00  01  02") || mapRow >= GridSize)
+            {
+                if (logger != null && line.Contains("00  01  02")) logger.WriteLine($"  Line {lineNum:D2} [COLUMN LABEL SKIP]: '{line}'");
+                return;
+            }
+
+            string[] tokens = line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            if (tokens.Length == 0) return;
+
+            int startCol = 0;
+            if (int.TryParse(tokens[0], out int rowPrefix) && rowPrefix == mapRow)
+            {
+                startCol = 1;
+                if (logger != null && mapRow == 0) logger.WriteLine($"  Line {lineNum:D2} [STRIDE SHIFT] -> Line {lineNum:D2} Row Label '{tokens[0]}' Detected. Stripping Left-Margin Index Prefix.");
+            }
+
+            if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [DATA INGEST] -> Raw Char Length: {line.Length} | Text: '{line}' | Tokens: {tokens.Length}");
+
+            for (int colY = 0; colY < GridSize && (colY + startCol) < tokens.Length; colY++)
+            {
+                string token = tokens[colY + startCol].Trim();
+                if (token == ".." || token == "..." || token == "XX")
+                {
+                    profile.Heights[mapRow, colY] = 0;
+                }
+                else if (byte.TryParse(token, out byte height))
+                {
+                    profile.Heights[mapRow, colY] = height > 99 ? (byte)99 : height;
+                }
+            }
+
+            if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [HEIGHT VERIFY] -> Row {mapRow:D2} Heights Loaded Natively. Void Tile Filters Synced.");
+            mapRow++;
         }
     }
 }
-
-
-
