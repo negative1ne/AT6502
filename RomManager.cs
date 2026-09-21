@@ -58,8 +58,6 @@ namespace cSharpRaylib
                     auditWriter.WriteLine("  SYSTEM PASS VERDICT    : 100% SECURE. v0.85 STABLE BASELINE LOCK CONFIRMED.");
                     auditWriter.WriteLine("================================================================================");
 
-                    //FileAuditSystem.ExecutePipelineAudit(StageNames, logFullPath, sessionLogName, DateTime.Now);
-
                     string romDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "rom");
                     string file1Path = Path.Combine(romDir, "136022-102.1h");
                     string file2Path = Path.Combine(romDir, "136022-101.1f");
@@ -74,8 +72,6 @@ namespace cSharpRaylib
                         );
                         Environment.Exit(1);
                     }
-
-
 
                     byte[] file1 = File.ReadAllBytes(file1Path);
                     byte[] file2 = File.ReadAllBytes(file2Path);
@@ -100,6 +96,8 @@ namespace cSharpRaylib
                     };
 
                     IsolatedStages.Clear();
+
+                    // Change loop parameter limit explicitly to 37 to natively allocate the 37th room memory slot
                     for (int stageNum = 0; stageNum < 37; stageNum++)
                     {
                         int parentCityIndex = RoomToCityMap[stageNum] & 0x0F;
@@ -133,21 +131,16 @@ namespace cSharpRaylib
                         }
 
                         // ============================================================================
-                        // FIX BANNER: ROMMANAGER.CS - MASTER PIPELINE GEMS RE-ROUTE (v0.85 STABLE)
+                        // FIX BANNER: ROMMANAGER.CS - MASTER PIPELINE TEXT RE-ROUTE (v0.85 STABLE)
                         // ============================================================================
                         string baseFolder = AppDomain.CurrentDomain.BaseDirectory;
                         string cleanStageCleanName = (stageNum < StageNames.Length) ? StageNames[stageNum].Replace(" ", "_") : "Unknown_Wave";
                         string targetTextMapPath = Path.Combine(baseFolder, "data", "maps", $"Maps_Stage_{stageNum:D2}_{cleanStageCleanName}.txt");
                         string targetTextGemPath = Path.Combine(baseFolder, "data", "gems", $"Gems_Stage_{stageNum:D2}_{cleanStageCleanName}.txt");
 
-                        // Step 1: Route map height parsing natively through the unified parser
                         CrystalCastles.DataEngine.CCUnifiedParser.LoadMapFile(targetTextMapPath, clonedRoom.Heights);
-
-                        // Step 2: PRIORITY ROUTE: Completely swap the legacy local gem loop out for our new parser pass
                         CrystalCastles.DataEngine.CCUnifiedParser.LoadGemFile(targetTextGemPath, clonedRoom.Gems, clonedRoom.Attributes);
-                        // ============================================================================
 
-                        // Step 3: Load parent ROM elevators into the room collection container
                         foreach (var parentLift in parentCity.Elevators)
                         {
                             ElevatorData clonedLift = new ElevatorData();
@@ -167,21 +160,13 @@ namespace cSharpRaylib
                             clonedRoom.Elevators.Add(clonedLift);
                         }
 
-                        // Step 4: Lock down hand-edited lift positions after the collection is ready
                         ElevatorPremapper.ApplyOverrides(stageNum, clonedRoom.Elevators);
-
-                        // Step 5: Securely append the fully unified level structure to the master tracking list
                         IsolatedStages.Add(clonedRoom);
-                        // ============================================================================
-
                     }
 
                     ElevatorPremapper.InitializeFromDisk();
                     GenerateStartupLaboratoryLogs();
 
-                    // ============================================================================
-                    // FIX BANNER: ROMMANAGER.CS - MASTER FILE AUDIT LEDGER INJECTION (v0.85 SUCCESS)
-                    // ============================================================================
                     auditWriter.WriteLine("\n================================================================================");
                     auditWriter.WriteLine("=== CRYSTAL CASTLES v0.85 INGESTION ENGINE MASTER FILE AUDIT REPORT ===");
                     auditWriter.WriteLine($"Execution Timestamp: {DateTime.Now}");
@@ -193,7 +178,6 @@ namespace cSharpRaylib
                     {
                         string currentStageCleanName = (i < StageNames.Length) ? StageNames[i] : "Unknown_Wave";
 
-                        // Verify map presence dynamically across our 6 target verification cluster tracks
                         bool hasMapFile = (i == 0 || i == 3 || i == 7 || i == 11 || i == 15 || i == 27);
                         int liveCellDrift = 0;
 
@@ -202,24 +186,96 @@ namespace cSharpRaylib
                             liveCellDrift = MapRenderer.GetRomHeightDiscrepancyCount(IsolatedStages[i], i);
                         }
 
-                        // Output checkmark only if the custom file asset achieves a flawless 000 height variance pass
                         string mapIndicator = (hasMapFile && liveCellDrift == 0) ? "[✓]" : "[X]";
-
                         auditWriter.WriteLine($"Stage [{i:D2}] -> {currentStageCleanName.PadRight(25)} | Maps: {mapIndicator} ({liveCellDrift:D3} Var)");
                     }
                     auditWriter.WriteLine("--------------------------------------------------------------------------------");
                     auditWriter.WriteLine("================================================================================");
+
                     // ============================================================================
-                
-                    //FileAuditSystem.ExecutePipelineAudit(StageNames, logFullPath, sessionLogName, DateTime.Now);
+                    // FIX BANNER: ROMMANAGER.CS - v0.90 STANDARDIZED DATA EXPORTER INJECTION (v0.90)
+                    // ============================================================================
+                    try
+                    {
+                        string targetExportFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "unified_data");
+                        Directory.CreateDirectory(targetExportFolder);
 
+                        for (int s = 0; s < IsolatedStages.Count && s < StageNames.Length; s++)
+                        {
+                            CityData romStage = IsolatedStages[s];
+                            string formattedName = StageNames[s].Replace(" ", "_").Replace("'", "").ToUpper();
+                            string outFileName = $"STAGE_{s:D2}_{formattedName}.txt";
+                            string fullOutPath = Path.Combine(targetExportFolder, outFileName);
 
+                            StringBuilder fileBuilder = new StringBuilder();
+
+                            fileBuilder.AppendLine("// ============================================================================");
+                            fileBuilder.AppendLine($"// CRYSTAL CASTLES UNIFIED LEVEL ENGINE v0.90 CONFIGURATION SPECIFICATION");
+                            fileBuilder.AppendLine($"// FILE NAME TARGET: {outFileName}");
+                            fileBuilder.AppendLine("// ============================================================================");
+                            fileBuilder.AppendLine("[METADATA]");
+                            fileBuilder.AppendLine($"StageID={s:D2}");
+                            fileBuilder.AppendLine($"StageName={StageNames[s]}");
+
+                            string stateTag = (s == 0 || s == 15 || s == 27) ? "StageTrackingState.VerifiedWorking" : "StageTrackingState.ExperimentalTarget";
+                            if (s == 36) stateTag = "StageTrackingState.NoElevators";
+                            fileBuilder.AppendLine($"TrackState={stateTag}");
+                            fileBuilder.AppendLine("// ============================================================================\n");
+
+                            fileBuilder.AppendLine("[ELEVATORS]");
+                            if (romStage.Elevators.Count == 0 || romStage.NumElevators == 0)
+                            {
+                                fileBuilder.AppendLine("[NONE]");
+                            }
+                            else
+                            {
+                                for (int e = 0; e < romStage.Elevators.Count; e++)
+                                {
+                                    var lift = romStage.Elevators[e];
+                                    fileBuilder.AppendLine($"LIFT_{e}: RowX={lift.CellX:D2} | ColY={lift.CellY:D2} | BottomH={lift.BottomPosition:D3} | TopH={lift.TopPosition:D3} | Direction=UP");
+                                }
+                            }
+                            fileBuilder.AppendLine();
+
+                            fileBuilder.AppendLine("[GEMS]");
+                            fileBuilder.AppendLine("     00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21");
+                            for (int r = 0; r < 22; r++)
+                            {
+                                fileBuilder.Append($"{r:D2}   ");
+                                for (int c = 0; c < 22; c++)
+                                {
+                                    fileBuilder.Append(romStage.Gems[r, c] ? "*  " : ".  ");
+                                }
+                                fileBuilder.AppendLine();
+                            }
+                            fileBuilder.AppendLine();
+
+                            fileBuilder.AppendLine("[MAP]");
+                            fileBuilder.AppendLine("    00  01  02  03  04  05  06  07  08  09  10  11  12  13  14  15  16  17  18  19  20  21");
+                            for (int r = 0; r < 22; r++)
+                            {
+                                fileBuilder.Append($"{r:D2}  ");
+                                for (int c = 0; c < 22; c++)
+                                {
+                                    int h = romStage.Heights[r, c];
+                                    fileBuilder.Append(h == 0 ? "... " : $"{h:D3} ");
+                                }
+                                fileBuilder.AppendLine();
+                            }
+
+                            File.WriteAllText(fullOutPath, fileBuilder.ToString());
+                        }
+                        Console.WriteLine("[PIPELINE MONITOR] v0.90 Baseline Generation Utility executed successfully. 37 master sheets written.");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Automation baseline exporter fault: {ex.Message}");
+                    }
                 }
-
             }
             catch (Exception) { }
 
-            return BaseCities;
+            return IsolatedStages;
         }
 
 
