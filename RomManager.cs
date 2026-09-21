@@ -133,13 +133,19 @@ namespace cSharpRaylib
                         }
 
                         // ============================================================================
-                        // FIX BANNER: ROMMANAGER.CS - CONSOLIDATED INGESTION MAPPING PIPELINE (v0.85)
+                        // FIX BANNER: ROMMANAGER.CS - MASTER PIPELINE GEMS RE-ROUTE (v0.85 STABLE)
                         // ============================================================================
-                        // Step 1: Run height overrides flat against the local reference arrays
-                        InjectCustomHeightsFromDisk(stageNum, clonedRoom.Heights, auditWriter);
+                        string baseFolder = AppDomain.CurrentDomain.BaseDirectory;
+                        string cleanStageCleanName = (stageNum < StageNames.Length) ? StageNames[stageNum].Replace(" ", "_") : "Unknown_Wave";
+                        string targetTextMapPath = Path.Combine(baseFolder, "data", "maps", $"Maps_Stage_{stageNum:D2}_{cleanStageCleanName}.txt");
+                        string targetTextGemPath = Path.Combine(baseFolder, "data", "gems", $"Gems_Stage_{stageNum:D2}_{cleanStageCleanName}.txt");
 
-                        // Step 2: PRIORITY SYNC - Pass the clean boolean matrix slot down to receive disk file tokens
-                        InjectCustomGemsFromDisk(stageNum, clonedRoom.Gems, clonedRoom.Attributes);
+                        // Step 1: Route map height parsing natively through the unified parser
+                        CrystalCastles.DataEngine.CCUnifiedParser.LoadMapFile(targetTextMapPath, clonedRoom.Heights);
+
+                        // Step 2: PRIORITY ROUTE: Completely swap the legacy local gem loop out for our new parser pass
+                        CrystalCastles.DataEngine.CCUnifiedParser.LoadGemFile(targetTextGemPath, clonedRoom.Gems, clonedRoom.Attributes);
+                        // ============================================================================
 
                         // Step 3: Load parent ROM elevators into the room collection container
                         foreach (var parentLift in parentCity.Elevators)
@@ -216,168 +222,6 @@ namespace cSharpRaylib
             return BaseCities;
         }
 
-        // ====================================================================================
-        // FIX BANNER: ROMMANAGER.CS - FILE-STREAM MULTI-TARGET STRIDE MONITOR (v0.85 GROUP PASS)
-        // ====================================================================================
-        // ====================================================================================
-        // FIX BANNER: ROMMANAGER.CS - STABLE TRACKING PIPELINE REGRESSION (v0.85 SECURE BASELINE)
-        // ====================================================================================
-        // ====================================================================================
-        // FIX BANNER: ROMMANAGER.CS - TARGETED ZERO-DRIFT TRACK FILTER SUITE (v0.85 REPAIR)
-        // ====================================================================================
-        private static void InjectCustomHeightsFromDisk(int stageNum, byte[,] heightsMatrix, StreamWriter sessionWriter)
-        {
-            // Open processing explicitly for the zero-drift target cluster levels
-            if (stageNum != 0 && stageNum != 3 && stageNum != 7 && stageNum != 11 && stageNum != 15 && stageNum != 27) return;
-
-            string mapsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "maps");
-
-            // Dynamic asset search pattern using the double-digit stage indicator padding
-            string[] files = Directory.GetFiles(mapsFolder, $"Maps_Stage_{stageNum:D2}_*.txt");
-            if (files.Length == 0) files = Directory.GetFiles(mapsFolder, $"Diagnostic_Dump_Stage_{stageNum:D2}_*.txt");
-
-            if (files.Length == 0)
-            {
-                sessionWriter.WriteLine($"[!] MONITOR CRITICAL: Stage {stageNum:D2} file target missing on disk.");
-                return;
-            }
-
-            sessionWriter.WriteLine($"\n==================== [STRIDE MONITOR: STARTING STAGE {stageNum:D2} LOG] ====================");
-            sessionWriter.WriteLine($"Target File Resource: {Path.GetFileName(files[0])}");
-
-            string[] lines = File.ReadAllLines(files[0]);
-            int currentGridRow = 0;
-
-            for (int i = 0; i < lines.Length; i++)
-            {
-                string cleanLine = lines[i].Trim(new char[] { '\uFEFF', '\u200B' });
-                string trimmed = cleanLine.Trim();
-
-                // Structural Metadata & Layout Element Filtering Block
-                if (string.IsNullOrWhiteSpace(trimmed) || trimmed.Contains("====") || trimmed.Contains("----") || trimmed.Contains("[Legend"))
-                {
-                    sessionWriter.WriteLine($"  Line {i + 1:D2} [HEADER SKIP]: '{trimmed}'");
-                    continue;
-                }
-                if (trimmed.StartsWith("00") && trimmed.Contains("01"))
-                {
-                    sessionWriter.WriteLine($"  Line {i + 1:D2} [COLUMN LABEL SKIP]: '{trimmed}'");
-                    continue;
-                }
-
-                // Token extraction check to enforce two-digit numeric data row verification
-                string[] tokens = trimmed.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-
-                if (tokens.Length > 0)
-                {
-                    // FIXED SUITE: If it has exactly 22 columns, it is a valid legacy raw grid data line.
-                    if (tokens.Length == 22)
-                    {
-                        // Pass validation cleanly
-                    }
-                    else
-                    {
-                        string firstToken = tokens[0].Trim();
-                        // If the first token isn't a 2-digit row marker index (00-21), treat line as narrative text
-                        if (firstToken.Length != 2 || !char.IsDigit(firstToken[0]) || !char.IsDigit(firstToken[1]))
-                        {
-                            sessionWriter.WriteLine($"  Line {i + 1:D2} [NARRATIVE METADATA TEXT SKIP]: '{trimmed}'");
-                            continue;
-                        }
-                    }
-                }
-
-                sessionWriter.WriteLine($"  Line {i + 1:D2} [DATA INGEST] -> Raw Char Length: {cleanLine.Length} | Text: '{cleanLine}' | Tokens: {tokens.Length}");
-
-                int startColIndex = (tokens.Length == 23) ? 1 : 0;
-                for (int colY = 0; colY < 22; colY++)
-                {
-                    int targetTokenPos = colY + startColIndex;
-                    if (targetTokenPos >= tokens.Length) break;
-
-                    string tokenValue = tokens[targetTokenPos].Trim();
-                    // ============================================================================
-                    // FIX BANNER: ROMMANAGER.CS - VALUE ALIGNMENT PROTECTION RESYNC (v0.85 SUCCESS)
-                    // ============================================================================
-                    if (tokenValue == ".." || tokenValue == "." || tokenValue == "..." || tokenValue == "XX")
-                    {
-                        // Set to 0 to represent empty space boundaries rather than solid ground
-                        heightsMatrix[currentGridRow, colY] = 0;
-                    }
-                    else if (byte.TryParse(tokenValue, out byte parsedHeight))
-                    {
-                        heightsMatrix[currentGridRow, colY] = parsedHeight;
-                    }
-                    // ============================================================================
-                }
-                currentGridRow++;
-                if (currentGridRow >= 22) break;
-            }
-            // FIXED SUITE: Dynamic stage token replacement ensures clean file boundary search traces
-            sessionWriter.WriteLine($"==================== [STRIDE MONITOR: END OF STAGE {stageNum:D2} LOG] ====================\n");
-        }
-        // ============================================================================
-        // FIX BANNER: ROMMANAGER.CS - INJECTCUSTOMGEMSFROMDISK HEAD RESYNC (v0.85 SUCCESS)
-        // ============================================================================
-        private static void InjectCustomGemsFromDisk(int stageNum, bool[,] gemsMatrix, byte[,] attributesTargetMatrix)
-        {
-            string gemsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "gems");
-            if (!Directory.Exists(gemsFolder)) return;
-
-            string v080Pattern = $"Gems_Stage_{stageNum:D2}_*.txt";
-            string legacyPattern = $"Diagnostic_Gems_Stage_{stageNum:D2}_*.txt";
-
-            string[] files = Directory.GetFiles(gemsFolder, v080Pattern);
-            if (files.Length == 0) files = Directory.GetFiles(gemsFolder, legacyPattern);
-            if (files.Length == 0) return;
-
-            try
-            {
-                string[] lines = File.ReadAllLines(files[0]);
-                int currentGridRow = 0;
-
-                for (int x = 0; x < 22; x++)
-                    for (int y = 0; y < 22; y++)
-                        attributesTargetMatrix[x, y] &= 0xEF;
-
-                // ============================================================================
-                // FIX BANNER: ROMMANAGER.CS - CONCURRENT GEMS MATRIX INJECTOR (v0.85 SUCCESS)
-                // ============================================================================
-                foreach (string line in lines)
-                {
-                    if (string.IsNullOrWhiteSpace(line) || line.Contains("===") || line.Contains("-") || line.Contains("[Legend")) continue;
-
-                    string[] tokens = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                    if (tokens.Length >= 22)
-                    {
-                        for (int colY = 0; colY < 22 && colY < tokens.Length; colY++)
-                        {
-                            string tokenValue = tokens[colY].Trim();
-                            if (tokenValue == "*")
-                            {
-                                // Write 1: Populate your clean boolean array slot for direct rendering
-                                gemsMatrix[currentGridRow, colY] = true;
-
-                                // Write 2: Maintain back-compatibility with the legacy validation checkmarks
-                                attributesTargetMatrix[currentGridRow, colY] |= 0x10;
-                            }
-                            else
-                            {
-                                // Enforce default state safety configuration across space gaps
-                                gemsMatrix[currentGridRow, colY] = false;
-                            }
-                        }
-                        currentGridRow++;
-                        if (currentGridRow >= 22) break;
-                    }
-                }
-                // ============================================================================
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to inject custom gems matrix pass: {ex.Message}");
-            }
-        }
 
         public static void GenerateStartupLaboratoryLogs()
         {

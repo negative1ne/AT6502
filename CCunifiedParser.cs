@@ -11,7 +11,7 @@ using System.IO;
 
 namespace CrystalCastles.DataEngine
 {
-    
+
 
     public class CCUnifiedParser
     {
@@ -21,6 +21,63 @@ namespace CrystalCastles.DataEngine
         /// SUB-SECTION 1: Dynamic Map Geometry Loader (Working Parser Core)
         /// Ingests both legacy 2-char NN and modern 3-char NNN padded file grids.
         /// </summary>
+        /// 
+        // ============================================================================
+        // FIX BANNER: CCUNIFIEDPARSER.CS - UNIFIED BYTE CONSLIDATION LOOP (v0.85 SUCCESS)
+        // ============================================================================
+        public static void LoadMapFile(string filePath, byte[,] targetHeightsMatrix)
+        {
+            if (!File.Exists(filePath)) return;
+
+            try
+            {
+                string[] lines = File.ReadAllLines(filePath);
+                int currentGridRow = 0;
+
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    string cleanLine = lines[i].Trim(new char[] { '\uFEFF', '\u200B' }).Trim();
+
+                    // Structural Metadata header and padding row filters
+                    if (string.IsNullOrWhiteSpace(cleanLine) || cleanLine.Contains("====") || cleanLine.Contains("----") || cleanLine.Contains("[Legend")) continue;
+                    if (cleanLine.StartsWith("00") && cleanLine.Contains("01")) continue;
+
+                    string[] tokens = cleanLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (tokens.Length > 0)
+                    {
+                        if (tokens.Length != 22)
+                        {
+                            string firstToken = tokens[0].Trim();
+                            if (firstToken.Length != 2 || !char.IsDigit(firstToken[0]) || !char.IsDigit(firstToken[1])) continue;
+                        }
+                    }
+                    else continue;
+
+                    int startColIndex = (tokens.Length == 23) ? 1 : 0;
+                    for (int colY = 0; colY < 22; colY++)
+                    {
+                        int targetTokenPos = colY + startColIndex;
+                        if (targetTokenPos >= tokens.Length) break;
+
+                        string tokenValue = tokens[targetTokenPos].Trim();
+                        if (tokenValue == ".." || tokenValue == "." || tokenValue == "..." || tokenValue == "XX")
+                        {
+                            targetHeightsMatrix[currentGridRow, colY] = 0;
+                        }
+                        else if (byte.TryParse(tokenValue, out byte parsedHeight))
+                        {
+                            targetHeightsMatrix[currentGridRow, colY] = parsedHeight;
+                        }
+                    }
+                    currentGridRow++;
+                    if (currentGridRow >= 22) break;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Unified text matrix parsing fault: {ex.Message}");
+            }
+        }
         public static short[,] LoadMapFile(string filePath, out int stageId, out int gemTally)
         {
             var matrix = new short[GridSize, GridSize];
@@ -126,8 +183,8 @@ namespace CrystalCastles.DataEngine
             Console.WriteLine($"[✓] SUCCESS: Gem matrix loaded -> {Path.GetFileName(filePath)} | Active Count: {parsedGemCount} Found.");
             return matrix;
         }
-    
-    /// <summary>
+
+        /// <summary>
         /// SUB-SECTION 3: Keyword-Targeted Elevator Config Loader
         /// Streams text sheets, scanning explicitly for "RowX = " to isolate vector vectors.
         /// </summary>
@@ -188,24 +245,78 @@ namespace CrystalCastles.DataEngine
             return elevators;
         }
 
-    } // ============================================================================
-    // FIX BANNER: CCUNIFIEDPARSER.CS - STRUCT RECOVERY LAYER (v0.85 REPAIR)
-    // ============================================================================
-    // ============================================================================
-    // FIX BANNER: CCUNIFIEDPARSER.CS - COMPLETE STRUCT RECOVERY LAYER (v0.85 FIXED)
-    // ============================================================================
-    public class ElevatorEntity
-    {
-        public int RowX { get; set; }
-        public int ColY { get; set; }
-        public int BottomH { get; set; }
-        public int TopH { get; set; }
-        public string Direction { get; set; } = "UP";
 
-        // Dan's native properties to resolve CS0117 and CS1061 errors
-        public int GridX { get; set; }
-        public int GridY { get; set; }
-        public float Height { get; set; }
+
+        // ============================================================================
+        // FIX BANNER: CCUNIFIEDPARSER.CS - UNIFIED GEMS CONSOLIDATION LOOP (v0.85 SUCCESS)
+        // ============================================================================
+        public static void LoadGemFile(string filePath, bool[,] targetGemsMatrix, byte[,] targetAttributesMatrix)
+        {
+            if (!File.Exists(filePath)) return;
+
+            try
+            {
+                string[] lines = File.ReadAllLines(filePath);
+                int currentGridRow = 0;
+
+                foreach (string line in lines)
+                {
+                    if (string.IsNullOrWhiteSpace(line) || line.Contains("===") || line.Contains("-") || line.Contains("[Legend")) continue;
+
+                    string[] tokens = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (tokens.Length >= 22)
+                    {
+                        for (int colY = 0; colY < 22 && colY < tokens.Length; colY++)
+                        {
+                            string tokenValue = tokens[colY].Trim();
+                            if (tokenValue == "*")
+                            {
+                                // Populate the clean boolean array slot for direct viewport rendering
+                                targetGemsMatrix[currentGridRow, colY] = true;
+
+                                // Maintain back-compatibility with the legacy validation flags
+                                targetAttributesMatrix[currentGridRow, colY] |= 0x10;
+                            }
+                            else
+                            {
+                                targetGemsMatrix[currentGridRow, colY] = false;
+                            }
+                        }
+                        currentGridRow++;
+                        if (currentGridRow >= 22) break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Unified gem matrix parsing fault: {ex.Message}");
+            }
+        }
+
+
+
+
+        // ============================================================================
+        // FIX BANNER: CCUNIFIEDPARSER.CS - STRUCT RECOVERY LAYER (v0.85 REPAIR)
+        // ============================================================================
+        // ============================================================================
+        // FIX BANNER: CCUNIFIEDPARSER.CS - COMPLETE STRUCT RECOVERY LAYER (v0.85 FIXED)
+        // ============================================================================
+        public class ElevatorEntity
+        {
+            public int RowX { get; set; }
+            public int ColY { get; set; }
+            public int BottomH { get; set; }
+            public int TopH { get; set; }
+            public string Direction { get; set; } = "UP";
+
+            // Dan's native properties to resolve CS0117 and CS1061 errors
+            public int GridX { get; set; }
+            public int GridY { get; set; }
+            public float Height { get; set; }
+        }
     }
 }
+
+
 
