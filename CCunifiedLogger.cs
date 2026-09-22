@@ -39,12 +39,18 @@ namespace cSharpRaylib
             }
         }
 
-        // v0.90 ISOLATED TRANSACTION DUMPER: Invoked solely on manual 'E' hotkey command passes
-        public static void ExportActiveSessionSummary(int currentRoom, string stageName, bool[,] activeGridCells)
+        // ====================================================================================
+        // TASK 1 - PART 5: CCUNIFIEDLOGGER.CS - 3D DATA RETENTION EXPORT LOG ROUTINE
+        // LOCATION: REPLACES ExportActiveSessionSummary TO END OF MODULE (APPROX LINE 34)
+        // CONSTRAINTS: COMPACT LINE OVERRUN PREVENTER | PARSES SELECTED LEVEL DEPTH ROWS
+        // ====================================================================================
+        // v0.90 TRANSACTION EXPORTER: Reads from isolated multi-room array matrices
+        public static void ExportActiveSessionSummary(int currentRoom, string stageName, bool[,,] activeGridCells)
         {
             try
             {
-                string outFileName = $"session_audit_stage_{currentRoom:D2}_{_sessionTimestamp}.log";
+                // RENAMED BASELINE: Overwrites old "session_" marker tag to standardized "export_" format
+                string outFileName = $"export_stage_{currentRoom:D2}_{_sessionTimestamp}.log";
                 string fullExportPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, outFileName);
 
                 using (StreamWriter sw = new StreamWriter(fullExportPath, true, Encoding.UTF8))
@@ -64,7 +70,8 @@ namespace cSharpRaylib
                         StringBuilder rowText = new StringBuilder($"{x:D2} ");
                         for (int y = 0; y < 22; y++)
                         {
-                            if (activeGridCells[x, y])
+                            // Ingest selections natively from the explicit 3D room tier index slot
+                            if (activeGridCells[currentRoom, x, y])
                             {
                                 rowText.Append(" L ");
                                 activeLockedCount++;

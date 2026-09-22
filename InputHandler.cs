@@ -77,22 +77,28 @@ namespace cSharpRaylib
 
 
         // ====================================================================================
-        // REBUILD STEP 3 - PART 2: INPUTHANDLER.CS (PURE MOUSE PROBE CAPTURE LOGIC)
-        // LOCATION: REPLACES MOUSE INITIALIZATION AND CROSSHAIR LOCK PASSES IN THE INNER HOOKS
-        // CONSTRAINTS: NO CACHED DISK EVENT WRITES | ENFORCES RIGID CANVASES BOUND CLAMPING
+        // TASK 1 - PART 3: INPUTHANDLER.CS - 3D MOUSE SELECTION INPUT SYNCHRONIZATION
+        // LOCATION: TARGET REGIONS IN TrackMouseProbeCoordinates (APPROX LINE 70 TO 95)
+        // CONSTRAINTS: COMPACT LINE OVERRUN PREVENTER | 3D ROOM TARGET INDEXING
         // ====================================================================================
         public static void TrackMouseProbeCoordinates(float screenX, float screenY,
             float scale, int offsetX, int offsetY, int rotationAngle, float tiltFactor,
-            CityData activeCity, bool is3DMode, int currentRoom)
+            CityData activeCity, bool is3DMode, int currentRoom, bool[,,] canvasMatrix)
         {
             if (is3DMode != _lastIs3DMode) { _lastIs3DMode = is3DMode; return; }
 
-            // Pure coordinate locking toggle pass: Completely free of volatile file writes
+            // 3D Matrix Click Capture Hook: Synchronizes toggles cleanly to the specific level layer
             if (Raylib.IsMouseButtonPressed(MouseButton.Left) && !IsStageCommitted)
             {
                 if (IsProbeInsideWorkspace || IsProbeLockedToGrid)
                 {
                     IsProbeLockedToGrid = !IsProbeLockedToGrid;
+
+                    if (IsProbeLockedToGrid && canvasMatrix != null && currentRoom >= 0 && currentRoom < 37)
+                    {
+                        // Flips selection bit natively on the explicit room layer row
+                        canvasMatrix[currentRoom, ProbeGridX, ProbeGridY] = !canvasMatrix[currentRoom, ProbeGridX, ProbeGridY];
+                    }
                 }
             }
 
@@ -144,19 +150,17 @@ namespace cSharpRaylib
         // ====================================================================================
         // END OF DIRECT MOUSE CLICK PIPELINE CORRECTION
         // ====================================================================================
-        // ============================================================================
-        // REBUILD STEP 3 - PART 3: INPUTHANDLER.CS (ANCHOR STACKING HUD ENGINE)
-        // LOCATION: REPLACES DRAWCONTROLOVERLAY ENTRY ROUTINE DOWN TO FILE END
-        // CONSTRAINTS: COMPACT LINE OVERRUN SAFETY | DYNAMIC DUAL HIGHLIGHT TOGGLES
-        // ============================================================================
+        // ====================================================================================
+        // TASK 1 - PART 4 (REVISED): INPUTHANDLER.CS - RESOLVE AMBIGUOUS COLOR NAMESPACES
+        // LOCATION: REPLACES DRAWCONTROLOVERLAY ENTRY SIGNATURE ROUTINES (APPROX LINE 120)
+        // CONSTRAINTS: COMPACT LINE OVERRUN PREVENTER | EXPLICIT RAYLIB_CS.COLOR TYPING
+        // ====================================================================================
         public static void DrawControlOverlay(bool is3DMode, int renderStyle, bool pathsOn, bool gemsOn, bool legacyOverlayOn,
-        bool isInverted, float globalScale, int currentRoom, string stageName, int totalElevators, Raylib_cs.Color[] activeTheme)
+        bool isInverted, float globalScale, int currentRoom, string stageName, int totalElevators, Raylib_cs.Color[] activeTheme, bool[,,] canvasMatrix)
         {
             Raylib_cs.Color cardBg = isInverted ? new Raylib_cs.Color(230, 230, 230, 220) : new Raylib_cs.Color(20, 20, 20, 200);
             Raylib_cs.Color cardBorder = isInverted ? Raylib_cs.Color.DarkGray : Raylib_cs.Color.LightGray;
             Raylib_cs.Color textClr = isInverted ? Raylib_cs.Color.Black : Raylib_cs.Color.RayWhite;
-
-            // Global Layout Anchor point calculation variables
             Vector2 guiAnchor = new Vector2(15, 10);
 
             Raylib.DrawText("ccSharpRaylib [v0.90]", (int)guiAnchor.X, (int)guiAnchor.Y, 20, textClr);
@@ -182,7 +186,6 @@ namespace cSharpRaylib
             Raylib.DrawText($"G          : Gems     [{(gemsOn ? "ON" : "OFF")}]", (int)guiAnchor.X + 10, tY + 76, 11, textClr);
             Raylib.DrawText($"V          : Palette Mode Toggle", (int)guiAnchor.X + 10, tY + 96, 11, Raylib_cs.Color.Yellow);
 
-            // Dynamic Brightness Highlighting Switch: Shift from Dim Gray to Bright Neon Green instantly
             Raylib_cs.Color commitStatusColor = IsStageCommitted ? Raylib_cs.Color.Lime : Raylib_cs.Color.DarkGray;
             string commitLabelText = IsStageCommitted ? "C          : Commit Data [LOCKED]" : "C          : Commit Data [OFF]";
             Raylib.DrawText(commitLabelText, (int)guiAnchor.X + 10, tY + 114, 11, commitStatusColor);

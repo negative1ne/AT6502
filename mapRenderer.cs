@@ -1,9 +1,10 @@
 ﻿// ============================================================================
 // FIX BANNER: MAPRENDERER.CS - PART 1: MAIN VIEWPORT SESSION MARKERS (v0.85)
 // ============================================================================
+using Raylib_cs;
 using System;
 using System.Collections.Generic;
-using Raylib_cs;
+using static System.Windows.Forms.AxHost;
 using Color = Raylib_cs.Color;
 
 namespace cSharpRaylib
@@ -78,11 +79,18 @@ namespace cSharpRaylib
                     {
                         Raylib.DrawText("E", posX + 4, posY + 1, 12, Color.White);
                     }
-                    // Read the shared global matrix to display session progress markers live
-                    else if (Program.MainLoggedCells[x, y])
+                    // ====================================================================================
+                    // FIX BANNER: MAPRENDERER.CS - 3D RENDERING MATRIX SYNCHRONIZATION
+                    // LOCATION: REPLACES THE ELSE IF (Program.MainLoggedCells) SELECTION TARGET (APPROX LINE 80)
+                    // CONSTRAINTS: COMPACT LINE OVERRUN PREVENTER | ALIGNS NATIVE STAGENUM & POSX/Y LABELS
+                    // ====================================================================================
+                    // Read the 3D persistent matrix layer cleanly using your native stageNum index
+                    else if (Program.MainLoggedCells[stageNum, x, y])
                     {
                         Raylib.DrawText("L", posX + 4, posY + 1, 12, Color.Orange);
                     }
+                    // ====================================================================================
+
                     // ============================================================================
                     // FIX BANNER: MAPRENDERER.CS - 2D BLUEPRINT GEM REFERENCE UNLEASHED (v0.85)
                     // ============================================================================

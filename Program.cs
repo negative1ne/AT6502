@@ -12,8 +12,14 @@ namespace cSharpRaylib
 {
     public class Program
     {
-        // v0.85 MASTER INTERACTIVE AUDIT ARRAYS: Tracks clicked blocks live
-        public static bool[,] MainLoggedCells = new bool[22, 22];
+        // ====================================================================================
+        // TASK 1 - PART 1: PROGRAM.CS - 3D MULTI-ROOM SELECTION FIELD ALLOCATION
+        // LOCATION: REPLACES SINGLE LAYERING MATRIX DECLARATION AT FIELD LEVEL (APPROX LINE 20)
+        // CONSTRAINTS: MEMORY-RESIDENT ALLOTMENT | 37 ISOLATED REPOSITORY SHEETS
+        // ====================================================================================
+        // v0.90 3D PERSISTENT MATRIX: 37 rooms x 22 rows x 22 columns = 17.5KB stable RAM footprint
+        public static bool[,,] MainLoggedCells = new bool[37, 22, 22];
+        // ====================================================================================
         public static int LastAuditedRoomID = -1;
 
         public static void Main(string[] args)
@@ -134,9 +140,10 @@ namespace cSharpRaylib
             bool triggerTextExport = false;
             bool trigger3DLabWindow = false;
 
-            // ============================================================================
-            // FIX BANNER: PROGRAM.CS - PART 2 FINAL CORRECTED RUNTIME CORE (v0.85)
-            // ============================================================================
+            // ====================================================================================
+            // REBUILD STEP 4 - PART 1: PROGRAM.CS - CORE HOTKEY LOGGER INTERCEPT
+            // LOCATION: REPLACES INITIAL KEY HANDLING IN MAIN WHILE LOOP (APPROX LINE 135-145)
+            // ====================================================================================
             while (!Raylib.WindowShouldClose())
             {
                 InputHandler.HandleKeys(
@@ -146,15 +153,18 @@ namespace cSharpRaylib
                     ref invertBackground, ref triggerTextExport, ref trigger3DLabWindow
                 );
 
-                // ====================================================================================
-                // FIX BANNER: PROGRAM.CS - BIND VIEWPORT GRAPHICS TO SINGLE SOURCE OF TRUTH (v0.85 SUCCESS)
-                // ====================================================================================
+                // v0.90 DEFERRED LOG ENGINE SNAPSHOT HOOK: Invoked strictly under user command pass
+                if (Raylib.IsKeyPressed(KeyboardKey.E))
+                {
+                    string cleanStageName = (currentRoom < StageNames.Length) ? StageNames[currentRoom] : "Unknown Castle";
+                    CCUnifiedLogger.ExportActiveSessionSummary(currentRoom, cleanStageName, MainLoggedCells);
+                }
+
                 int cityIndex = RoomToCityMap[currentRoom] & 0x0F;
-
-                // FORCE POINTER ALIGNMENT: Point your rendering engine directly to the unified ingestion array
                 CityData activeCity = RomManager.IsolatedStages[currentRoom];
-
                 string currentStageName = (currentRoom < StageNames.Length) ? StageNames[currentRoom] : "Unknown Castle";
+                // ====================================================================================
+                // END OF PART 1
                 // ====================================================================================
 
                 // ====================================================================================
@@ -200,12 +210,18 @@ namespace cSharpRaylib
                 var drawingRoom = RomManager.IsolatedStages[currentRoom];
                 System.Numerics.Vector2 frameworkMouseVec = Raylib.GetMousePosition();
 
+                /// ====================================================================================
+                // TASK 1 - PART 2: PROGRAM.CS - CORE GRAPHICS UPDATE LOOP VARIABLE HOOK
+                // LOCATION: REPLACES PARAMETER PASSING TO MOUSE TRACKING ENGINE (APPROX LINE 207)
+                // ====================================================================================
                 InputHandler.TrackMouseProbeCoordinates(
                     frameworkMouseVec.X / scaleMultiplier,
                     frameworkMouseVec.Y / scaleMultiplier,
                     globalScale, panOffsetX, panOffsetY, rotationAngle, tiltFactor,
-                    drawingRoom, is3DMode, currentRoom
+                    drawingRoom, is3DMode, currentRoom, MainLoggedCells
                 );
+                // ====================================================================================
+        
 
                 if (!is3DMode)
                 {
@@ -217,10 +233,16 @@ namespace cSharpRaylib
                     MapRenderer.Draw3DWorkspace(drawingRoom, activeTheme, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode, displayPathOverlays, displayGems, true, currentRoom);
                 }
 
+                // ====================================================================================
+                // FIX BANNER: PROGRAM.CS - PARAMETER VARIABLE ALIGNMENT CORRECTION
+                // LOCATION: REPLACES DRAWCONTROLOVERLAY RUNTIME HOOK IN MAIN LOOP (APPROX LINE 243)
+                // ====================================================================================
                 InputHandler.DrawControlOverlay(
-                    is3DMode, renderStyleMode, displayPathOverlays, displayGems, showDanLegacyOverlay,
-                    invertBackground, globalScale, currentRoom, currentStageName, drawingRoom.Elevators.Count, activeTheme
+                    is3DMode, renderStyleMode, displayPathOverlays, displayGems,
+                    showDanLegacyOverlay, invertBackground, globalScale, currentRoom,
+                    currentStageName, activeCity.Elevators.Count, activeTheme, MainLoggedCells
                 );
+                // ====================================================================================
 
                 Raylib.EndTextureMode();
 
