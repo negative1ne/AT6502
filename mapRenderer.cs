@@ -11,7 +11,7 @@ namespace cSharpRaylib
 {
     public static class MapRenderer
     {
-        // ====================================================================================
+         // ====================================================================================
         // FIX BANNER: MAPRENDERER.CS - TASK 6: THREE-LEVEL 90° 2D BLUEPRINT CANVAS RE-MAPPER
         // LOCATION: REPLACES DRAW2DBLUEPRINT METHOD COMPLETELY (LINES 12-105 APPROX)
         // CONSTRAINTS: KEEPS NATIVE STORAGE PURITY | ALIGNS STAGES 01, 21, AND 22 VISUALLY
@@ -24,7 +24,11 @@ namespace cSharpRaylib
 
             byte[,] romAttributes = RomManager.BaseCities[stageNum % 16].Attributes;
 
-            // Establish visual-only tracking rotation target exception filter
+            // ====================================================================================
+            // UNIFICATION FIX: MAPRENDERER.CS - BROADEN TREE WAVE ROTATION ENGINE RANGE
+            // LOCATION: REPLACES SINGLE-STAGE EXCEPTION CONDITIONAL INSIDE DRAW2DBLUEPRINT METHOD
+            // CONSTRAINTS: EMBEDS STAGES 21 AND 22 TO ROTATE VISUALLY AND ALIGN UNIFORM (v0.90 SPEC)
+            // ====================================================================================
             bool isRotatedStage = (stageNum == 1 || stageNum == 21 || stageNum == 22);
 
             for (int x = 0; x < 22; x++)
@@ -47,7 +51,7 @@ namespace cSharpRaylib
 
                     int tileHeight = activeCity.Heights[srcX, srcY];
                     byte cellAttr = activeCity.Attributes[srcX, srcY];
-
+                    
                     // Render coordinates remain linear while tracking source indices step through matrix rotation transformations
                     int posX = gridOffsetX + (y * cellSize);
                     int posY = gridOffsetY + (x * cellSize);
@@ -121,7 +125,7 @@ namespace cSharpRaylib
                 }
             }
         }
-
+         
         // ============================================================================
         // MAPRENDERER.CS APPENDIX FIX: RESTORE 3D WORKSPACE METHOD HOOK (v0.85)
         // ============================================================================

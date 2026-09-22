@@ -117,6 +117,12 @@ namespace cSharpRaylib
             // ====================================================================================
             CCUnifiedLogger.AppendStartupAuditReport(StageNames);
             List<CityData> cities = RomManager.LoadRomDatabase();
+            // ====================================================================================
+            // DIAGNOSTIC CORE FIXED BANNER: PROGRAM.CS - DYNAMIC LEVEL 01 OVERWRITE RUN HOOK
+            // LOCATION: INJECTED DIRECTLY BENEATH INITIAL STARTUP AUDIT LOG STRIDE PASS
+            // CONSTRAINTS: FORCES LOG GENERATION TO SWITCH TARGET TO TREE WAVE FILE (v0.90)
+            // ====================================================================================
+            RomManager.DebugTargetStage = 1;
             var stagePalettes = StagePalettes.GetMasterPaletteMatrix();
 
             const int virtualWidth = 800;
@@ -167,13 +173,16 @@ namespace cSharpRaylib
                     ref invertBackground, ref triggerTextExport, ref trigger3DLabWindow,
                     RomManager.ActiveSessionTimestamp
                 );
-              
 
-            // v0.90 DEFERRED LOG ENGINE SNAPSHOT HOOK: Invoked strictly under user command pass
-            if (Raylib.IsKeyPressed(KeyboardKey.E))
+
+                // ====================================================================================
+                // OPTION 1: PROGRAM.CS - DEFERRED MULTI-LEVEL MASTER SNAPSHOT INJECTOR HOOK
+                // LOCATION: REPLACES DEFERRED LOG HOOK WITHIN RUNTIME ENGINE LOOP BREAK STRIDE
+                // CONSTRAINTS: INJECTS MASTER STAGENAMES CONTEXT TABLE FOR CONSOLIDATION (v0.90)
+                // ====================================================================================
+                if (Raylib.IsKeyPressed(KeyboardKey.E))
                 {
-                    string cleanStageName = (currentRoom < StageNames.Length) ? StageNames[currentRoom] : "Unknown Castle";
-                    CCUnifiedLogger.ExportActiveSessionSummary(currentRoom, cleanStageName, MainLoggedCells);
+                    CCUnifiedLogger.ExportActiveSessionSummary(StageNames, MainLoggedCells);
                 }
 
                 int cityIndex = RoomToCityMap[currentRoom] & 0x0F;

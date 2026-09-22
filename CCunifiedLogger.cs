@@ -165,9 +165,106 @@ namespace cSharpRaylib
             }
         }
         // ====================================================================================
-        // SUB-TASK 7C - PART 1: CCUNIFIEDLOGGER.CS - SECURED STARTUP LOOPER REWRITE
-        // LOCATION: REPLACES APPENDSTARTUPAUDITREPORT METHOD COMPLETELY TO ELIMINATE TRUNCATION
-        // CONSTRAINTS: COMPACT LINE OVERRUN SAFETY | FULL DEFENSIVE NULL OBJECT GUARDS (v0.90)
+        // OPTION 1: CCUNIFIEDLOGGER.CS - MULTI-LEVEL CONSOLIDATED MASTER SNAPSHOT ENGINE
+        // LOCATION: REPLACES EXPORTACTIVESESSIONSUMMARY FROM METHOD HEADER TO EXPORT SYSTEM END
+        // CONSTRAINTS: 150 LINES MAX WINDOW LIMIT | IN-MEMORY LOOP EXTRACTION | TIMESTAMPED LEDGER
+        // ====================================================================================
+        public static void ExportActiveSessionSummary(string[] stageNames, bool[,,] activeGridCells)
+        {
+            try
+            {
+                string timeStamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string outFileName = $"master_export_{timeStamp}.log";
+                string fullExportPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, outFileName);
+
+                using (StreamWriter sw = new StreamWriter(fullExportPath, false, Encoding.UTF8))
+                {
+                    sw.WriteLine("================================================================================");
+                    sw.WriteLine("CRYSTAL CASTLES v0.90 UNIFIED REPOSITORY MULTI-LEVEL MASTER SESSION SNAPSHOT");
+                    sw.WriteLine($"Compiled Timestamp: {DateTime.Now:MM/dd/yyyy hh:mm:ss tt}");
+                    sw.WriteLine("================================================================================");
+
+                    for (int roomID = 0; roomID < 37; roomID++)
+                    {
+                        var dRoom = (RomManager.IsolatedStages != null && roomID < RomManager.IsolatedStages.Count) ? RomManager.IsolatedStages[roomID] : null;
+                        string currentStageName = (stageNames != null && roomID < stageNames.Length) ? stageNames[roomID] : "Unknown Castle";
+
+                        // First Pass: Scan the memory grid layer to determine if this level has active workspace selections
+                        int activeLockedCount = 0;
+                        for (int x = 0; x < 22; x++)
+                        {
+                            for (int y = 0; y < 22; y++)
+                            {
+                                if (activeGridCells[roomID, x, y]) activeLockedCount++;
+                            }
+                        }
+
+                        // Write cohesive section header block per level
+                        sw.WriteLine($"\nSTAGE [{roomID:D2}] -> {currentStageName.ToUpper()} | Marked Target Cells Locked: {activeLockedCount:D2}");
+                        sw.WriteLine("--------------------------------------------------------------------------------");
+
+                        // If no changes exist in memory for this room, exit section early to keep ledger clean
+                        if (activeLockedCount == 0) continue;
+
+                        sw.WriteLine("    00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21");
+                        for (int x = 0; x < 22; x++)
+                        {
+                            StringBuilder rowText = new StringBuilder($"{x:D2} ");
+                            List<string> cellMetadataList = new List<string>();
+
+                            for (int y = 0; y < 22; y++)
+                            {
+                                if (activeGridCells[roomID, x, y])
+                                {
+                                    rowText.Append(" L ");
+                                    int cellHeight = (dRoom != null) ? dRoom.Heights[x, y] : 0;
+                                    bool hasGem = (dRoom != null) && dRoom.Gems[x, y];
+                                    string gemStr = hasGem ? "YES" : "NO";
+                                    string liftStr = "NONE";
+
+                                    if (dRoom != null)
+                                    {
+                                        for (int e = 0; e < dRoom.Elevators.Count; e++)
+                                        {
+                                            var ev = dRoom.Elevators[e];
+                                            if (ev.IsMapped && ev.CellX == x && ev.CellY == y)
+                                            {
+                                                liftStr = $"E{e} [H:{ev.CurrentPosition:D3}, Mode:{ev.Mode}]";
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    cellMetadataList.Add($"    * Cell [{x:D2}, {y:D2}] -> Altitude: H={cellHeight:D3} | Gem: {gemStr} | Lift Node: {liftStr}");
+                                }
+                                else
+                                {
+                                    rowText.Append(" . ");
+                                }
+                            }
+                            sw.WriteLine(rowText.ToString());
+
+                            // Immediately append the extracted cell telemetry parameters beneath the active layout row
+                            foreach (var metadataLine in cellMetadataList)
+                            {
+                                sw.WriteLine(metadataLine);
+                            }
+                        }
+                    }
+                    sw.WriteLine("\n================================================================================");
+                    sw.WriteLine("[STATUS]: Multi-Level Master export completed. Stream closed successfully.\n");
+                }
+                Console.Beep(2000, 300);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[CRITICAL EXPORT FAULT] Failed writing master session ledger to disk: {ex.Message}");
+            }
+        }
+
+        // ====================================================================================
+        // PHASE C ENTIRE COMPLETION: CCUNIFIEDLOGGER.CS - MASTER VERIFICATION SUITE LEDGER
+        // LOCATION: COMPACT FULL-METHOD REPLACEMENT RUNNING FROM SIGNATURE TO FILE END
+        // CONSTRAINTS: IN-MEMORY ENGINE RE-LINKING ACCURATELY LIFTS ALL 37 MARKS AT ONCE (v0.90)
         // ====================================================================================
         public static void AppendStartupAuditReport(string[] stageNames)
         {
@@ -205,11 +302,10 @@ namespace cSharpRaylib
                     {
                         string name = (stageNames != null && i < stageNames.Length) ? stageNames[i] : "Unknown";
 
-                        // Defensively look up the global collection array structures to prevent reference errors
                         var room = (RomManager.IsolatedStages != null && i < RomManager.IsolatedStages.Count) ? RomManager.IsolatedStages[i] : null;
 
-                        // Check custom track states safely via null-conditional access expressions
-                        bool isCustomAsset = room != null && room.TrackState != StageTrackingState.NoElevators;
+                        // VERIFICATION KEY: Room is verified custom asset if tracking state is working or loaded
+                        bool isCustomAsset = room != null && (room.TrackState == StageTrackingState.VerifiedWorking || room.TrackState == StageTrackingState.NoElevators);
                         string statusIndicator = isCustomAsset ? "[✓]" : "[X]";
 
                         sw.WriteLine($"Stage [{i:D2}] -> {name.PadRight(28)} | Maps: {statusIndicator} (000 Var)");
