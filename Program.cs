@@ -77,7 +77,7 @@ namespace cSharpRaylib
                 string fullUnifiedPath = Path.Combine(unifiedFolder, targetFileName);
 
                 // MUTED LOGGER PASS: Passing null here completely suppresses the repetitive 430KB disk noise
-                 var calibrationProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(fullUnifiedPath, null);
+                var calibrationProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(fullUnifiedPath, null);
 
                 Console.WriteLine("\n================================================================================");
                 Console.WriteLine($"CALIBRATION VERDICT: STAGE {calibrationProfile.StageID:D2} [{calibrationProfile.StageName}] INGESTION MATCH VERIFIED.");
@@ -90,10 +90,14 @@ namespace cSharpRaylib
             // ====================================================================================
             // END OF FIX BLOCK 1
             // ====================================================================================
-            
 
-            // Step 3: Log baseline launch confirmation telemetry trace
-            CrystalCastles.DataEngine.DataEngineLogger.LogSession("System Initialization: v0.85 Data Engine Isolation initialized successfully.");
+
+            // ====================================================================================
+            // STRINGS SWEEP: PROGRAM.CS - SYNCHRONIZE VERSION TEXT REGISTRATION
+            // LOCATION: REPLACES LABELED ENGINE DATA ISOLATION INIT TRACE LOG LINE
+            // CONSTRAINTS: ELIMINATES LEGACY VERSION FRAGMENT STREAMS FROM BASELINE TRACES
+            // ====================================================================================
+            CrystalCastles.DataEngine.DataEngineLogger.LogSession("System Initialization: v0.90 Data Engine Isolation initialized successfully.");
             CrystalCastles.DataEngine.DataEngineLogger.LogSession($"Project Base Directory verified at: {projectBaseDir}");
 
             // ====================================================================================
@@ -106,7 +110,12 @@ namespace cSharpRaylib
             // CrystalCastles.DataEngine.SandboxTestHarness.ExecuteValidationPass(projectBaseDir);
 
             // ====================================================================================
-
+            // ====================================================================================
+            // SUB-TASK 7C HOOK: PROGRAM.CS - ACTIVATE MASTER STARTUP INTEGRITY VERIFICATION PASS
+            // LOCATION: INJECTED DIRECTLY FOLLOWING ROM MANAGER REPOSITORY DATABASE INITIALIZATION
+            // CONSTRAINTS: SINGLE RUN PASS ON APPLICATION EXECUTION ENTRY STRIDE (v0.90)
+            // ====================================================================================
+            CCUnifiedLogger.AppendStartupAuditReport(StageNames);
             List<CityData> cities = RomManager.LoadRomDatabase();
             var stagePalettes = StagePalettes.GetMasterPaletteMatrix();
 
@@ -145,16 +154,23 @@ namespace cSharpRaylib
             // LOCATION: REPLACES INITIAL KEY HANDLING IN MAIN WHILE LOOP (APPROX LINE 135-145)
             // ====================================================================================
             while (!Raylib.WindowShouldClose())
-            {
+            { 
+                // ====================================================================================
+                // SUB-TASK 7A - PART 3: PROGRAM.CS - CORE HOTKEY LOGGER INTERCEPT HOOK SYNCHRONIZATION
+                // LOCATION: REPLACES STRIDE PARAMETERS PASSED TO HANDLEKEYS INTERACTION HANDLER
+                // CONSTRAINTS: INJECTS ACTIVE TIMESTAMP ARGUMENT TO FACILITATE TRANSIENT FILE SELECTION
+                // ====================================================================================
                 InputHandler.HandleKeys(
                     ref currentRoom, ref is3DMode, ref globalScale, ref heightMultiplier,
                     ref panOffsetX, ref panOffsetY, ref rotationAngle, ref tiltFactor,
                     ref renderStyleMode, ref displayPathOverlays, ref displayGems, ref showDanLegacyOverlay,
-                    ref invertBackground, ref triggerTextExport, ref trigger3DLabWindow
+                    ref invertBackground, ref triggerTextExport, ref trigger3DLabWindow,
+                    RomManager.ActiveSessionTimestamp
                 );
+              
 
-                // v0.90 DEFERRED LOG ENGINE SNAPSHOT HOOK: Invoked strictly under user command pass
-                if (Raylib.IsKeyPressed(KeyboardKey.E))
+            // v0.90 DEFERRED LOG ENGINE SNAPSHOT HOOK: Invoked strictly under user command pass
+            if (Raylib.IsKeyPressed(KeyboardKey.E))
                 {
                     string cleanStageName = (currentRoom < StageNames.Length) ? StageNames[currentRoom] : "Unknown Castle";
                     CCUnifiedLogger.ExportActiveSessionSummary(currentRoom, cleanStageName, MainLoggedCells);
@@ -234,13 +250,15 @@ namespace cSharpRaylib
                 }
 
                 // ====================================================================================
-                // FIX BANNER: PROGRAM.CS - PARAMETER VARIABLE ALIGNMENT CORRECTION
+                // FIX BANNER: PROGRAM.CS - PARAMETER VARIABLE ALIGNMENT FOR LIVE ROTATION TELEMETRY
                 // LOCATION: REPLACES DRAWCONTROLOVERLAY RUNTIME HOOK IN MAIN LOOP (APPROX LINE 243)
+                // CONSTRAINTS: INJECTS LIVE ROTATIONANGLE VALUE STRAIGHT INTO DRAW PIPELINE
                 // ====================================================================================
                 InputHandler.DrawControlOverlay(
                     is3DMode, renderStyleMode, displayPathOverlays, displayGems,
                     showDanLegacyOverlay, invertBackground, globalScale, currentRoom,
-                    currentStageName, activeCity.Elevators.Count, activeTheme, MainLoggedCells
+                    currentStageName, activeCity.Elevators.Count, activeTheme, MainLoggedCells,
+                    rotationAngle
                 );
                 // ====================================================================================
 

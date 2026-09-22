@@ -11,6 +11,11 @@ namespace cSharpRaylib
 {
     public static class MapRenderer
     {
+        // ====================================================================================
+        // FIX BANNER: MAPRENDERER.CS - TASK 6: THREE-LEVEL 90° 2D BLUEPRINT CANVAS RE-MAPPER
+        // LOCATION: REPLACES DRAW2DBLUEPRINT METHOD COMPLETELY (LINES 12-105 APPROX)
+        // CONSTRAINTS: KEEPS NATIVE STORAGE PURITY | ALIGNS STAGES 01, 21, AND 22 VISUALLY
+        // ====================================================================================
         public static void Draw2DBlueprint(CityData activeCity, Color[] activeTheme, bool displayPathOverlays, bool displayGems, bool displayElevators, int stageNum)
         {
             int cellSize = 16;
@@ -19,22 +24,31 @@ namespace cSharpRaylib
 
             byte[,] romAttributes = RomManager.BaseCities[stageNum % 16].Attributes;
 
+            // Establish visual-only tracking rotation target exception filter
+            bool isRotatedStage = (stageNum == 1 || stageNum == 21 || stageNum == 22);
+
             for (int x = 0; x < 22; x++)
             {
                 for (int y = 0; y < 22; y++)
                 {
+                    // INVERSE COORDINATE RE-MAPPER: Rotate 90 deg clockwise visually if exception stage
+                    int srcX = isRotatedStage ? (21 - y) : x;
+                    int srcY = isRotatedStage ? x : y;
+
                     bool isElevatorCell = false;
                     foreach (var ev in activeCity.Elevators)
                     {
-                        if (ev.IsMapped && ev.CellX == x && ev.CellY == y)
+                        if (ev.IsMapped && ev.CellX == srcX && ev.CellY == srcY)
                         {
                             isElevatorCell = true;
                             break;
                         }
                     }
 
-                    int tileHeight = activeCity.Heights[x, y];
-                    byte cellAttr = activeCity.Attributes[x, y];
+                    int tileHeight = activeCity.Heights[srcX, srcY];
+                    byte cellAttr = activeCity.Attributes[srcX, srcY];
+
+                    // Render coordinates remain linear while tracking source indices step through matrix rotation transformations
                     int posX = gridOffsetX + (y * cellSize);
                     int posY = gridOffsetY + (x * cellSize);
 
@@ -45,7 +59,7 @@ namespace cSharpRaylib
                         {
                             Raylib.DrawRectangleLines(posX, posY, cellSize - 1, cellSize - 1, Color.DarkGray);
                         }
-                        if (displayGems) DrawVerifiedGemMarker2D(x, y, cellAttr, romAttributes, posX, posY);
+                        if (displayGems) DrawVerifiedGemMarker2D(srcX, srcY, cellAttr, romAttributes, posX, posY);
                         continue;
                     }
 
@@ -74,47 +88,40 @@ namespace cSharpRaylib
 
                     Raylib.DrawRectangle(posX, posY, cellSize - 1, cellSize - 1, blockColor);
 
-                    // v0.85 MASTER INTERACTIVE OVERLAY RULE
                     if (isElevatorCell && displayElevators)
                     {
                         Raylib.DrawText("E", posX + 4, posY + 1, 12, Color.White);
                     }
-                    // ====================================================================================
-                    // FIX BANNER: MAPRENDERER.CS - 3D RENDERING MATRIX SYNCHRONIZATION
-                    // LOCATION: REPLACES THE ELSE IF (Program.MainLoggedCells) SELECTION TARGET (APPROX LINE 80)
-                    // CONSTRAINTS: COMPACT LINE OVERRUN PREVENTER | ALIGNS NATIVE STAGENUM & POSX/Y LABELS
-                    // ====================================================================================
-                    // Read the 3D persistent matrix layer cleanly using your native stageNum index
-                    else if (Program.MainLoggedCells[stageNum, x, y])
+                    else if (Program.MainLoggedCells[stageNum, srcX, srcY])
                     {
                         Raylib.DrawText("L", posX + 4, posY + 1, 12, Color.Orange);
                     }
-                    // ====================================================================================
-
-                    // ============================================================================
-                    // FIX BANNER: MAPRENDERER.CS - 2D BLUEPRINT GEM REFERENCE UNLEASHED (v0.85)
-                    // ============================================================================
-                    else if (displayGems && activeCity.Gems[x, y])
+                    else if (displayGems && activeCity.Gems[srcX, srcY])
                     {
-                        DrawVerifiedGemMarker2D(x, y, cellAttr, romAttributes, posX, posY);
+                        DrawVerifiedGemMarker2D(srcX, srcY, cellAttr, romAttributes, posX, posY);
                     }
                 }
             }
 
+            // Interactive coordinate probe box alignment
             if (InputHandler.IsProbeInsideWorkspace && !displayPathOverlays)
             {
-                int probeX = InputHandler.ProbeGridX;
-                int probeY = InputHandler.ProbeGridY;
+                int rawProbeX = InputHandler.ProbeGridX;
+                int rawProbeY = InputHandler.ProbeGridY;
 
-                if (probeX >= 0 && probeX < 22 && probeY >= 0 && probeY < 22)
+                // Adjust screen selection highlight vectors to display properly over rotated sheets
+                int drawGridRow = isRotatedStage ? rawProbeY : rawProbeX;
+                int drawGridCol = isRotatedStage ? (21 - rawProbeX) : rawProbeY;
+
+                if (drawGridRow >= 0 && drawGridRow < 22 && drawGridCol >= 0 && drawGridCol < 22)
                 {
-                    int highlightX = gridOffsetX + (probeY * 16);
-                    int highlightY = gridOffsetY + (probeX * 16);
+                    int highlightX = gridOffsetX + (drawGridCol * 16);
+                    int highlightY = gridOffsetY + (drawGridRow * 16);
                     Raylib.DrawRectangleLines(highlightX, highlightY, 15, 15, Color.SkyBlue);
                 }
             }
         }
-         
+
         // ============================================================================
         // MAPRENDERER.CS APPENDIX FIX: RESTORE 3D WORKSPACE METHOD HOOK (v0.85)
         // ============================================================================
