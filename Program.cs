@@ -152,14 +152,42 @@ namespace cSharpRaylib
                 );
 
 
-                // ====================================================================================
-                // OPTION 1: PROGRAM.CS - DEFERRED MULTI-LEVEL MASTER SNAPSHOT INJECTOR HOOK
-                // LOCATION: REPLACES DEFERRED LOG HOOK WITHIN RUNTIME ENGINE LOOP BREAK STRIDE
-                // CONSTRAINTS: INJECTS MASTER STAGENAMES CONTEXT TABLE FOR CONSOLIDATION (v0.90)
-                // ====================================================================================
-                if (Raylib.IsKeyPressed(KeyboardKey.E))
+                // --- v0.91 Core Hotkey Input Focus Latch ---
+                // Protect global files and variables from unintended keystroke bleed-through
+                // --- v0.91 Isolated Diagnostic Window Trigger Stub ---
+                // Intercept the F3 function key to deploy our isolated parallel layout validation environment
+                if (Raylib.IsKeyPressed(KeyboardKey.F3))
                 {
-                    CCUnifiedLogger.ExportActiveSessionSummary(StageNames, MainLoggedCells);
+                    // Latch state variable tracking flag so core inputs go blind
+                    RomManager.IsParserDiagnosticActive = true;
+
+                    // Launch our memory-isolated v0.91 diagnostic viewer workspace context thread
+                    DiagnosticCanvas.LaunchDebugWindow(
+                        currentRoom,
+                        StageNames,
+                        RoomToCityMap,
+                        RomManager.IsolatedStages
+                    );
+                }
+
+                // --- v0.91 Core Hotkey Input Focus Latch ---
+                if (!RomManager.IsParserDiagnosticActive)
+                {
+                    if (Raylib.IsKeyPressed(KeyboardKey.E))
+                    {
+                        CCUnifiedLogger.ExportActiveSessionSummary(StageNames, MainLoggedCells);
+                    }
+                }
+                else
+                {
+                    // --- Localized Diagnostic Overlay Input Intercept Pass ---
+                    // Keystrokes pressed here run strictly local to the diagnostic view layer,
+                    // safely hiding global engine variables from accidental macro fires.
+                    if (Raylib.IsKeyPressed(KeyboardKey.Tab))
+                    {
+                        // Toggle local sub-layers (Elevators vs Gems verification matrices)
+                        RomManager.IsParserDiagnosticActive = false;
+                    }
                 }
 
                 int cityIndex = RoomToCityMap[currentRoom] & 0x0F;

@@ -144,15 +144,25 @@ namespace cSharpRaylib
 
                 if (IsParserDiagnosticActive)
                 {
-                    // Parallel Test Path: Targets our newly updated v0.91 files exclusively
+                    // FIX BANNER: ESCAPE BIN CONTEXT ONLY FOR ISOLATED PARALLEL DIAGNOSTIC FILES [v0.91]
+                    string exeDir = AppDomain.CurrentDomain.BaseDirectory;
+                    string projectRoot = Path.GetFullPath(Path.Combine(exeDir, "..", "..", "..", ".."));
+
+                    // FIX BANNER: TARGET DETACHED REVISED SUBDIRECTORY LOCALLY TO PROTECT GRAPHICS [v0.91]
                     string revisedFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "revised");
                     string parallelTestPath = Path.Combine(revisedFolder, outFileName);
                     string unifiedSessionLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
 
                     using (StreamWriter parallelAuditWriter = new StreamWriter(unifiedSessionLog, true, Encoding.UTF8))
                     {
-                        // Parse the revised file to safely populate our text logger without touching core memory vectors
-                        CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(parallelTestPath, parallelAuditWriter);
+                        // Parse the local revised layout file and extract its profile properties safely
+                        var diagnosticProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(parallelTestPath, parallelAuditWriter);
+
+                        if (diagnosticProfile != null && diagnosticProfile.Heights != null)
+                        {
+                            // Bind the revised altitude arrays strictly to the isolated target buffer profile
+                            ingestedProfile = diagnosticProfile;
+                        }
                     }
                 }
                 else
@@ -197,182 +207,21 @@ namespace cSharpRaylib
                 }
                 // ============================================================================
 
+                // --- Replaces the old method calls right before return statement ---
                 ElevatorPremapper.ApplyOverrides(stageNum, clonedRoom.Elevators);
                 IsolatedStages.Add(clonedRoom);
             }
 
-            ElevatorPremapper.InitializeFromDisk();
-            GenerateStartupLaboratoryLogs();
+            // EXCISE: Removed old GenerateStartupLaboratoryLogs() trigger line completely
 
             return IsolatedStages;
         }
+        
         // ====================================================================================
         // END OF SEGMENT 1
         // ====================================================================================
 
 
-        public static void GenerateStartupLaboratoryLogs()
-        {
-            string[] stageNames = new string[] {
-                "Ball Wave", "Tree Wave", "Doomsdome", "Berthilda's Castle",
-                "Hidden Ramp", "Staircase", "Crossroads", "Berthilda's Fortress",
-                "Hidden Ramp", "Nasty Tree", "Hidden Spiral", "Berthilda's Dungeon",
-                "Pyramid", "Cross Maze", "Hidden Ramp", "Berthilda's Palace",
-                "Staircase", "Nasty Tree", "Crossroads", "Berthilda's Castle",
-                "Cross Maze", "Tree Wave", "Tree Wave", "Berthilda's Palace",
-                "Staircase", "Pyramid", "Hidden Spiral", "Berthilda's Dungeon",
-                "Staircase", "Cross Maze", "Hidden Ramp", "Berthilda's Fortress",
-                "Impossible Staircase", "Nasty Tree", "Hidden Spiral", "Berthilda's Dungeon",
-                "The End"
-            };
-
-            ElevatorPremapper.InitializeFromDisk();
-
-            for (int stageNum = 0; stageNum < 37; stageNum++)
-            {
-                var isolatedRoom = IsolatedStages[stageNum];
-
-                // ====================================================================================
-                // PASS 2 - PART 1: ROMMANAGER.CS - OVERWRITE GUARD INTERCEPT REGISTERS
-                // LOCATION: DEACTIVATES COORD BLOCKS INSIDE GENERATESTARTUPLABORATORYLOGS METHOD
-                // CONSTRAINTS: PREVENTS LEGACY MAPPING COUPLERS FROM FLIPPING CELLX/Y TO ZERO (v0.90)
-                // ====================================================================================
-                /*
-                if (ElevatorPremapper.FileCoordinateCache.ContainsKey(stageNum))
-                {
-                    var cachedCoords = ElevatorPremapper.FileCoordinateCache[stageNum];
-                    int boundLimit = Math.Min(isolatedRoom.Elevators.Count, cachedCoords.Count);
-                    for (int k = 0; k < boundLimit; k++)
-                    {
-                        isolatedRoom.Elevators[k].CellX = cachedCoords[k].X;
-                        isolatedRoom.Elevators[k].CellY = cachedCoords[k].Y;
-                        isolatedRoom.Elevators[k].IsMapped = true;
-                    }
-                }
-                */
-
-                string currentStageName = (stageNum < stageNames.Length) ? stageNames[stageNum] : "Unknown Wave";
-
-                try
-                {
-                    // ====================================================================================
-                    // FIX BANNER: RomManager.cs & InputHandler.cs SAFE DEACTIVATION GATE (v0.85)
-                    // ====================================================================================
-                    return; // Stops execution dead right here before any file stream is opened!
-                            // ====================================================================================
-
-                    // Left completely untouched below so no downstream variables break:
-                    string stamp = RomManager.ActiveSessionTimestamp;
-                    string filename = $"LAB_TEST_LOG_STAGE_{stageNum:D2}_{stamp}.txt";
-                    string fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
-
-                    using (StreamWriter sw = new StreamWriter(fullPath, false, Encoding.UTF8))
-                    {
-                        sw.WriteLine("================================================================================");
-                        sw.WriteLine($"=== CRYSTAL CASTLES ISOLATED AUTOMATED AUDIT REPORT: STAGE {stageNum:D2} ===");
-                        sw.WriteLine($"Stage Name Reference profile: {currentStageName.ToUpper()} | Engine: v0.85");
-                        sw.WriteLine("================================================================================");
-
-                        if (isolatedRoom.Elevators.Count == 0 || !ElevatorPremapper.FileCoordinateCache.ContainsKey(stageNum))
-                        {
-                            sw.WriteLine("  * Elevator Configuration: N/A (No verified file assets present to cross-examine)");
-                        }
-                        else
-                        {
-                            sw.WriteLine($"  * Cross-examining {isolatedRoom.Elevators.Count} hand-mapped disk vector locations:");
-                            sw.WriteLine("--------------------------------------------------------------------------------");
-
-                            for (int i = 0; i < isolatedRoom.Elevators.Count; i++)
-                            {
-                                var ev = isolatedRoom.Elevators[i];
-                                int terrainTileHeight = isolatedRoom.Heights[ev.CellX, ev.CellY];
-
-                                sw.WriteLine($"  * LIFT INDEX POINTER [{i}]:");
-                                sw.WriteLine($"    - Grid Matrix Cell Coordinates : Row_X = {ev.CellX:D2}, Col_Y = {ev.CellY:D2}");
-                                sw.WriteLine($"    - Ground Deck Terrain Altitude : TerrainTileHeight = {terrainTileHeight:D2}");
-                                sw.WriteLine($"    - Raw Arcade Threshold Data    : BottomPosition   = {ev.BottomPosition:D3}");
-                                sw.WriteLine($"                                   : TopPosition      = {ev.TopPosition:D3}");
-
-                                int calibrationDelta = ev.BottomPosition - terrainTileHeight;
-                                sw.WriteLine($"    - Height Calibration Offset Delta: (ArcadeBottom - TerrainTileHeight) = {calibrationDelta:+0;-0;0}");
-                                sw.WriteLine("--------------------------------------------------------------------------------");
-                            }
-                        }
-                        sw.WriteLine("================================================================================");
-                    }
-                }
-                catch { }
-            }
-        }
-        // ============================================================================
-        // ROMMANAGER.CS - PART 3: RE-MAPPED STATIC FILE EXPORT PIPELINE (v0.85)
-        // ============================================================================
-        public static void ExportStageTextFile(int stageNum, string stageName, CityData activeCity)
-        {
-            try
-            {
-                string filename = $"Stage_{stageNum:D2}_{stageName.Replace(" ", "_")}_Matrix.txt";
-                string fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
-
-                using (StreamWriter writer = new StreamWriter(fullPath))
-                {
-                    writer.WriteLine($"=== VIEWER PIPELINE AUDIT LOG - RUN TIME: {DateTime.Now} | Engine: v0.85 ===");
-                    writer.WriteLine($"Stage [{stageNum:D2}] - [{stageName}] | Lifts Configured: {activeCity.NumElevators}");
-
-                    if (activeCity.NumElevators == 0)
-                    {
-                        writer.WriteLine("  * Lift Data: N/A (No lifts configured on this layout)");
-                        writer.WriteLine("\nLOCATION : N/A\nBEHAVIOR : N/A\nRESULTS  : 0/0 passed");
-                    }
-                    else
-                    {
-                        int passedCount = 0;
-                        for (int i = 0; i < activeCity.Elevators.Count; i++)
-                        {
-                            var ev = activeCity.Elevators[i];
-                            string statusStr = ev.IsMapped ? $"SUCCESS -> [CellX: {ev.CellX}, CellY: {ev.CellY}]" : "FAILED -> Out of bounds";
-                            if (ev.IsMapped) passedCount++;
-
-                            writer.WriteLine($"  * Lift [{i}]: ScreenX={ev.HorizontalPosition}, ScreenY={ev.VerticalPosition} | Map Position: {statusStr}");
-                        }
-
-                        writer.WriteLine("\nLOCATION : Verified");
-                        writer.WriteLine("BEHAVIOR : Verified");
-                        writer.WriteLine($"RESULTS  : {passedCount}/{activeCity.Elevators.Count} passed");
-                    }
-
-                    writer.WriteLine("\n--------------------------------------------------------------------------------");
-                    writer.WriteLine("[Tile Height Grid Layout (22x22 Raw Blueprint View)]\n");
-
-                    for (int i = 0; i < 22; i++)
-                    {
-                        StringBuilder rowLine = new StringBuilder();
-                        for (int j = 0; j < 22; j++)
-                        {
-                            bool isElevatorSpot = false;
-                            foreach (var ev in activeCity.Elevators)
-                            {
-                                if (ev.IsMapped && ev.CellX == i && ev.CellY == j)
-                                {
-                                    isElevatorSpot = true;
-                                    break;
-                                }
-                            }
-
-                            int heightVal = activeCity.Heights[i, j];
-
-                            if (isElevatorSpot) rowLine.Append(" E  ");
-                            else if (heightVal == 0) rowLine.Append("  . ");
-                            else rowLine.Append($" {heightVal:D2} ");
-                        }
-                        writer.WriteLine(rowLine.ToString());
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error exporting layout report text matrix: {ex.Message}");
-            }
-        }
+       
     }
 }
