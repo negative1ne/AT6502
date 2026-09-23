@@ -104,7 +104,37 @@ namespace cSharpRaylib
 
                     ElevatorPremapper.ApplyOverrides(currentRoom, mockList);
 
+                    // FIX BANNER: HARDCODED FORCE-MAPPED LIFT NODE FOR LAYER COMPOSITE VERIFICATION [v0.91]
+                    if (mockList.Count > 0)
+                    {
+                        // Explicitly overwrite the first lift index to a visible grid position for layout verification
+                        mockList[0].CellX = 4;
+                        mockList[0].CellY = 4;
+                        mockList[0].IsMapped = true;
+                    }
+
+                    // FIX BANNER: RUNTIME ELEVATOR READOUT TRACE & LEDGER LOG PASS [v0.91]
+                    try
+                    {
+                        string logName = $"session_audit_{RomManager.ActiveSessionTimestamp}.log";
+                        string auditPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, logName);
+                        using (StreamWriter sw = new StreamWriter(auditPath, true, Encoding.UTF8))
+                        {
+                            sw.WriteLine($"\n[DISPLAY RENDER TRACE] MAPPING LEVEL: {currentRoom:D2} [{stageNames[currentRoom].ToUpper()}]");
+                            sw.WriteLine($"  -> Active Elevator Element Count Sent to Grid = {mockList.Count:D2}");
+                            for (int i = 0; i < mockList.Count; i++)
+                            {
+                                var ev = mockList[i];
+                                sw.WriteLine($"    - Slot [E{i}]: IsMapped={ev.IsMapped} | GridPos=({ev.CellX:D2},{ev.CellY:D2}) | HeightBounds=[Min:{ev.BottomPosition:D3}, Max:{ev.TopPosition:D3}]");
+                            }
+                            sw.WriteLine("--------------------------------------------------------------------------------");
+                        }
+                    }
+                    catch { /* Drive file locking safeguards */ }
+
                     // Scan the loaded heights map array to cache the absolute peak height value for the dashboard
+
+
                     _maxObservedHeight = 0;
                     for (int r = 0; r < 22; r++)
                     {
@@ -136,31 +166,70 @@ namespace cSharpRaylib
                 {
                     telemetryOutputDisplayString = $"ROW (X): {_hoveredRowX:D2}  |  COL (Y): {_hoveredColY:D2}";
 
-                    if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+                    // FIX BANNER: EDGE-TRIPPED MOUSE RELEASE PROTECTIVE TIMING GATE [v0.91]
+                    if (Raylib.IsMouseButtonReleased(MouseButton.Left))
                     {
-                        // Hard clamp indices to strictly lock coordinates into safe [0..21] range
                         int clampedX = Math.Clamp(_hoveredRowX, 0, 21);
                         int clampedY = Math.Clamp(_hoveredColY, 0, 21);
 
-                        globalSessionLoggedCells[currentRoom, clampedX, clampedY] = !globalSessionLoggedCells[currentRoom, clampedX, clampedY];
-
-                        if (_selectedElevatorIndex >= 0 && _selectedElevatorIndex < mockList.Count)
+                        // FIX BANNER: TWO-PHASE SELECTION PLACEMENT CONTEXT GATING INTERCEPTOR [v0.91]
+                        if (!_isInGemMode)
                         {
-                            mockList[_selectedElevatorIndex].CellX = clampedX;
-                            mockList[_selectedElevatorIndex].CellY = clampedY;
-                            mockList[_selectedElevatorIndex].IsMapped = true;
-                            _selectedElevatorIndex = -1;
+                            // PHASE 2: PLACE DEPLOYMENT - An elevator node is active and primed for relocation
+                            if (_selectedElevatorIndex >= 0 && _selectedElevatorIndex < mockList.Count)
+                            {
+                                var targetedLiftNode = mockList[_selectedElevatorIndex];
+
+                                // Only commit if the target location is a completely distinct grid cell tile
+                                if (clampedX != targetedLiftNode.CellX || clampedY != targetedLiftNode.CellY)
+                                {
+                                    // Synchronize coordinates to the active local viewer cache arrays
+                                    mockList[_selectedElevatorIndex].CellX = clampedX;
+                                    mockList[_selectedElevatorIndex].CellY = clampedY;
+                                    mockList[_selectedElevatorIndex].IsMapped = true;
+
+                                    // Commit changes straight to the primary repository ledger record
+                                    if (activeCity != null && _selectedElevatorIndex < activeCity.Elevators.Count)
+                                    {
+                                        activeCity.Elevators[_selectedElevatorIndex].CellX = clampedX;
+                                        activeCity.Elevators[_selectedElevatorIndex].CellY = clampedY;
+                                        activeCity.Elevators[_selectedElevatorIndex].IsMapped = true;
+                                    }
+
+                                    _selectedElevatorIndex = -1; // Permanently release selection hold context
+                                    Console.Beep(1400, 150);     // Distinct clean transaction completion beep
+                                }
+                                else
+                                {
+                                    // Safeguard deselect: Clear index hold if clicking the exact same box twice
+                                    _selectedElevatorIndex = -1;
+                                    Console.Beep(900, 100);      // Notice tone response clear
+                                }
+                            }
+                            else
+                            {
+                                // PHASE 1: ACQUIRE SELECTION - Latch onto whichever lift index populates this tile space
+                                int pickIndex = -1;
+                                for (int i = 0; i < mockList.Count; i++)
+                                {
+                                    if (mockList[i].CellX == clampedX && mockList[i].CellY == clampedY)
+                                    {
+                                        pickIndex = i;
+                                        break;
+                                    }
+                                }
+
+                                if (pickIndex != -1)
+                                {
+                                    _selectedElevatorIndex = pickIndex;
+                                    Console.Beep(1900, 120); // Sharp, clean initial focus pickup beep
+                                }
+                            }
                         }
                         else
                         {
-                            for (int i = 0; i < mockList.Count; i++)
-                            {
-                                if (mockList[i].IsMapped && mockList[i].CellX == _hoveredRowX && mockList[i].CellY == _hoveredColY)
-                                {
-                                    _selectedElevatorIndex = i;
-                                    break;
-                                }
-                            }
+                            // GEM MODE: Standard bi-directional room matrix retention toggle operation
+                            globalSessionLoggedCells[currentRoom, clampedX, clampedY] = !globalSessionLoggedCells[currentRoom, clampedX, clampedY];
                         }
                     }
                 }
@@ -349,22 +418,39 @@ namespace cSharpRaylib
 
                         Raylib.DrawRectangleLines(posX, posY, cellSize, cellSize, new Color(45, 45, 40, 255));
 
-                        if (h > 0)
+                        // FIX BANNER: VISUAL ANCHOR PATCH WITH DYNAMIC EN LABELS [v0.91]
+                        int locatedElevatorIndex = -1;
+                        for (int i = 0; i < mockList.Count; i++)
                         {
-                            Color terrainColor = spaceMapView ? new Color(0, 30, 60, 255) : new Color(0, 50, 0, 255);
-                            Raylib.DrawRectangle(posX + 2, posY + 2, cellSize - 4, cellSize - 4, terrainColor);
+                            // Scan everything in the active room list, catching them even if unmapped at (0,0)
+                            if (mockList[i].CellX == x && mockList[i].CellY == y)
+                            {
+                                locatedElevatorIndex = i;
+                                break;
+                            }
                         }
 
-                        // Gated Rendering Logic: Respects mode flags to show elements in complete isolation
-                        if (!_isInGemMode)
+                        // FIX BANNER: STANDALONE MODE ELEVATOR INDEPENDENT MATRIX DRAWER [v0.91]
+                        
+                        for (int i = 0; i < mockList.Count; i++)
                         {
-                            bool isElevatorCell = false;
-                            foreach (var ev in mockList)
+                            if (mockList[i].CellX == x && mockList[i].CellY == y)
                             {
-                                if (ev.IsMapped && ev.CellX == x && ev.CellY == y) { isElevatorCell = true; break; }
+                                locatedElevatorIndex = i;
+                                break;
                             }
-                            if (isElevatorCell) Raylib.DrawText("E", posX + 12, posY + 8, 20, Color.White);
                         }
+
+                        if (locatedElevatorIndex != -1)
+                        {
+                            // Force an independent solid background rectangle to make the elevator box fully clear
+                            Raylib.DrawRectangle(posX + 2, posY + 2, cellSize - 4, cellSize - 4, Color.Blue);
+                            Raylib.DrawRectangleLines(posX + 1, posY + 1, cellSize - 2, cellSize - 2, Color.SkyBlue);
+
+                            // Draw a high-contrast white index indicator value tag string
+                            Raylib.DrawText($"E{locatedElevatorIndex}", posX + 8, posY + 10, 16, Color.RayWhite);
+                        }
+
                         else if (diagnosticProfile != null && diagnosticProfile.Gems != null && diagnosticProfile.Gems[x, y])
                         {
                             Raylib.DrawCircle(posX + (cellSize / 2), posY + (cellSize / 2), 6, Color.Gold);
