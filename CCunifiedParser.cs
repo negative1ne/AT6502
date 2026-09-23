@@ -32,6 +32,15 @@ namespace CrystalCastles.DataEngine
             public byte[,] Heights { get; set; } = new byte[GridSize, GridSize];
             public bool[,] Gems { get; set; } = new bool[GridSize, GridSize];
             public List<UnifiedLiftEntity> Lifts { get; set; } = new List<UnifiedLiftEntity>();
+            // FIX BANNER: v0.91 DYNAMIC VIEWPORT CAMERA TELEMETRY MODEL DECLARATIONS [v0.91]
+            // Explicitly declare missing scene origin offsets to clear Downstream Canvas compilation errors
+            public int CameraOffsetX { get; set; } = 200;
+            public int CameraOffsetY { get; set; } = 100;
+
+            // Elevator tracking scalars matching arcade hardware configuration layouts
+            public bool HasCustomLiftScalar { get; set; } = false;
+            public int LiftOriginX { get; set; } = 112;
+            public int LiftOriginY { get; set; } = -28;
         }
 
         public class UnifiedLiftEntity
@@ -158,6 +167,35 @@ namespace CrystalCastles.DataEngine
             {
                 profile.TrackState = val;
                 if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [DATA INGEST] -> Field: TrackState = {profile.TrackState}");
+            }
+            // FIX BANNER: METADATA HEADER CAMERA OFFSET INGESTION PASS [v0.91]
+            else if (key.Equals("CameraOffsetX", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(val, out int cx)) profile.CameraOffsetX = cx;
+                if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [DATA INGEST] -> Field: CameraOffsetX = {profile.CameraOffsetX}");
+            }
+            else if (key.Equals("CameraOffsetY", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(val, out int cy)) profile.CameraOffsetY = cy;
+                if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [DATA INGEST] -> Field: CameraOffsetY = {profile.CameraOffsetY}");
+            }
+            else if (key.Equals("LiftOriginX", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(val, out int lox))
+                {
+                    profile.LiftOriginX = lox;
+                    profile.HasCustomLiftScalar = true;
+                }
+                if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [DATA INGEST] -> Field: LiftOriginX = {profile.LiftOriginX}");
+            }
+            else if (key.Equals("LiftOriginY", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(val, out int loy))
+                {
+                    profile.LiftOriginY = loy;
+                    profile.HasCustomLiftScalar = true;
+                }
+                if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [DATA INGEST] -> Field: LiftOriginY = {profile.LiftOriginY}");
             }
         }
 
