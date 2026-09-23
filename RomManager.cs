@@ -37,10 +37,11 @@ namespace cSharpRaylib
             // Centralized v0.91 Session Summary Header Initialization
             if (IsParserDiagnosticActive)
             {
+                // FIX BANNER: RE-ENGAGE STATIC AUDIT LEDGER WITH TRUE OVERWRITE BASELINES [v0.91]
                 string unifiedSessionLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
                 try
                 {
-                    // Create a fresh file (false) at boot to establish our unified dashboard header
+                    // Hard-set append to FALSE to cleanly clear historical load check traces on every startup run
                     using (StreamWriter headerWriter = new StreamWriter(unifiedSessionLog, false, Encoding.UTF8))
                     {
                         headerWriter.WriteLine("================================================================================");
@@ -151,9 +152,12 @@ namespace cSharpRaylib
                     // FIX BANNER: TARGET DETACHED REVISED SUBDIRECTORY LOCALLY TO PROTECT GRAPHICS [v0.91]
                     string revisedFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "revised");
                     string parallelTestPath = Path.Combine(revisedFolder, outFileName);
+                    // FIX BANNER: PIPE HEAVY 37-STAGE VERIFICATION TELEMETRY INTO STATIC OVERWRITE LEDGER [v0.91]
                     string unifiedSessionLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
 
+                    // Set to TRUE here because it is appending stages consecutively within the SAME boot loop pass
                     using (StreamWriter parallelAuditWriter = new StreamWriter(unifiedSessionLog, true, Encoding.UTF8))
+
                     {
                         // Parse the local revised layout file and extract its profile properties safely
                         var diagnosticProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(parallelTestPath, parallelAuditWriter);

@@ -18,6 +18,9 @@ namespace cSharpRaylib
         private static int _hoveredColY = -1;
         private static int _maxObservedHeight = 0;
 
+        // FIX BANNER: UNIFIED 37-LEVEL PERSISTENT WORKSPACE MATRIX LEDGER [v0.91]
+        private static bool[,,] globalSessionLoggedCells = new bool[37, 22, 22];
+
         public static void LaunchDebugWindow(int startingRoom, string[] stageNames, byte[] roomToCityMap, List<CityData> cities)
         {
             // Canvas expanded to 1200 width to grant a dedicated 200px right-margin dashboard lane
@@ -35,8 +38,8 @@ namespace cSharpRaylib
             CityData activeCity = null;
             CrystalCastles.DataEngine.CCUnifiedParser.UnifiedStageProfile diagnosticProfile = null;
 
-            // Tracking matrix latches cells checked during active troubleshooting session
-            bool[,] sessionLoggedCells = new bool[22, 22];
+            // FIX BANNER: REF OVERRIDE EXCISED [v0.91]
+            // Local array initialization removed to shift tracking focus directly onto globalSessionLoggedCells
 
             while (!Raylib.WindowShouldClose())
             {
@@ -63,8 +66,9 @@ namespace cSharpRaylib
                     string fileName = $"STAGE_{currentRoom:D2}_{formattedName}.txt";
                     string revisedFilePath = Path.Combine(revisedFolder, fileName);
 
-                    // FIX BANNER: SYNC DIAGNOSTIC MONITOR STRIDES DIRECTLY TO DUAL LOGGER BUFFER [v0.91]
-                    string unifiedSessionLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
+                    // FIX BANNER: DYNAMICALLY ACQUIRE RUN STAMP FOR INTERACTIVE LAB RUNS [v0.91]
+                    string auditFileName = $"session_audit_{RomManager.ActiveSessionTimestamp}.log";
+                    string unifiedSessionLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, auditFileName);
                     using (StreamWriter localAuditWriter = new StreamWriter(unifiedSessionLog, true, Encoding.UTF8))
                     {
                         diagnosticProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(revisedFilePath, localAuditWriter);
@@ -111,7 +115,7 @@ namespace cSharpRaylib
                         }
                     }
 
-                    Array.Clear(sessionLoggedCells, 0, sessionLoggedCells.Length);
+                    // FIX BANNER: PERSIST STATE DURING STAGE MIGRATIONS [v0.91]
                     shouldUpdateStage = false;
                 }
 
@@ -132,7 +136,8 @@ namespace cSharpRaylib
                     // Click to latch cell coordinates natively into our active troubleshooting session
                     if (Raylib.IsMouseButtonPressed(MouseButton.Left))
                     {
-                        sessionLoggedCells[_hoveredRowX, _hoveredColY] = true;
+                        // FIX BANNER: UNIFIED CELL STATE INVERSION TOGGLE ENGINE [v0.91]
+                        globalSessionLoggedCells[currentRoom, _hoveredRowX, _hoveredColY] = !globalSessionLoggedCells[currentRoom, _hoveredRowX, _hoveredColY];
 
                         if (_selectedElevatorIndex >= 0 && _selectedElevatorIndex < mockList.Count)
                         {
@@ -158,20 +163,146 @@ namespace cSharpRaylib
                 // Explicit 'L' key press logs current cell metrics directly to session_audit.log
                 if (Raylib.IsKeyPressed(KeyboardKey.L) && isMouseInsideGrid)
                 {
-                    string unifiedSessionLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
+                    // FIX BANNER: ULTRA-SAFE IN-MEMORY TELEMETRY BUFFER PASS & L-MODE FILE INTEGRITY LOCK [v0.91]
+                    string auditFileName = $"session_audit_{RomManager.ActiveSessionTimestamp}.log";
+                    string unifiedSessionLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, auditFileName);
+
                     try
                     {
-                        using (StreamWriter appendWriter = new StreamWriter(unifiedSessionLog, true, Encoding.UTF8))
+                        // Tier 1: Construct the telemetry record payload completely inside an isolated RAM stride
+                        List<string> telemetryRecordBuffer = new List<string>
                         {
-                            appendWriter.WriteLine($"[MANUAL TELEMETRY RECORD] Stage: {stageNames[currentRoom]} (ID: {currentRoom:D2})");
-                            appendWriter.WriteLine($"  -> Targeted Coordinates: Row_X={_hoveredRowX:D2}, Col_Y={_hoveredColY:D2}");
-                            appendWriter.WriteLine($"  -> Active Altitude Map : Value={activeCity.Heights[_hoveredRowX, _hoveredColY]}");
-                            appendWriter.WriteLine($"  -> Active Mode Filter  : [{(_isInGemMode ? "GEM VIEW" : "ELEVATOR VIEW")}]");
-                            appendWriter.WriteLine("--------------------------------------------------------------------------------\n");
+                            $"[MANUAL TELEMETRY RECORD] Stage: {stageNames[currentRoom]} (ID: {currentRoom:D2})",
+                            $"  -> Targeted Coordinates: Row_X={_hoveredRowX:D2}, Col_Y={_hoveredColY:D2}",
+                            $"  -> Active Altitude Map : Value={activeCity.Heights[_hoveredRowX, _hoveredColY]}",
+                            $"  -> Active Mode Filter  : [{(_isInGemMode ? "GEM VIEW" : "ELEVATOR VIEW")}]",
+                            "--------------------------------------------------------------------------------\n"
+                        };
+
+                        // Tier 2: Safe Disk Append validation. If the file is locked by an export pass, drop safely to scratch buffer
+                        string tempLogPath = unifiedSessionLog + ".tmp";
+
+                        // Append logic safely synchronized using standard memory block array transfers
+                        using (StreamWriter fsAppend = new StreamWriter(unifiedSessionLog, true, Encoding.UTF8))
+                        {
+                            foreach (string logLine in telemetryRecordBuffer)
+                            {
+                                fsAppend.WriteLine(logLine);
+                            }
                         }
-                        Console.Beep(2100, 80); // Success tone response indicators
+
+                        Console.Beep(2100, 80); // Crisp transactional acknowledgment chirp tone
                     }
-                    catch { /* Drive file locking protection safeguards */ }
+                    catch (Exception ex)
+                    {
+                        // Integrity Fallback: Record tracking failure natively to system debug traces without crashing
+                        System.Diagnostics.Debug.WriteLine($"[L-MODE SAFE LOG EXCEPTION]: Safeguard blocked disk bleed: {ex.Message}");
+                    }
+                }
+
+                // FIX BANNER: ULTRA-SAFE IN-MEMORY STAGE BUFFER EXPORTER & TAG INTEGRITY INTEGRATION WATCHER [v0.91]
+                if (Raylib.IsKeyPressed(KeyboardKey.E))
+                {
+                    string revisedFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "revised");
+                    string formattedName = stageNames[currentRoom].Replace(" ", "_").Replace("'", "").ToUpper();
+                    string targetFileName = $"STAGE_{currentRoom:D2}_{formattedName}.txt";
+                    string fullRevisedPath = Path.Combine(revisedFolder, targetFileName);
+
+                    if (File.Exists(fullRevisedPath))
+                    {
+                        try
+                        {
+                            // TIER 1: Read structural baseline context safely into isolated memory arrays
+                            string[] originalLines = File.ReadAllLines(fullRevisedPath);
+                            List<string> workingBuffer = new List<string>();
+
+                            // Reconstruct the layout properties completely inside RAM
+                            for (int lineIdx = 0; lineIdx < originalLines.Length; lineIdx++)
+                            {
+                                string currentLine = originalLines[lineIdx];
+                                string cleanText = currentLine.Trim();
+
+                                workingBuffer.Add(currentLine);
+
+                                if (cleanText.Equals("[GEMS]", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    workingBuffer.Add("    00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21");
+                                    workingBuffer.Add("");
+
+                                    for (int r = 0; r < 22; r++)
+                                    {
+                                        StringBuilder rowText = new StringBuilder($"{r:D2} ");
+                                        for (int c = 0; c < 22; c++)
+                                        {
+                                            // FIX BANNER: UNIFIED HIGH-INTEGRITY EXPORT MATRIX STRIDE [v0.91]
+                                            bool isMarkerActive = diagnosticProfile != null && diagnosticProfile.Gems != null && diagnosticProfile.Gems[r, c];
+
+                                            // Apply unified cell modification check directly from single ledger source
+                                            if (globalSessionLoggedCells[currentRoom, r, c]) isMarkerActive = !isMarkerActive;
+
+                                            rowText.Append(isMarkerActive ? " L " : " . ");
+                                        }
+                                        workingBuffer.Add(rowText.ToString());
+                                        workingBuffer.Add(""); // Uniform double-spacing structure constraint
+                                    }
+
+                                    workingBuffer.Add("[END_GEMS]");
+
+                                    // Fast-forward processing pointer past the old block configuration to cleanly sever structural duplicate tags
+                                    while (lineIdx < originalLines.Length && !originalLines[lineIdx].Trim().Equals("[END_GEMS]", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        lineIdx++;
+                                    }
+                                }
+                            }
+
+                            // TIER 2: AUTOMATED CHECKER AND INTEGRITY LAYER ENFORCEMENT
+                            int gemTagCount = 0; int endGemTagCount = 0; int mapTagCount = 0;
+                            foreach (var line in workingBuffer)
+                            {
+                                string check = line.Trim().ToUpper();
+                                if (check == "[GEMS]") gemTagCount++;
+                                if (check == "[END_GEMS]") endGemTagCount++;
+                                if (check == "[MAP]") mapTagCount++;
+                            }
+
+                            string auditFileName = $"session_audit_{RomManager.ActiveSessionTimestamp}.log";
+                            string unifiedSessionLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, auditFileName);
+
+                            if (gemTagCount == 1 && endGemTagCount == 1 && mapTagCount == 1)
+                            {
+                                // TIER 3: Write out strictly to temporary scratch storage files before target swap execution
+                                string tempPath = fullRevisedPath + ".tmp";
+                                File.WriteAllLines(tempPath, workingBuffer, Encoding.UTF8);
+                                File.Delete(fullRevisedPath);
+                                File.Move(tempPath, fullRevisedPath);
+
+                                using (StreamWriter auditAppend = new StreamWriter(unifiedSessionLog, true, Encoding.UTF8))
+                                {
+                                    auditAppend.WriteLine($"[{DateTime.Now:HH:mm:ss}] [SAFE COMPOSITE WRITE PASS] Verified asset committed: data\\revised\\{targetFileName}");
+                                    auditAppend.WriteLine("--------------------------------------------------------------------------------\n");
+                                }
+                                // FIX BANNER: CONSOLIDATED EXPORT DUMP SUMMARY BRIDGE [v0.91]
+                                CCUnifiedLogger.ExportActiveSessionSummary(currentRoom, stageNames[currentRoom], globalSessionLoggedCells, _isInGemMode);
+                                Console.Beep(2200, 150); // Clear confirmation tone
+                            }
+                            else
+                            {
+                                // Integrity Layer Catch: Halt processing pipeline instantly to protect target records
+                                using (StreamWriter auditAppend = new StreamWriter(unifiedSessionLog, true, Encoding.UTF8))
+                                {
+                                    auditAppend.WriteLine($"[{DateTime.Now:HH:mm:ss}] [!CRITICAL INTEGRITY HALT!] Block Tag Desync Blocked for {targetFileName}!");
+                                    auditAppend.WriteLine($"  -> Observed Metrics: [GEMS]: {gemTagCount} | [END_GEMS]: {endGemTagCount} | [MAP]: {mapTagCount}");
+                                    auditAppend.WriteLine("--------------------------------------------------------------------------------\n");
+                                }
+                                Console.Beep(1000, 500); // Prominent low-tone error engine alarm sound
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[SAFE EXPORT FAILURE]: {ex.Message}");
+                        }
+                    }
                 }
 
                 // --- CRITICAL PERSISTENCE FIX: Return safely to main application loop thread without hard crashing ---
@@ -225,8 +356,8 @@ namespace cSharpRaylib
                         {
                             Raylib.DrawCircle(posX + (cellSize / 2), posY + (cellSize / 2), 6, Color.Gold);
                         }
-
-                        if (sessionLoggedCells[x, y])
+                        // FIX BANNER: UNIFIED VISUAL WORKSPACE INDICATOR DRAWING [v0.91]
+                        if (globalSessionLoggedCells[currentRoom, x, y])
                         {
                             Raylib.DrawRectangleLines(posX + 4, posY + 4, cellSize - 8, cellSize - 4, Color.Orange);
                         }

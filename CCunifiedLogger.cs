@@ -72,8 +72,10 @@ namespace cSharpRaylib
         // LOCATION: REPLACES EXPORTACTIVESESSIONSUMMARY FROM SIGNATURE DOWN TO GRID MATRIX END
         // CONSTRAINTS: COMPACT LINE RUN PREVENTER | RESOLVES ALL CASCADING PASTE SHORT-CIRCUITS
         // ====================================================================================
-        public static void ExportActiveSessionSummary(int currentRoom, string stageName, bool[,,] activeGridCells)
+        // FIX BANNER: SIGNATURE EXPANSION TO BRIDGE DIAGNOSTIC LAYERS [v0.91]
+        public static void ExportActiveSessionSummary(int currentRoom, string stageName, bool[,,] activeGridCells, bool isInGemMode)
         {
+
             try
             {
                 string outFileName = $"export_stage_{currentRoom:D2}_{_sessionTimestamp}.log";
@@ -99,9 +101,10 @@ namespace cSharpRaylib
                         StringBuilder rowText = new StringBuilder($"{x:D2} ");
                         for (int y = 0; y < 22; y++)
                         {
+                            // FIX BANNER: EXPORT ENGINE CHARACTER SYSTEM RE-TUNING [v0.91]
                             if (activeGridCells[currentRoom, x, y])
                             {
-                                rowText.Append(" L ");
+                                rowText.Append(isInGemMode ? " G " : " L ");
                                 activeLockedCount++;
 
                                 int cellHeight = (dRoom != null) ? dRoom.Heights[x, y] : 0;
