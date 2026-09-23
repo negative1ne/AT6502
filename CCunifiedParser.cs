@@ -99,7 +99,17 @@ namespace CrystalCastles.DataEngine
                     continue;
                 }
 
-                // Divert processing lines based on the active mode
+                // Strict v0.91 Explicit End Token Interceptors
+                if (cleanLine.Equals("[END_ELEVATORS]", StringComparison.OrdinalIgnoreCase) ||
+                    cleanLine.Equals("[END_GEMS]", StringComparison.OrdinalIgnoreCase) ||
+                    cleanLine.Equals("[END_MAP]", StringComparison.OrdinalIgnoreCase))
+                {
+                    currentState = ParserBlockState.None;
+                    if (sessionLogger != null) sessionLogger.WriteLine($"  Line {i + 1:D2} [STATE -> NONE]: Boundary Tag Detected. Re-locking State Pointer.");
+                    continue;
+                }
+
+                // Divert processing lines based on the active mode with row index validation guards
                 switch (currentState)
                 {
                     case ParserBlockState.Metadata:
@@ -185,6 +195,11 @@ namespace CrystalCastles.DataEngine
             }
         }
 
+        // ====================================================================================
+        // PASS 2 - PART 2: CCUNIFIEDPARSER.CS - SPATIAL DATA TOKEN STRIDE INDEXER FIXED
+        // LOCATION: REPLACES PARSEGEMSLINE INTERIOR IMPLEMENTATION COMPLETELY
+        // CONSTRAINTS: COMPACT LINE OVERRUN SAFETY | ELIMINATES WHITESPACE FRAGMENT DRIFT (v0.90)
+        // ====================================================================================
         private static void ParseGemsLine(string line, UnifiedStageProfile profile, ref int gemRow, int lineNum, StreamWriter logger)
         {
             if (line.Contains("00 01 02") || gemRow >= GridSize)
@@ -193,24 +208,29 @@ namespace CrystalCastles.DataEngine
                 return;
             }
 
-            string[] tokens = line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-            if (tokens.Length == 0) return;
+            // Split on spaces and remove all empty element fragments cleanly
+            string[] rawTokens = line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            if (rawTokens.Length == 0) return;
 
-            int startCol = 0;
-            if (int.TryParse(tokens[0], out int rowPrefix) && rowPrefix == gemRow)
+            // DYNAMIC STRIDE FILTER: Isolate the row prefix securely to lock accurate array offsets
+            int cleanStartCol = 0;
+            if (int.TryParse(rawTokens[0], out int labelCheck) && labelCheck == gemRow)
             {
-                startCol = 1;
-                if (logger != null && gemRow == 0) logger.WriteLine($"  Line {lineNum:D2} [STRIDE SHIFT] -> Line {lineNum:D2} Row Label '{tokens[0]}' Detected. Skipping Left-Margin Stride [Token Offset 1].");
+                cleanStartCol = 1;
             }
 
-            int validTokens = tokens.Length - startCol;
-            if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [DATA INGEST] -> Raw Char Length: {line.Length} | Text: '{line}' | Tokens: {tokens.Length}");
+            if (logger != null)
+            {
+                logger.WriteLine($"  Line {lineNum:D2} [DATA INGEST] -> Raw Char Length: {line.Length} | Active Row: {gemRow:D2} | Tokens: {rawTokens.Length}");
+            }
 
             int activeGemsInRow = 0;
-            for (int colY = 0; colY < GridSize && (colY + startCol) < tokens.Length; colY++)
+            for (int colY = 0; colY < GridSize && (colY + cleanStartCol) < rawTokens.Length; colY++)
             {
-                string token = tokens[colY + startCol].Trim();
-                if (token == "*" || token == "**")
+                string targetToken = rawTokens[colY + cleanStartCol].Trim();
+
+                // Track both single-pass marker profiles to lock gem occupancy records natively
+                if (targetToken == "*" || targetToken == "**" || targetToken == "L")
                 {
                     profile.Gems[gemRow, colY] = true;
                     activeGemsInRow++;
@@ -221,7 +241,11 @@ namespace CrystalCastles.DataEngine
                 }
             }
 
-            if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [MATRIX CELL MAP] -> Row {gemRow:D2} Gems Extracted (Active Count: {activeGemsInRow})");
+            if (logger != null)
+            {
+                logger.WriteLine($"  Line {lineNum:D2} [MATRIX CELL MAP] -> Row {gemRow:D2} Gems Extracted (Active Count: {activeGemsInRow})");
+            }
+
             gemRow++;
         }
 

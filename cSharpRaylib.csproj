@@ -22,4 +22,12 @@
     <PackageReference Include="Raylib-cs" Version="8.1.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EditorConfigFiles Remove="C:\Users\neg1s\source\repos\cSharpRaylib\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="C:\Users\neg1s\source\repos\cSharpRaylib\.editorconfig" />
+  </ItemGroup>
+
 </Project>

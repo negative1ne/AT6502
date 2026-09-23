@@ -206,6 +206,9 @@ namespace cSharpRaylib
                         // If no changes exist in memory for this room, exit section early to keep ledger clean
                         if (activeLockedCount == 0) continue;
 
+                        // PASS 1 - PART 2: Apply inverse mapping onto the text exporter sheet loop
+                        bool isRotatedStage = (roomID == 1 || roomID == 21 || roomID == 22);
+
                         sw.WriteLine("    00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21");
                         for (int x = 0; x < 22; x++)
                         {
@@ -214,13 +217,18 @@ namespace cSharpRaylib
 
                             for (int y = 0; y < 22; y++)
                             {
-                                if (activeGridCells[roomID, x, y])
+                                // Symmetrical Re-mapper: Extract coordinates relative to visual display mapping
+                                int srcX = isRotatedStage ? (21 - y) : x;
+                                int srcY = isRotatedStage ? x : y;
+
+                                if (activeGridCells[roomID, srcX, srcY])
                                 {
                                     rowText.Append(" L ");
-                                    int cellHeight = (dRoom != null) ? dRoom.Heights[x, y] : 0;
-                                    bool hasGem = (dRoom != null) && dRoom.Gems[x, y];
+                                    int cellHeight = (dRoom != null) ? dRoom.Heights[srcX, srcY] : 0;
+                                    bool hasGem = (dRoom != null) && dRoom.Gems[srcX, srcY];
                                     string gemStr = hasGem ? "YES" : "NO";
                                     string liftStr = "NONE";
+                                    
 
                                     if (dRoom != null)
                                     {

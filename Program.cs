@@ -1,12 +1,14 @@
 ﻿// ============================================================================
 // FIX BANNER: PROGRAM.CS - PART 1: MASTER ENGINE LOOP UTILITIES (v0.85)
 // ============================================================================
+using CrystalCastles.DataEngine;
 using Raylib_cs;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using Color = Raylib_cs.Color;
 using Rectangle = Raylib_cs.Rectangle;
+
 
 namespace cSharpRaylib
 {
@@ -44,6 +46,7 @@ namespace cSharpRaylib
                 "Impossible Staircase", "Nasty Tree", "Hidden Spiral", "Berthilda's Dungeon",
                 "The End"
             };
+            
 
             // ====================================================================================
             // INITIALIZATION SEQUENCE DROP-IN BANNER: v0.85 DATA ENGINE ISOLATION
@@ -87,42 +90,16 @@ namespace cSharpRaylib
             {
                 Console.WriteLine($"[CRITICAL PIPELINE FAULT]: Integration run execution crashed: {integrationEx.Message}");
             }
-            // ====================================================================================
-            // END OF FIX BLOCK 1
-            // ====================================================================================
+            
 
-
-            // ====================================================================================
-            // STRINGS SWEEP: PROGRAM.CS - SYNCHRONIZE VERSION TEXT REGISTRATION
-            // LOCATION: REPLACES LABELED ENGINE DATA ISOLATION INIT TRACE LOG LINE
-            // CONSTRAINTS: ELIMINATES LEGACY VERSION FRAGMENT STREAMS FROM BASELINE TRACES
-            // ====================================================================================
-            CrystalCastles.DataEngine.DataEngineLogger.LogSession("System Initialization: v0.90 Data Engine Isolation initialized successfully.");
-            CrystalCastles.DataEngine.DataEngineLogger.LogSession($"Project Base Directory verified at: {projectBaseDir}");
-
-            // ====================================================================================
-
-            // ====================================================================================
-            // CONCLUDING PIPELINE EXECUTION HOOK: v0.85 DATA ENGINE ISOLATION
-            // ====================================================================================
-
-            // Step 4: Fire the isolated 5-stage migration sandbox pass immediately
-            // CrystalCastles.DataEngine.SandboxTestHarness.ExecuteValidationPass(projectBaseDir);
-
-            // ====================================================================================
-            // ====================================================================================
-            // SUB-TASK 7C HOOK: PROGRAM.CS - ACTIVATE MASTER STARTUP INTEGRITY VERIFICATION PASS
-            // LOCATION: INJECTED DIRECTLY FOLLOWING ROM MANAGER REPOSITORY DATABASE INITIALIZATION
-            // CONSTRAINTS: SINGLE RUN PASS ON APPLICATION EXECUTION ENTRY STRIDE (v0.90)
-            // ====================================================================================
-            CCUnifiedLogger.AppendStartupAuditReport(StageNames);
+            // Clean initialization run that passes data directly to RomManager without log-bloating intercepts
             List<CityData> cities = RomManager.LoadRomDatabase();
             // ====================================================================================
             // DIAGNOSTIC CORE FIXED BANNER: PROGRAM.CS - DYNAMIC LEVEL 01 OVERWRITE RUN HOOK
             // LOCATION: INJECTED DIRECTLY BENEATH INITIAL STARTUP AUDIT LOG STRIDE PASS
             // CONSTRAINTS: FORCES LOG GENERATION TO SWITCH TARGET TO TREE WAVE FILE (v0.90)
             // ====================================================================================
-            RomManager.DebugTargetStage = 1;
+            RomManager.DebugTargetStage = 0;
             var stagePalettes = StagePalettes.GetMasterPaletteMatrix();
 
             const int virtualWidth = 800;

@@ -34,6 +34,28 @@ namespace cSharpRaylib
                 ActiveSessionTimestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             }
 
+            // Centralized v0.91 Session Summary Header Initialization
+            if (IsParserDiagnosticActive)
+            {
+                string unifiedSessionLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
+                try
+                {
+                    // Create a fresh file (false) at boot to establish our unified dashboard header
+                    using (StreamWriter headerWriter = new StreamWriter(unifiedSessionLog, false, Encoding.UTF8))
+                    {
+                        headerWriter.WriteLine("================================================================================");
+                        headerWriter.WriteLine("=== CRYSTAL CASTLES UNIFIED INGESTION SUITE ISOLATED DIAGNOSTIC SESSION LOG ===");
+                        headerWriter.WriteLine($"=== ENGINE ARCHITECTURE: v0.91 SPECIFICATION  |  STATUS: ANALYSIS RUN      ===");
+                        headerWriter.WriteLine("================================================================================");
+                        headerWriter.WriteLine($"[SESSION LAUNCH] : {DateTime.Now:MM/dd/yyyy hh:mm:ss tt}");
+                        headerWriter.WriteLine($"[SANDBOX BIN]    : {AppDomain.CurrentDomain.BaseDirectory}");
+                        headerWriter.WriteLine($"[AUDIT VERDICT]  : OVERRUN GUARD FILTERS LIVE. DIRECT MEMORY TRACE ACTIVE.");
+                        headerWriter.WriteLine("================================================================================\n");
+                    }
+                }
+                catch { /* Prevent disk write access locks */ }
+            }
+
             string[] StageNames = new string[] {
                 "Ball Wave", "Tree Wave", "Doomsdome", "Berthilda's Castle",
                 "Hidden Ramp", "Staircase", "Crossroads", "Berthilda's Fortress",
@@ -116,25 +138,28 @@ namespace cSharpRaylib
 
                 CrystalCastles.DataEngine.CCUnifiedParser.UnifiedStageProfile ingestedProfile = null;
 
-                // ====================================================================================
-                // DIAGNOSTIC CORE FIXED BANNER: ROMMANAGER.CS - 5-LEVEL TESTING SUITE RANGE PASS
-                // LOCATION: REPLACES SINGLE-STAGE CONDITIONAL HOOK INSIDE THE STAGENUM LOOP
-                // CONSTRAINTS: UNDER 150 LINES MAX WINDOW LIMIT | STREAMS STAGES 00-04 LINE-BY-LINE (v0.90)
-                // ====================================================================================
-                if (IsParserDiagnosticActive && stageNum < 37)
+                // --- v0.91 Isolated Parallel Ingestion Test Leg ---
+                // Live Path: Feeds the visible display variables safely from production records
+                ingestedProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(fullUnifiedPath, null);
+
+                if (IsParserDiagnosticActive)
                 {
-                    string auditPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "startup_audit.log");
-                    // Using append mode ensures all 5 stages record sequentially to the same run ledger
-                    using (StreamWriter verboseAuditWriter = new StreamWriter(auditPath, true, Encoding.UTF8))
+                    // Parallel Test Path: Targets our newly updated v0.91 files exclusively
+                    string revisedFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "revised");
+                    string parallelTestPath = Path.Combine(revisedFolder, outFileName);
+                    string unifiedSessionLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
+
+                    using (StreamWriter parallelAuditWriter = new StreamWriter(unifiedSessionLog, true, Encoding.UTF8))
                     {
-                        ingestedProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(fullUnifiedPath, verboseAuditWriter);
+                        // Parse the revised file to safely populate our text logger without touching core memory vectors
+                        CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(parallelTestPath, parallelAuditWriter);
                     }
                 }
                 else
                 {
+                    // Production Mode: Zero disk overhead, 100% direct-to-RAM ingestion
                     ingestedProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(fullUnifiedPath, null);
                 }
-
                 // TYPE-SAFE ARRAY TRANSFORMER: Elements are copied sequentially to align byte[,] to int[,] variables
                 if (ingestedProfile != null && ingestedProfile.Heights != null)
                 {
@@ -207,6 +232,12 @@ namespace cSharpRaylib
             {
                 var isolatedRoom = IsolatedStages[stageNum];
 
+                // ====================================================================================
+                // PASS 2 - PART 1: ROMMANAGER.CS - OVERWRITE GUARD INTERCEPT REGISTERS
+                // LOCATION: DEACTIVATES COORD BLOCKS INSIDE GENERATESTARTUPLABORATORYLOGS METHOD
+                // CONSTRAINTS: PREVENTS LEGACY MAPPING COUPLERS FROM FLIPPING CELLX/Y TO ZERO (v0.90)
+                // ====================================================================================
+                /*
                 if (ElevatorPremapper.FileCoordinateCache.ContainsKey(stageNum))
                 {
                     var cachedCoords = ElevatorPremapper.FileCoordinateCache[stageNum];
@@ -218,6 +249,7 @@ namespace cSharpRaylib
                         isolatedRoom.Elevators[k].IsMapped = true;
                     }
                 }
+                */
 
                 string currentStageName = (stageNum < stageNames.Length) ? stageNames[stageNum] : "Unknown Wave";
 
