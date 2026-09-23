@@ -129,20 +129,25 @@ namespace cSharpRaylib
                 // --- v0.91 Focus-Latching Click Interceptor & L-Key Log Matrix ---
                 string telemetryOutputDisplayString = "ROW (X): OUT  |  COL (Y): OUT";
 
-                if (isMouseInsideGrid)
+                // FIX BANNER: DEFENSIVE COORDINATE CLAMP SAFEGUARD WITH MULTI-LEVEL MATRIX PASS [v0.91]
+                bool isMouseOverActiveGrid = (_hoveredRowX >= 0 && _hoveredRowX < 22 && _hoveredColY >= 0 && _hoveredColY < 22);
+
+                if (isMouseInsideGrid && isMouseOverActiveGrid)
                 {
                     telemetryOutputDisplayString = $"ROW (X): {_hoveredRowX:D2}  |  COL (Y): {_hoveredColY:D2}";
 
-                    // Click to latch cell coordinates natively into our active troubleshooting session
                     if (Raylib.IsMouseButtonPressed(MouseButton.Left))
                     {
-                        // FIX BANNER: UNIFIED CELL STATE INVERSION TOGGLE ENGINE [v0.91]
-                        globalSessionLoggedCells[currentRoom, _hoveredRowX, _hoveredColY] = !globalSessionLoggedCells[currentRoom, _hoveredRowX, _hoveredColY];
+                        // Hard clamp indices to strictly lock coordinates into safe [0..21] range
+                        int clampedX = Math.Clamp(_hoveredRowX, 0, 21);
+                        int clampedY = Math.Clamp(_hoveredColY, 0, 21);
+
+                        globalSessionLoggedCells[currentRoom, clampedX, clampedY] = !globalSessionLoggedCells[currentRoom, clampedX, clampedY];
 
                         if (_selectedElevatorIndex >= 0 && _selectedElevatorIndex < mockList.Count)
                         {
-                            mockList[_selectedElevatorIndex].CellX = _hoveredRowX;
-                            mockList[_selectedElevatorIndex].CellY = _hoveredColY;
+                            mockList[_selectedElevatorIndex].CellX = clampedX;
+                            mockList[_selectedElevatorIndex].CellY = clampedY;
                             mockList[_selectedElevatorIndex].IsMapped = true;
                             _selectedElevatorIndex = -1;
                         }
@@ -271,15 +276,23 @@ namespace cSharpRaylib
 
                             if (gemTagCount == 1 && endGemTagCount == 1 && mapTagCount == 1)
                             {
-                                // TIER 3: Write out strictly to temporary scratch storage files before target swap execution
-                                string tempPath = fullRevisedPath + ".tmp";
-                                File.WriteAllLines(tempPath, workingBuffer, Encoding.UTF8);
-                                File.Delete(fullRevisedPath);
-                                File.Move(tempPath, fullRevisedPath);
+                                // FIX BANNER: NON-DESTRUCTIVE ISOLATED EXPORTS SUBFOLDER OVERRIDE ROUTE [v0.91]
+                                string exportDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "revised", "exports");
+                                if (!Directory.Exists(exportDirectory))
+                                {
+                                    Directory.CreateDirectory(exportDirectory);
+                                }
+
+                                string timeSuffix = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                                string dynamicExportFile = $"EXPORT_STAGE_{currentRoom:D2}_{formattedName}_{timeSuffix}.txt";
+                                string isolatedExportPath = Path.Combine(exportDirectory, dynamicExportFile);
+
+                                // Write our clean double-spaced row layout buffer safely to the exports subfolder
+                                File.WriteAllLines(isolatedExportPath, workingBuffer, Encoding.UTF8);
 
                                 using (StreamWriter auditAppend = new StreamWriter(unifiedSessionLog, true, Encoding.UTF8))
                                 {
-                                    auditAppend.WriteLine($"[{DateTime.Now:HH:mm:ss}] [SAFE COMPOSITE WRITE PASS] Verified asset committed: data\\revised\\{targetFileName}");
+                                    auditAppend.WriteLine($"[{DateTime.Now:HH:mm:ss}] [ISOLATED SHIELD WRITE] Generated clean transaction sheet: data\\revised\\exports\\{dynamicExportFile}");
                                     auditAppend.WriteLine("--------------------------------------------------------------------------------\n");
                                 }
                                 // FIX BANNER: CONSOLIDATED EXPORT DUMP SUMMARY BRIDGE [v0.91]
