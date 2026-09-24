@@ -4,6 +4,7 @@
 // CONSTRAINTS: SINGLE-PASS DATA INGESTION | VERBOSE STRIDE LEDGER TELEMETRY
 // ====================================================================================
 
+using cSharpRaylib;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -70,6 +71,7 @@ namespace CrystalCastles.DataEngine
                 return profile;
             }
 
+            // FIX BANNER: Task H3 Unified Parser Telemetry Tracking Harmonization [v0.95]
             string[] lines = File.ReadAllLines(filePath);
             ParserBlockState currentState = ParserBlockState.None;
             int currentGemRow = 0;
@@ -77,7 +79,7 @@ namespace CrystalCastles.DataEngine
 
             if (sessionLogger != null)
             {
-                sessionLogger.WriteLine($"\n==================== [STATE SWITCH DIAGNOSTIC: STAGE {Path.GetFileNameWithoutExtension(filePath)}] ====================");
+                sessionLogger.WriteLine($"\n==================== [STATE SWITCH DIAGNOSTIC: STAGE {Path.GetFileNameWithoutExtension(filePath)} v{CCFormatConfig.VersionTag}] ====================");
                 sessionLogger.WriteLine($"Resource: {filePath}");
             }
 

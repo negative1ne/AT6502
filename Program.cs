@@ -109,7 +109,8 @@ namespace cSharpRaylib
             const int screenWidth = virtualWidth * scaleMultiplier;
             const int screenHeight = virtualHeight * scaleMultiplier;
 
-            Raylib.InitWindow(screenWidth, screenHeight, "cSharpRaylib - Crystal Castles Unified Ingestion Suite [v0.85]");
+            // FIX BANNER: Task H1 Dynamic GUI Title Window Synchronization [v0.95]
+            Raylib.InitWindow(screenWidth, screenHeight, $"cSharpRaylib - Crystal Castles Unified Ingestion Suite [v{CCFormatConfig.VersionTag}]");
             Raylib.SetTargetFPS(60);
 
             RenderTexture2D targetBuffer = Raylib.LoadRenderTexture(virtualWidth, virtualHeight);

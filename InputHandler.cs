@@ -259,7 +259,8 @@ namespace cSharpRaylib
             // FIX 1: Linked directly to live loop telemetry argument parameter
             string viewModeLabel = is3DMode ? $"3D Isometric @ {rotationAngle:D3}°" : "2D Flat Viewport";
 
-            Raylib.DrawText("ccSharpRaylib [v0.90]", (int)guiAnchor.X, (int)guiAnchor.Y, 20, textClr);
+            // FIX BANNER: Task H4 Dynamic Main Overlay UI Label Synchronizer [v0.95]
+            Raylib.DrawText($"ccSharpRaylib [v{CCFormatConfig.VersionTag}]", (int)guiAnchor.X, (int)guiAnchor.Y, 20, textClr);
             Raylib.DrawText($"Level {(currentRoom / 4) + 1} - {(currentRoom % 4) + 1} [{stageName}] | Lifts: {totalElevators} | {viewModeLabel}", (int)guiAnchor.X, (int)guiAnchor.Y + 35, 18, Raylib_cs.Color.Gold);
 
             if (activeTheme != null && activeTheme.Length >= 3)
@@ -268,7 +269,7 @@ namespace cSharpRaylib
                 Raylib.DrawRectangle((int)guiAnchor.X + 50, (int)guiAnchor.Y + 70, 40, 20, activeTheme[1]);
                 Raylib.DrawRectangle((int)guiAnchor.X + 100, (int)guiAnchor.Y + 70, 40, 20, activeTheme[2]);
             }
-            Raylib.DrawText("Active Layout Palette Matrix Slots (v0.90)", (int)guiAnchor.X + 160, (int)guiAnchor.Y + 73, 14, isInverted ? Raylib_cs.Color.DarkGray : Raylib_cs.Color.LightGray);
+            Raylib.DrawText($"Active Layout Palette Matrix Slots (v{CCFormatConfig.VersionTag})", (int)guiAnchor.X + 160, (int)guiAnchor.Y + 73, 14, isInverted ? Raylib_cs.Color.DarkGray : Raylib_cs.Color.LightGray);
 
             int box1Y = (int)guiAnchor.Y + 105;
             // COMPRESSION: Tightened up box height calculation constraints to fit menu scope exactly

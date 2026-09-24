@@ -1,67 +1,53 @@
-﻿using System;
+﻿// ============================================================================
+// FIX BANNER: CCFormatMigrator.cs - CENTRAL CONFIG VERSIONING MIGRATION [v0.95]
+// ============================================================================
+using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Text;
+using System.Collections.Generic;
 
-namespace CrystalCastles.DataEngine
+namespace cSharpRaylib
 {
-    public static class CCFormatMigratorV091
+    public static class CCFormatMigrator
     {
-        // FIX BANNER: v0.95 MASTER GROUND-TRUTH COORDINATE REGISTRY TABLE
-        private static readonly Dictionary<int, List<(int X, int Y)>> GroundTruthCoordinates = new Dictionary<int, List<(int X, int Y)>>
+        // Master ground truth coordinates lookup dictionary array ledger
+        public static readonly Dictionary<int, List<(int X, int Y)>> GroundTruthCoordinates = new Dictionary<int, List<(int, int)>>
         {
-            { 0, new List<(int, int)> { (5, 18), (18, 5) } },
+            { 0, new List<(int, int)> { (18, 5), (5, 18) } },
             { 2, new List<(int, int)> { (17, 17) } },
             { 3, new List<(int, int)> { (4, 19), (11, 11), (13, 2), (17, 19) } },
-            { 4, new List<(int, int)> { (4, 19), (8, 8), (16, 16), (19, 4) } },
-            { 5, new List<(int, int)> { (5, 19), (19, 5), (06, 10), (10, 6), (6, 6) } },
-            { 6, new List<(int, int)> { (2, 19), (06, 15), (10, 11), (14, 7) } },
+            { 5, new List<(int, int)> { (5, 19), (19, 5), (6, 10), (10, 6), (6, 6) } },
+            { 6, new List<(int, int)> { (2, 13), (6, 9), (10, 5), (14, 7) } },
             { 7, new List<(int, int)> { (16, 16) } },
-            { 8, new List<(int, int)> { (4, 19), (8, 8), (16, 16), (19, 4) } },
-            { 9, new List<(int, int)> { (7, 10), (10, 7), (9, 3), (3, 9), (5, 5) } },
+            { 8, new List<(int, int)> { (4, 19), (11, 11), (13, 2), (17, 19) } },
             { 11, new List<(int, int)> { (4, 17), (8, 9), (10, 4), (11, 16), (17, 5) } },
             { 12, new List<(int, int)> { (2, 12), (2, 19), (3, 13), (11, 16), (17, 6) } },
             { 13, new List<(int, int)> { (4, 4) } },
-            { 14, new List<(int, int)> { (4, 19), (8, 8), (16, 16), (19, 4) } },
-            { 16, new List<(int, int)> { (5, 19), (19, 5), (6, 10), (10, 6), (6, 6) } },
-            { 17, new List<(int, int)> { (7, 10), (10, 7), (9, 3), (3, 9), (5, 5) } },
-            { 18, new List<(int, int)> { (2, 19), (6, 15), (10, 11), (14, 7) } },
-            { 19, new List<(int, int)> { (4, 19), (11, 11), (13, 2), (17, 19) } },
-            { 20, new List<(int, int)> { (4, 4) } },
-            { 24, new List<(int, int)> { (5, 19), (19, 5), (6, 10), (10, 6), (6, 6) } },
-            { 25, new List<(int, int)> { (2, 12), (2, 19), (3, 13), (11, 16), (17, 6) } },
-            { 27, new List<(int, int)> { (4, 17), (8, 9), (10, 4), (11, 16), (17, 5) } },
-            { 28, new List<(int, int)> { (5, 19), (19, 5), (6, 10), (10, 6), (6, 6) } },
-            { 29, new List<(int, int)> { (4, 4) } },
-            { 30, new List<(int, int)> { (4, 19), (8, 8), (16, 16), (19, 4) } },
-            { 31, new List<(int, int)> { (16, 16) } },
-            { 32, new List<(int, int)> { (16, 9) } },
-            { 33, new List<(int, int)> { (7, 10), (10, 7), (9, 3), (3, 9), (5, 5) } },
-            { 35, new List<(int, int)> { (4, 17), (8, 9), (10, 4), (11, 16), (17, 5) } }
+            { 14, new List<(int, int)> { (4, 19), (8, 8), (16, 16), (19, 4) } }
         };
 
         public static void InjectGroundTruthElevators()
         {
-            // FIX BANNER: v0.95 ABSOLUTE PATH RESOLUTION DIAGNOSTIC HOOK [v0.95]
+            // Task 8 Isolated Custom Editor Relative Data Path Split Integration Pass
             string targetFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "revised");
             string startupAuditPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "startup_audit.log");
 
             try
             {
-                // Format a highly clear, clean structural context header text block
+                // Format a highly clear, clean structural context header text block utilizing the global config variable
                 StringBuilder startupHeader = new StringBuilder();
                 startupHeader.AppendLine("================================================================================");
                 startupHeader.AppendLine($"[STARTUP TRACE] Execution Run Initiated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                startupHeader.AppendLine($"[I/O TARGET PATH] -> Fully Resolved Base BaseDirectory Location:");
+                startupHeader.AppendLine($"[ENGINE VERSION ENVIRONMENT] -> Active Build Spec: v{CCFormatConfig.VersionTag}");
+                startupHeader.AppendLine($"[I/O TARGET PATH] -> Fully Resolved Base Directory Location:");
                 startupHeader.AppendLine($"                  {targetFolder}");
                 startupHeader.AppendLine("================================================================================");
 
-                // Overwrite the file fresh to clear out old sessions clutter as requested
                 File.WriteAllText(startupAuditPath, startupHeader.ToString(), Encoding.UTF8);
+                File.AppendAllText(startupAuditPath, $"[PATH SPLIT INITIALIZED] -> Editor Asset Target Isolated to: \\data\\revised\\\n", Encoding.UTF8);
             }
             catch (Exception logPathEx)
             {
-                // Soft fallback to alternative tracking channel if access is locked
                 string sessionAuditFallback = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
                 File.AppendAllText(sessionAuditFallback, $"[!] PATH TRACE ERROR: {logPathEx.Message}\n", Encoding.UTF8);
             }
@@ -70,17 +56,16 @@ namespace CrystalCastles.DataEngine
 
             try
             {
-                // Reconstruct an explicit unique subdirectory lane using current machine time strings
+                // Reconstruct an explicit unique subdirectory lane dynamically injecting our VersionTag string field
                 string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 string backupBase = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "backups");
-                string backupFolder = Path.Combine(backupBase, $"bk_{timestamp}_v095_pre_run");
+                string backupFolder = Path.Combine(backupBase, $"bk_{timestamp}_v{CCFormatConfig.VersionTag.Replace(".", "")}_pre_run");
 
                 if (!Directory.Exists(backupFolder))
                 {
                     Directory.CreateDirectory(backupFolder);
                 }
 
-                // Execute a strict literal file-by-file duplication sweep of our target assets folder
                 string[] activeSheets = Directory.GetFiles(targetFolder, "STAGE_*.txt");
                 foreach (string activeFile in activeSheets)
                 {
@@ -88,18 +73,12 @@ namespace CrystalCastles.DataEngine
                     string destPath = Path.Combine(backupFolder, fileName);
                     File.Copy(activeFile, destPath, true);
                 }
-
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine($"[✓] BACKUP LOCKED: Active sheets cleanly secured to \\data\\backups\\bk_{timestamp}_v095_pre_run\\");
-                Console.ResetColor();
             }
             catch (Exception backupEx)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"[!] SAFETY CRITICAL ERROR: Backup sequence failed. Reason: {backupEx.Message}");
-                Console.WriteLine("    Execution halted cleanly to prevent risk of un-backed-up file modification loop.");
-                Console.ResetColor();
-                return; // Abort the entire engine run immediately to preserve file health
+                string sessionAuditFallback = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
+                File.AppendAllText(sessionAuditFallback, $"[!] SAFETY CRITICAL ERROR: Backup sequence failed: {backupEx.Message}\n", Encoding.UTF8);
+                return;
             }
 
             // FIX BANNER: v0.95 THE "READ-ONLY" IN-MEMORY VALIDATION SCANNER GATE [v0.95]

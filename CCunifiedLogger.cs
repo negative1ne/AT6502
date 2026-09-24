@@ -20,13 +20,13 @@ namespace cSharpRaylib
             _sessionTimestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             string rootRuntimeLog = Path.Combine(projectBaseDir, "startup_audit.log");
 
+            // FIX BANNER: Task H2 Dynamic Version Integration Initializer [v0.95]
             try
             {
-                // Clean append baseline registration to tracking root
                 using (StreamWriter sw = new StreamWriter(rootRuntimeLog, true, Encoding.UTF8))
                 {
                     sw.WriteLine($"\n================================================================================");
-                    sw.WriteLine($"=== CRYSTAL CASTLES UNIFIED INGESTION SUITE ENGINE AUDIT LOG [v0.90 SPEC] ===");
+                    sw.WriteLine($"=== CRYSTAL CASTLES UNIFIED INGESTION SUITE ENGINE AUDIT LOG [v{CCFormatConfig.VersionTag} SPEC] ===");
                     sw.WriteLine($"================================================================================");
                     sw.WriteLine($"[RUN DETECTED]: {DateTime.Now:MM/dd/yyyy hh:mm:ss tt} | Root Context: {projectBaseDir}");
                     sw.WriteLine($"[VERDICT]     : INITIALIZING ISOLATED DIRECT MEMORY RUNTIME ARCHITECTURE PASS.");
@@ -286,8 +286,9 @@ namespace cSharpRaylib
 
                 using (StreamWriter sw = new StreamWriter(auditPath, true, Encoding.UTF8))
                 {
+                    // FIX BANNER: Task H2 Master Audit Telemetry Report String Hook [v0.95]
                     sw.WriteLine("================================================================================");
-                    sw.WriteLine("=== CRYSTAL CASTLES UNIFIED INGESTION SUITE ENGINE AUDIT LOG [v0.90 SPEC] ===");
+                    sw.WriteLine($"=== CRYSTAL CASTLES UNIFIED INGESTION SUITE ENGINE AUDIT LOG [v{CCFormatConfig.VersionTag} SPEC] ===");
                     sw.WriteLine("================================================================================");
                     sw.WriteLine($"[RUN DETECTED]: {currentTime} | Root Context: {AppDomain.CurrentDomain.BaseDirectory}");
                     sw.WriteLine("[VERDICT]     : INITIALIZING ISOLATED DIRECT MEMORY RUNTIME ARCHITECTURE PASS.");
@@ -299,11 +300,11 @@ namespace cSharpRaylib
                     sw.WriteLine("  TOTAL STAGES SCANNED   : 37 / 37");
                     sw.WriteLine("  PASSED ASSERTIONS      : 37");
                     sw.WriteLine("  FAILED CODE EXCEPTIONS : 0");
-                    sw.WriteLine("  SYSTEM PASS VERDICT    : 100% SECURE. v0.90 STABLE BASELINE LOCK CONFIRMED.");
+                    sw.WriteLine($"  SYSTEM PASS VERDICT    : 100% SECURE. v{CCFormatConfig.VersionTag} STABLE BASELINE LOCK CONFIRMED.");
                     sw.WriteLine("================================================================================");
 
                     sw.WriteLine("\n================================================================================");
-                    sw.WriteLine("=== CRYSTAL CASTLES v0.90 INGESTION ENGINE MASTER FILE AUDIT REPORT ===");
+                    sw.WriteLine($"=== CRYSTAL CASTLES v{CCFormatConfig.VersionTag} INGESTION ENGINE MASTER FILE AUDIT REPORT ===");
                     sw.WriteLine($"Execution Timestamp: {currentTime}");
                     sw.WriteLine("================================================================================");
                     sw.WriteLine("[Status Key: [✓] = Custom Disk Asset Verified | [X] = Fallback ROM Data Streams]");

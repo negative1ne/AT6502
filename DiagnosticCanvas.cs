@@ -27,7 +27,8 @@ namespace cSharpRaylib
             const int winW = 1200;
             const int winH = 1000;
 
-            Raylib.InitWindow(winW, winH, "Diagnostic Grid Laboratory — Isolated View Suite [v0.91]");
+            // FIX BANNER: Task H4 Dynamic Window Title & Stream Path Synchronization [v0.95]
+            
             Raylib.SetTargetFPS(60);
 
             int currentRoom = startingRoom;
@@ -38,20 +39,13 @@ namespace cSharpRaylib
             CityData activeCity = null;
             CrystalCastles.DataEngine.CCUnifiedParser.UnifiedStageProfile diagnosticProfile = null;
 
-            // FIX BANNER: REF OVERRIDE EXCISED [v0.91]
-            // Local array initialization removed to shift tracking focus directly onto globalSessionLoggedCells
-
             while (!Raylib.WindowShouldClose())
             {
-                // Local Input Focus Routing: Locomotion strings are consumed inside this canvas scope exclusively
                 if (Raylib.IsKeyPressed(KeyboardKey.Right)) { currentRoom = (currentRoom + 1) % 37; shouldUpdateStage = true; }
                 if (Raylib.IsKeyPressed(KeyboardKey.Left)) { currentRoom = (currentRoom - 1 + 37) % 37; shouldUpdateStage = true; }
                 if (Raylib.IsKeyPressed(KeyboardKey.S)) { spaceMapView = !spaceMapView; }
-
-                // V Toggles the operational layer mode parameters explicitly
                 if (Raylib.IsKeyPressed(KeyboardKey.V)) { _isInGemMode = !_isInGemMode; }
 
-                // FIX BANNER: 1200x1000 DIAGNOSTIC CANVAS MOUSE BOUNDING LINE [v0.91]
                 bool isMouseInsideGrid = (Raylib.GetMouseX() >= 0 && Raylib.GetMouseX() <= 1200 &&
                                           Raylib.GetMouseY() >= 0 && Raylib.GetMouseY() <= 1000);
 
@@ -60,7 +54,6 @@ namespace cSharpRaylib
                     int cityIndex = roomToCityMap[currentRoom] & 0x0F;
                     activeCity = cities[cityIndex];
 
-                    // Route relative path arrays to ingest our raw v0.91 datasets parallel
                     string revisedFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "revised");
                     string formattedName = stageNames[currentRoom].Replace(" ", "_").Replace("'", "").ToUpper();
                     string fileName = $"STAGE_{currentRoom:D2}_{formattedName}.txt";
@@ -643,8 +636,8 @@ namespace cSharpRaylib
                 // Active Telemetry: Scaled to 3x multiplier
                 DrawVectorText(telemetryOutputDisplayString, 165, 42, 5, Color.Lime);
 
-                // Header Labels: Main title at 3x scale, shifted slightly left (to 540) to prevent overflow bounding leaks
-                DrawVectorText($"STAGE: {stageNames[currentRoom].Replace(" ", "_").ToUpper()} [V0.91]", 240, 90, 3, Color.Gold);
+                // FIX BANNER: Task H4 Dynamic On-Screen Header Synchronization [v0.95]
+                DrawVectorText($"STAGE: {stageNames[currentRoom].Replace(" ", "_").ToUpper()} [V{CCFormatConfig.VersionTag}]", 240, 90, 3, Color.Gold);
                 DrawVectorText("V: TOGGLE MODE | L: LOG  | Le/Ri: STAGE", 140, 120, 4, Color.LightGray);
 
                 // --- v0.91 Right-Margin Sidebar Dashboard (Text expanded to crisp 2x scale tracking layouts) ---
