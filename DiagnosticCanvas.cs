@@ -521,9 +521,20 @@ namespace cSharpRaylib
                     {
                         int posX = startX + (y * cellSize);
                         int posY = startY + (x * cellSize);
-                        int h = activeCity.Heights[x, y];
+                        // FIX BANNER: v0.95 SEAMLESS CANVAS MATRIX LOOKUP PERMUTATION [v0.95]
+                        // Mirrors the exact array orientation used by the file reader specification layers
+                        int h = activeCity.Heights[y, x];
 
-                        Raylib.DrawRectangleLines(posX, posY, cellSize, cellSize, new Color(45, 45, 40, 255));
+
+                        // FIX BANNER: v0.95 GRAPHIC LAYER SHADING VECTOR SYNC & AMBIGUITY FIX [v0.95]
+                        // Force explicit byte conversions to clear error CS0121 and restore missing terrain colors
+                        byte tone = (byte)Math.Clamp(h * 4, 0, 255);
+                        Color tileColor = new Color((byte)(tone + 30), (byte)(tone + 25), (byte)(tone + 10), (byte)255);
+                        Color gridColor = new Color((byte)45, (byte)45, (byte)40, (byte)255);
+
+                        // Draw solid filled terrain block layers first, then overlay grid boundaries
+                        Raylib.DrawRectangle(posX, posY, cellSize, cellSize, tileColor);
+                        Raylib.DrawRectangleLines(posX, posY, cellSize, cellSize, gridColor);
 
                         // FIX BANNER: VISUAL ANCHOR PATCH WITH DYNAMIC EN LABELS [v0.91]
                         int locatedElevatorIndex = -1;

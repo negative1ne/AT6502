@@ -132,7 +132,7 @@ namespace cSharpRaylib
             bool invertBackground = false;
             bool triggerTextExport = false;
             bool trigger3DLabWindow = false;
-            CCFormatMigratorV091.InjectGroundTruthElevators();
+            
             // ====================================================================================
             // REBUILD STEP 4 - PART 1: PROGRAM.CS - CORE HOTKEY LOGGER INTERCEPT
             // LOCATION: REPLACES INITIAL KEY HANDLING IN MAIN WHILE LOOP (APPROX LINE 135-145)

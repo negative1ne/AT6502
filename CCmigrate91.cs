@@ -42,8 +42,30 @@ namespace CrystalCastles.DataEngine
 
         public static void InjectGroundTruthElevators()
         {
-            // FIX BANNER: AUTOMATED PRE-RUN BACKUP ENGINE MECHANISM [v0.95]
+            // FIX BANNER: v0.95 ABSOLUTE PATH RESOLUTION DIAGNOSTIC HOOK [v0.95]
             string targetFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "revised");
+            string startupAuditPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "startup_audit.log");
+
+            try
+            {
+                // Format a highly clear, clean structural context header text block
+                StringBuilder startupHeader = new StringBuilder();
+                startupHeader.AppendLine("================================================================================");
+                startupHeader.AppendLine($"[STARTUP TRACE] Execution Run Initiated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                startupHeader.AppendLine($"[I/O TARGET PATH] -> Fully Resolved Base BaseDirectory Location:");
+                startupHeader.AppendLine($"                  {targetFolder}");
+                startupHeader.AppendLine("================================================================================");
+
+                // Overwrite the file fresh to clear out old sessions clutter as requested
+                File.WriteAllText(startupAuditPath, startupHeader.ToString(), Encoding.UTF8);
+            }
+            catch (Exception logPathEx)
+            {
+                // Soft fallback to alternative tracking channel if access is locked
+                string sessionAuditFallback = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
+                File.AppendAllText(sessionAuditFallback, $"[!] PATH TRACE ERROR: {logPathEx.Message}\n", Encoding.UTF8);
+            }
+
             if (!Directory.Exists(targetFolder)) return;
 
             try
@@ -165,6 +187,15 @@ namespace CrystalCastles.DataEngine
                         {
                             output.Add("[NONE]");
                         }
+
+                        // FIX BANNER: v0.95 COMPONENT OVERRIDE MUTATION TRACE STAMP [v0.95]
+                        try
+                        {
+                            string sessionAuditPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
+                            string traceStamp = $"[MUTATION TRACE] STAGE_{stageID:D2} -> Generated {GroundTruthCoordinates[stageID].Count} active elevators slots. Origin Caller: CCFormatMigratorV091.InjectGroundTruthElevators\n";
+                            File.AppendAllText(sessionAuditPath, traceStamp, Encoding.UTF8);
+                        }
+                        catch { /* Soft ignore if file lock is busy */ }
                         continue;
                     }
 
