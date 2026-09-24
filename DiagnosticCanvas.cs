@@ -521,9 +521,42 @@ namespace cSharpRaylib
                     {
                         int posX = startX + (y * cellSize);
                         int posY = startY + (x * cellSize);
-                        // FIX BANNER: v0.95 SEAMLESS CANVAS MATRIX LOOKUP PERMUTATION [v0.95]
-                        // Mirrors the exact array orientation used by the file reader specification layers
-                        int h = activeCity.Heights[y, x];
+                        // FIX BANNER: v0.95 ADVANCED SEGREGATED STAGE ROTATION EXEMPTION MATRICES [v0.95]
+                        // Conditionally maps cell orientations based on historical room layout behaviors
+                        int h = 0;
+                        if (currentRoom == 0 || currentRoom == 4 || currentRoom == 8 || currentRoom == 14)
+                        {
+                            // Asymmetrical Quadrant Wave Classes: Enforce original indexing sequence to correct alignment
+                            h = activeCity.Heights[x, y];
+                        }
+                        else
+                        {
+                            // FIX BANNER: Task 6 Hardcoded Exemption Router Engine [v0.95]
+                            
+
+                            // Route 90-Degree Left (Transposed Symmetrical)
+                            if (currentRoom == 0)
+                            {
+                                h = activeCity.Heights[x, y];
+                            }
+                            // Route 90-Degree Clockwise Right (Hidden Ramp Family)
+                            else if (currentRoom == 8 || currentRoom == 14 || currentRoom == 30)
+                            {
+                                h = activeCity.Heights[21 - x, y];
+                            }
+                            // Route Horizontal Mirror + 90-Degree Left (Crossroads, Spiral, and Dungeon Families)
+                            else if (currentRoom == 6 || currentRoom == 10 || currentRoom == 11 ||
+                                     currentRoom == 18 || currentRoom == 26 || currentRoom == 27 ||
+                                     currentRoom == 34 || currentRoom == 35)
+                            {
+                                h = activeCity.Heights[21 - y, x];
+                            }
+                            // Default Standard Stride (Rescinded Stage 16 and remaining 25 Stable Levels)
+                            else
+                            {
+                                h = activeCity.Heights[y, x];
+                            }
+                        }
 
 
                         // FIX BANNER: v0.95 GRAPHIC LAYER SHADING VECTOR SYNC & AMBIGUITY FIX [v0.95]
@@ -536,20 +569,39 @@ namespace cSharpRaylib
                         Raylib.DrawRectangle(posX, posY, cellSize, cellSize, tileColor);
                         Raylib.DrawRectangleLines(posX, posY, cellSize, cellSize, gridColor);
 
-                        // FIX BANNER: VISUAL ANCHOR PATCH WITH DYNAMIC EN LABELS [v0.91]
+                        // FIX BANNER: Task 6 Parallel Gems and Lifts Synchronization Pass [v0.95]
+                        // Maps coordinate pointers using the exact transformation applied to the height array matrix
+                        int evalX = x;
+                        int evalY = y;
+
+                        if (currentRoom == 0)
+                        {
+                            evalX = x; evalY = y; // Maintained for transposed layout alignment
+                        }
+                        else if (currentRoom == 8 || currentRoom == 14 || currentRoom == 30)
+                        {
+                            evalX = 21 - x; evalY = y;
+                        }
+                        else if (currentRoom == 6 || currentRoom == 10 || currentRoom == 11 ||
+                                 currentRoom == 18 || currentRoom == 26 || currentRoom == 27 ||
+                                 currentRoom == 34 || currentRoom == 35)
+                        {
+                            evalX = 21 - y; evalY = x;
+                        }
+
                         int locatedElevatorIndex = -1;
                         for (int i = 0; i < mockList.Count; i++)
                         {
-                            // Scan everything in the active room list, catching them even if unmapped at (0,0)
-                            if (mockList[i].CellX == x && mockList[i].CellY == y)
+                            if (mockList[i].CellX == evalX && mockList[i].CellY == evalY)
                             {
                                 locatedElevatorIndex = i;
                                 break;
                             }
                         }
 
+
                         // FIX BANNER: STANDALONE MODE ELEVATOR INDEPENDENT MATRIX DRAWER [v0.91]
-                        
+
                         for (int i = 0; i < mockList.Count; i++)
                         {
                             if (mockList[i].CellX == x && mockList[i].CellY == y)
@@ -571,7 +623,9 @@ namespace cSharpRaylib
 
                         }
 
-                        else if (diagnosticProfile != null && diagnosticProfile.Gems != null && diagnosticProfile.Gems[x, y])
+                        // FIX BANNER: Task 6 Parallel Gem Layer Matrix Synchronization [v0.95]
+                        // Forces the collectible layer lookups to use the exact same transformed map axis pointers
+                        else if (diagnosticProfile != null && diagnosticProfile.Gems != null && diagnosticProfile.Gems[evalX, evalY])
                         {
                             Raylib.DrawCircle(posX + (cellSize / 2), posY + (cellSize / 2), 6, Color.Gold);
                         }
