@@ -10,6 +10,7 @@ using Color = Raylib_cs.Color;
 using Rectangle = Raylib_cs.Rectangle;
 
 
+
 namespace cSharpRaylib
 {
     public class Program
@@ -46,8 +47,8 @@ namespace cSharpRaylib
                 "Impossible Staircase", "Nasty Tree", "Hidden Spiral", "Berthilda's Dungeon",
                 "The End"
             };
-            
 
+            
             // ====================================================================================
             // INITIALIZATION SEQUENCE DROP-IN BANNER: v0.85 DATA ENGINE ISOLATION
             // ====================================================================================
@@ -131,7 +132,7 @@ namespace cSharpRaylib
             bool invertBackground = false;
             bool triggerTextExport = false;
             bool trigger3DLabWindow = false;
-
+            //CCFormatMigratorV091.InjectGroundTruthElevators();
             // ====================================================================================
             // REBUILD STEP 4 - PART 1: PROGRAM.CS - CORE HOTKEY LOGGER INTERCEPT
             // LOCATION: REPLACES INITIAL KEY HANDLING IN MAIN WHILE LOOP (APPROX LINE 135-145)

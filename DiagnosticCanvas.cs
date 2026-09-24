@@ -113,7 +113,8 @@ namespace cSharpRaylib
                     int elOriginX = (diagnosticProfile != null && diagnosticProfile.HasCustomLiftScalar) ? diagnosticProfile.LiftOriginX : 112;
                     int elOriginY = (diagnosticProfile != null && diagnosticProfile.HasCustomLiftScalar) ? diagnosticProfile.LiftOriginY : -28;
 
-                    // Match your sandbox reverse math matrices to compute real grid columns automatically on launch
+                    // FIX BANNER: HARMONIZED ALGORITHM PROJECTION SCANNER PASS [v0.91]
+                    // Loop coordinates inverted to align 100% with your canvas layout array indices
                     for (int gridX = 0; gridX < 22; gridX++)
                     {
                         for (int gridY = 0; gridY < 22; gridY++)
@@ -121,23 +122,39 @@ namespace cSharpRaylib
                             int xp = xOrigin - (gridX * 4) + (gridY * 8);
                             int yp = yOrigin + (gridX * 4) + (gridY * 2);
 
-                            // FIX BANNER: UNIFIED PREMAPPER GROUND-TRUTH ENGINE SYNC PASS [v0.91]
-                            // Bypass the raw byte tracking gaps by directly calling your pre-computed static database tables
-                            ElevatorPremapper.ApplyOverrides(currentRoom, mockList);
-
-                            // Synchronize the verified static dictionary targets straight back into the primary memory ledger
                             for (int i = 0; i < mockList.Count; i++)
                             {
-                                if (mockList[i].IsMapped)
+                                var ev = mockList[i];
+
+                                // Ingest raw pixel variables parsed from the text files inside CCUnifiedParser
+                                int targetFootprintX = ev.HorizontalPosition;
+                                int targetFootprintY = ev.VerticalPosition;
+
+                                // Safely capture tile heights directly following the canvas layout [gridX, gridY] convention
+                                int currentTileHeight = (diagnosticProfile != null && diagnosticProfile.Heights != null) ? diagnosticProfile.Heights[gridX, gridY] : 0;
+                                int adjustedYp = yp - currentTileHeight;
+
+                                if (targetFootprintX == xp && targetFootprintY == adjustedYp)
                                 {
-                                    if (activeCity != null && i < activeCity.Elevators.Count)
-                                    {
-                                        activeCity.Elevators[i].CellX = mockList[i].CellX;
-                                        activeCity.Elevators[i].CellY = mockList[i].CellY;
-                                        activeCity.Elevators[i].IsMapped = true;
-                                    }
+                                    ev.CellX = gridX;
+                                    ev.CellY = gridY;
+                                    ev.IsMapped = true;
                                 }
                             }
+                        }
+                    }
+
+                    // Invoke our static premapper coordinate tables fallback array to resolve leftover edge stages
+                    ElevatorPremapper.ApplyOverrides(currentRoom, mockList);
+
+                    // Sync all resolved database coordinates cleanly back into the primary master city ledger array
+                    for (int i = 0; i < mockList.Count; i++)
+                    {
+                        if (mockList[i].IsMapped && activeCity != null && i < activeCity.Elevators.Count)
+                        {
+                            activeCity.Elevators[i].CellX = mockList[i].CellX;
+                            activeCity.Elevators[i].CellY = mockList[i].CellY;
+                            activeCity.Elevators[i].IsMapped = true;
                         }
                     }
 

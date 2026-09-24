@@ -50,6 +50,12 @@ namespace CrystalCastles.DataEngine
             public int BottomH { get; set; }
             public int TopH { get; set; }
             public string Direction { get; set; } = "UP";
+
+            // FIX BANNER: v0.91 REBUILT HARDWARE POSITION TELEMETRY FIELDS [v0.91]
+            // Explicitly track calculated arcade mapping scalars to resolve upstream structural calculations
+            public int HorizontalPosition { get; set; } = 0;
+            public int VerticalPosition { get; set; } = 0;
+        
         }
 
         public static UnifiedStageProfile LoadUnifiedStageFile(string filePath, StreamWriter sessionLogger)
@@ -224,8 +230,27 @@ namespace CrystalCastles.DataEngine
                     TopH = int.Parse(line.Substring(thIdx, 3))
                 };
 
+                // FIX BANNER: REVERSE-PROJECTION HARDWARE SCALAR INGESTION PASS [v0.91]
+                // Intercept the row and column fields to mathematically reconstruct missing arcade coordinates in RAM
+                int xOrigin = profile.CameraOffsetX;
+                int yOrigin = profile.CameraOffsetY;
+                int elOriginX = profile.HasCustomLiftScalar ? profile.LiftOriginX : 112;
+                int elOriginY = profile.HasCustomLiftScalar ? profile.LiftOriginY : -28;
+
+                // Re-calculate raw screen pixel offsets based on target row/col tiles
+                int xp = xOrigin - (lift.CellX * 4) + (lift.CellY * 8);
+                int yp = yOrigin + (lift.CellX * 4) + (lift.CellY * 2);
+
+                // Populate UnifiedLiftEntity arcade coordinate trackers cleanly to satisfy downstream mapping equations
+                lift.HorizontalPosition = xp - elOriginX;
+                lift.VerticalPosition = yp - yOrigin + lift.BottomH - elOriginY;
+
                 profile.Lifts.Add(lift);
-                if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [DATA INGEST] -> LIFT_{profile.Lifts.Count - 1}: Bounds Loaded (RowX={lift.CellX:D2} | ColY={lift.CellY:D2} | BottomH={lift.BottomH:D3} | TopH={lift.TopH:D3})");
+                if (logger != null)
+                {
+                    logger.WriteLine($"  Line {lineNum:D2} [DATA INGEST] -> LIFT_{profile.Lifts.Count - 1}: Bounds Loaded (RowX={lift.CellX:D2} | ColY={lift.CellY:D2})");
+                    logger.WriteLine($"    * Rebuilt Arcade Scalars : HorizPos={lift.HorizontalPosition} | VertPos={lift.VerticalPosition}");
+                }
             }
             catch (Exception ex)
             {

@@ -9,6 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="data\**" />
+    <EmbeddedResource Remove="data\**" />
+    <None Remove="data\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="ElevatorDataEngine.cs" />
     <Compile Remove="FileAuditSystem.cs" />
     <Compile Remove="GemDataEngine.cs" />
