@@ -39,6 +39,10 @@ namespace cSharpRaylib
             CityData activeCity = null;
             CrystalCastles.DataEngine.CCUnifiedParser.UnifiedStageProfile diagnosticProfile = null;
 
+            // FIX BANNER: Task Step 2 Sandboxed Local Memory Laboratory Array Initializer [v0.95]
+            byte[,] labScratchHeights = new byte[22, 22];
+            bool[,] labScratchGems = new bool[22, 22];
+
             while (!Raylib.WindowShouldClose())
             {
                 if (Raylib.IsKeyPressed(KeyboardKey.Right)) { currentRoom = (currentRoom + 1) % 37; shouldUpdateStage = true; }
@@ -59,23 +63,35 @@ namespace cSharpRaylib
                     string fileName = $"STAGE_{currentRoom:D2}_{formattedName}.txt";
                     string revisedFilePath = Path.Combine(revisedFolder, fileName);
 
-                    // FIX BANNER: DYNAMICALLY ACQUIRE RUN STAMP FOR INTERACTIVE LAB RUNS [v0.91]
-                    string auditFileName = $"session_audit_{RomManager.ActiveSessionTimestamp}.log";
-                    string unifiedSessionLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, auditFileName);
+                    // Overwrite pass: session_audit.log resets on every layout switch, preserving historical structure outputs exactly
+                    string unifiedSessionLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
+
+                    // Task Step 1: Write header file descriptors cleanly using a standard overwrite strategy
+                    StringBuilder labHeader = new StringBuilder();
+                    labHeader.AppendLine("================================================================================");
+                    labHeader.AppendLine("=== CRYSTAL CASTLES UNIFIED INGESTION SUITE ISOLATED DIAGNOSTIC SESSION LOG ===");
+                    labHeader.AppendLine($"=== ENGINE ARCHITECTURE: v{CCFormatConfig.VersionTag} SPECIFICATION  |  STATUS: ANALYSIS RUN      ===");
+                    labHeader.AppendLine("================================================================================");
+                    labHeader.AppendLine($"[SESSION LAUNCH] : {DateTime.Now:MM/dd/yyyy hh:mm:ss tt}");
+                    labHeader.AppendLine($"[SANDBOX BIN]    : {AppDomain.CurrentDomain.BaseDirectory}");
+                    labHeader.AppendLine("[AUDIT VERDICT]  : OVERRUN GUARD FILTERS LIVE. DIRECT MEMORY TRACE ACTIVE.");
+                    labHeader.AppendLine("================================================================================\n");
+                    File.WriteAllText(unifiedSessionLog, labHeader.ToString(), Encoding.UTF8);
+
                     using (StreamWriter localAuditWriter = new StreamWriter(unifiedSessionLog, true, Encoding.UTF8))
                     {
                         diagnosticProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(revisedFilePath, localAuditWriter);
                     }
 
-                    // Force the active viewport city map values to update using the newly parsed text profile
+                    // Populate memory vectors strictly inside the local lab arrays to preserve ground-truth isolation completely
                     if (diagnosticProfile != null && diagnosticProfile.Heights != null)
                     {
                         for (int r = 0; r < 22; r++)
                         {
                             for (int c = 0; c < 22; c++)
                             {
-                                activeCity.Heights[r, c] = diagnosticProfile.Heights[r, c];
-                                activeCity.Gems[r, c] = diagnosticProfile.Gems[r, c];
+                                labScratchHeights[r, c] = diagnosticProfile.Heights[r, c];
+                                labScratchGems[r, c] = diagnosticProfile.Gems[r, c];
                             }
                         }
                     }
@@ -514,73 +530,41 @@ namespace cSharpRaylib
                     {
                         int posX = startX + (y * cellSize);
                         int posY = startY + (x * cellSize);
-                        // FIX BANNER: v0.95 ADVANCED SEGREGATED STAGE ROTATION EXEMPTION MATRICES [v0.95]
-                        // Conditionally maps cell orientations based on historical room layout behaviors
+                        // FIX BANNER: Task Step 3 Core Laboratory Local Scratchpad Redirection Pass [v0.95]
                         int h = 0;
+                        int evalX = x;
+                        int evalY = y;
+
+                        // Advanced Exemption Matrix: Resolve actual visual tile mappings out of sandboxed RAM data slots exclusively
                         if (currentRoom == 0 || currentRoom == 4 || currentRoom == 8 || currentRoom == 14)
                         {
-                            // Asymmetrical Quadrant Wave Classes: Enforce original indexing sequence to correct alignment
-                            h = activeCity.Heights[x, y];
+                            h = labScratchHeights[x, y];
                         }
                         else
                         {
-                            // FIX BANNER: Task 6 Hardcoded Exemption Router Engine [v0.95]
-                            
-
-                            // Route 90-Degree Left (Transposed Symmetrical)
-                            if (currentRoom == 0)
+                            if (currentRoom == 8 || currentRoom == 14 || currentRoom == 30)
                             {
-                                h = activeCity.Heights[x, y];
+                                evalX = 21 - x; evalY = y;
                             }
-                            // Route 90-Degree Clockwise Right (Hidden Ramp Family)
-                            else if (currentRoom == 8 || currentRoom == 14 || currentRoom == 30)
-                            {
-                                h = activeCity.Heights[21 - x, y];
-                            }
-                            // Route Horizontal Mirror + 90-Degree Left (Crossroads, Spiral, and Dungeon Families)
                             else if (currentRoom == 6 || currentRoom == 10 || currentRoom == 11 ||
                                      currentRoom == 18 || currentRoom == 26 || currentRoom == 27 ||
                                      currentRoom == 34 || currentRoom == 35)
                             {
-                                h = activeCity.Heights[21 - y, x];
+                                evalX = 21 - y; evalY = x;
                             }
-                            // Default Standard Stride (Rescinded Stage 16 and remaining 25 Stable Levels)
                             else
                             {
-                                h = activeCity.Heights[y, x];
+                                evalX = y; evalY = x;
                             }
+                            h = labScratchHeights[evalX, evalY];
                         }
 
-
-                        // FIX BANNER: v0.95 GRAPHIC LAYER SHADING VECTOR SYNC & AMBIGUITY FIX [v0.95]
-                        // Force explicit byte conversions to clear error CS0121 and restore missing terrain colors
                         byte tone = (byte)Math.Clamp(h * 4, 0, 255);
                         Color tileColor = new Color((byte)(tone + 30), (byte)(tone + 25), (byte)(tone + 10), (byte)255);
                         Color gridColor = new Color((byte)45, (byte)45, (byte)40, (byte)255);
 
-                        // Draw solid filled terrain block layers first, then overlay grid boundaries
                         Raylib.DrawRectangle(posX, posY, cellSize, cellSize, tileColor);
                         Raylib.DrawRectangleLines(posX, posY, cellSize, cellSize, gridColor);
-
-                        // FIX BANNER: Task 6 Parallel Gems and Lifts Synchronization Pass [v0.95]
-                        // Maps coordinate pointers using the exact transformation applied to the height array matrix
-                        int evalX = x;
-                        int evalY = y;
-
-                        if (currentRoom == 0)
-                        {
-                            evalX = x; evalY = y; // Maintained for transposed layout alignment
-                        }
-                        else if (currentRoom == 8 || currentRoom == 14 || currentRoom == 30)
-                        {
-                            evalX = 21 - x; evalY = y;
-                        }
-                        else if (currentRoom == 6 || currentRoom == 10 || currentRoom == 11 ||
-                                 currentRoom == 18 || currentRoom == 26 || currentRoom == 27 ||
-                                 currentRoom == 34 || currentRoom == 35)
-                        {
-                            evalX = 21 - y; evalY = x;
-                        }
 
                         int locatedElevatorIndex = -1;
                         for (int i = 0; i < mockList.Count; i++)

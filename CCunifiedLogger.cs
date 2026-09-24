@@ -84,8 +84,9 @@ namespace cSharpRaylib
 
                 using (StreamWriter sw = new StreamWriter(fullExportPath, true, Encoding.UTF8))
                 {
+                    // FIX BANNER: Task Step 3 Dynamic Logger Snapshot Header Spec Token Alignment [v0.95]
                     sw.WriteLine("================================================================================");
-                    sw.WriteLine("CRYSTAL CASTLES v0.90 UNIFIED REPOSITORY SINGLE SHEET SESSION SNAPSHOT");
+                    sw.WriteLine($"CRYSTAL CASTLES v{CCFormatConfig.VersionTag} UNIFIED REPOSITORY SINGLE SHEET SESSION SNAPSHOT");
                     sw.WriteLine($"Export Timestamp: {DateTime.Now:MM/dd/yyyy hh:mm:ss tt}");
                     sw.WriteLine($"Target Stage     : Room [{currentRoom:D2}] - {stageName}");
                     sw.WriteLine("================================================================================");
@@ -183,7 +184,7 @@ namespace cSharpRaylib
                 using (StreamWriter sw = new StreamWriter(fullExportPath, false, Encoding.UTF8))
                 {
                     sw.WriteLine("================================================================================");
-                    sw.WriteLine("CRYSTAL CASTLES v0.90 UNIFIED REPOSITORY MULTI-LEVEL MASTER SESSION SNAPSHOT");
+                    sw.WriteLine($"CRYSTAL CASTLES v{CCFormatConfig.VersionTag} UNIFIED REPOSITORY SINGLE SHEET SESSION SNAPSHOT");
                     sw.WriteLine($"Compiled Timestamp: {DateTime.Now:MM/dd/yyyy hh:mm:ss tt}");
                     sw.WriteLine("================================================================================");
 
