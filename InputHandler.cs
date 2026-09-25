@@ -52,7 +52,22 @@ namespace cSharpRaylib
             string logTargetName = $"session_audit_{activeSessionTimestamp}.log";
 
             // Level change intercept: Capture old layout states and log selection details
+            // FIX BANNER: Task Step 1 High-Integrity F2 Key Snapshot Router Pass [v0.95]
+            if (Raylib.IsKeyPressed(KeyboardKey.F2))
+            {
+                // Forces fallback string formatting to safely avoid city engine variable leaks
+                string structuralFallbackName = $"STAGE_{currentRoom:D2}";
+
+                // Routes data straight to logging engine using thread-safe parameters
+                CCUnifiedLogger.ExportActiveSessionSummary(currentRoom, structuralFallbackName, Program.MainLoggedCells, displayGems);
+                Console.Beep(800, 150);
+            }
+
+            // Level change intercept: Capture old layout states and log selection details
             if (Raylib.IsKeyPressed(KeyboardKey.Right) || Raylib.IsKeyPressed(KeyboardKey.Left))
+
+                // Level change intercept: Capture old layout states and log selection details
+                if (Raylib.IsKeyPressed(KeyboardKey.Right) || Raylib.IsKeyPressed(KeyboardKey.Left))
             {
                 int oldRoom = currentRoom;
                 SaveActiveRoomVisualState(currentRoom, globalScale, heightMultiplier, panOffsetX, panOffsetY, rotationAngle, tiltFactor, renderStyleMode);
@@ -117,6 +132,7 @@ namespace cSharpRaylib
                 rotationAngle = ((rotationAngle / 45) + 1) * 45 % 360;
                 CCUnifiedLogger.LogSessionEvent(logTargetName, $"Fixed angle snap executed. Active rotation angle locked at {rotationAngle:D3}°.");
             }
+            
             trigger3DLabFlag = false;
             exportTextFlag = false;
 

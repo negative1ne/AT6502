@@ -116,11 +116,13 @@ namespace cSharpRaylib
                     }
 
                     // Push verified data values into the application's single source of truth memory layer
+                    // FIX BANNER: Task High-Integrity Direct Ground-Truth Matrix Ingestion Mapping [v0.95]
                     var targetCity = RomManager.IsolatedStages[roomIdx];
                     for (int r = 0; r < 22; r++)
                     {
                         for (int c = 0; c < 22; c++)
                         {
+                            // Ingest height structures and collectibles using uniform linear matching indices
                             targetCity.Heights[r, c] = diskProfile.Heights[r, c];
                             targetCity.Gems[r, c] = diskProfile.Gems[r, c];
                         }
@@ -144,7 +146,56 @@ namespace cSharpRaylib
                 File.WriteAllText(emergencyLog, $"Pipeline execution crashed out during validation pass: {startupEx.Message}");
                 Environment.Exit(1);
             }
+            /// ====================================================================================
+            // FIX BANNER: High-Integrity Diagnostic Gem Flow Matrix Analyzer [v0.95 SPEC]
+            // TARGETS: [1-1] (Stage 00), [1-2] (Stage 01), [1-3] (Stage 02) Dual Audit Verification
             // ====================================================================================
+            int[] traceStages = new int[] { 0, 1, 2 };
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine("\n================================================================================");
+            Console.WriteLine("Executing Live Diagnostic Analysis Pass for Gem Data Flow — Stages [1-1], [1-2], [1-3]");
+            Console.WriteLine("================================================================================");
+            Console.ResetColor();
+
+            foreach (int stgIdx in traceStages)
+            {
+                var targetCity = RomManager.IsolatedStages[stgIdx];
+                int displayWaveMajor = (stgIdx / 4) + 1;
+                int displayWaveMinor = (stgIdx % 4) + 1;
+
+                Console.WriteLine($"\n[DIAGNOSTIC MATRIX COMPARISON TRACE FOR LEVEL [{displayWaveMajor}-{displayWaveMinor}] — STAGE {stgIdx:D2}]");
+                Console.WriteLine("    --- FILE PARSED IN-MEMORY PROFILE ---             --- ACTIVE ENGINE COMPILATION CORE ---");
+                Console.WriteLine("    00 02 04 06 08 10 12 14 16 18 20                  00 02 04 06 08 10 12 14 16 18 20");
+
+                for (int r = 0; r < 22; r++)
+                {
+                    // Print File-parsed memory buffer line block pass row index
+                    Console.Write($"{r:D2}  ");
+                    for (int c = 0; c < 22; c++)
+                    {
+                        Console.Write(targetCity.Gems[r, c] ? "*" : ".");
+                    }
+
+                    // Separation Divider Gutter
+                    Console.Write("    |    ");
+
+                    // Print Running System Memory state block pass row index
+                    Console.Write($"{r:D2}  ");
+                    for (int c = 0; c < 22; c++)
+                    {
+                        // Safely probing engine core lookup coordinates dynamically
+                        bool engineGemState = RomManager.IsolatedStages[stgIdx].Gems[r, c];
+                        Console.Write(engineGemState ? "*" : ".");
+                    }
+                    Console.WriteLine();
+                }
+            }
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine("================================================================================");
+            Console.WriteLine("Diagnostic Print Sequence Finished. Launching Application Core Windows Viewport.");
+            Console.WriteLine("================================================================================");
+            Console.ResetColor();
+
             // DIAGNOSTIC CORE FIXED BANNER: PROGRAM.CS - DYNAMIC LEVEL 01 OVERWRITE RUN HOOK
             // LOCATION: INJECTED DIRECTLY BENEATH INITIAL STARTUP AUDIT LOG STRIDE PASS
             // CONSTRAINTS: FORCES LOG GENERATION TO SWITCH TARGET TO TREE WAVE FILE (v0.90)

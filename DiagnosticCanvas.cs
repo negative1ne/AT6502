@@ -530,34 +530,11 @@ namespace cSharpRaylib
                     {
                         int posX = startX + (y * cellSize);
                         int posY = startY + (x * cellSize);
-                        // FIX BANNER: Task Step 3 Core Laboratory Local Scratchpad Redirection Pass [v0.95]
-                        int h = 0;
+                        // FIX BANNER: Task Step 2 Streamlined Linear Laboratory Ingestion Mapping [v0.95]
                         int evalX = x;
                         int evalY = y;
-
-                        // Advanced Exemption Matrix: Resolve actual visual tile mappings out of sandboxed RAM data slots exclusively
-                        if (currentRoom == 0 || currentRoom == 4 || currentRoom == 8 || currentRoom == 14)
-                        {
-                            h = labScratchHeights[x, y];
-                        }
-                        else
-                        {
-                            if (currentRoom == 8 || currentRoom == 14 || currentRoom == 30)
-                            {
-                                evalX = 21 - x; evalY = y;
-                            }
-                            else if (currentRoom == 6 || currentRoom == 10 || currentRoom == 11 ||
-                                     currentRoom == 18 || currentRoom == 26 || currentRoom == 27 ||
-                                     currentRoom == 34 || currentRoom == 35)
-                            {
-                                evalX = 21 - y; evalY = x;
-                            }
-                            else
-                            {
-                                evalX = y; evalY = x;
-                            }
-                            h = labScratchHeights[evalX, evalY];
-                        }
+                        int h = labScratchHeights[evalX, evalY];
+                    
 
                         byte tone = (byte)Math.Clamp(h * 4, 0, 255);
                         Color tileColor = new Color((byte)(tone + 30), (byte)(tone + 25), (byte)(tone + 10), (byte)255);

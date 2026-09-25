@@ -100,9 +100,11 @@ namespace cSharpRaylib
                     {
                         Raylib.DrawText("L", posX + 4, posY + 1, 12, Color.Orange);
                     }
-                    else if (displayGems && activeCity.Gems[srcX, srcY])
+                    // FIX BANNER: Task Step 1 Linear 2D Blueprint Gem Coordinate Coupler [v0.95]
+                    else if (displayGems && activeCity.Gems[x, y])
                     {
-                        DrawVerifiedGemMarker2D(srcX, srcY, cellAttr, romAttributes, posX, posY);
+                        // Safely processes file coordinates linearly to achieve 0-cell baseline drift parity
+                        DrawVerifiedGemMarker2D(x, y, cellAttr, romAttributes, posX, posY);
                     }
                 }
             }
@@ -179,10 +181,11 @@ namespace cSharpRaylib
                     }
 
                     // ============================================================================
-                    // FIX BANNER: MAPRENDERER.CS - 3D WORKSPACE GEM REFERENCE UNLEASHED (v0.85)
+                    // FIX BANNER: Task Step 2 Symmetric 3D Isometric Gem Marker Stride [v0.95]
                     // ============================================================================
                     if (displayGems && !isElevatorCell && activeCity.Gems[x, y])
                     {
+                        // Evaluates coordinates symmetrically off the underlying master text asset layers
                         DrawVerifiedGemMarker3D(x, y, currentHeight, scale, heightScale, offsetX, offsetY, rotationAngle, tiltFactor, cellAttr, romAttributes);
                     }
                 }
