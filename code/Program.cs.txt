@@ -2,13 +2,10 @@
 // FIX BANNER: PROGRAM.CS - PART 1: MASTER ENGINE LOOP UTILITIES (v0.85)
 // ============================================================================
 using CrystalCastles.DataEngine;
-using Microsoft.VisualBasic.ApplicationServices;
 using Raylib_cs;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Color = Raylib_cs.Color;
 using Rectangle = Raylib_cs.Rectangle;
 
@@ -30,9 +27,6 @@ namespace cSharpRaylib
 
         public static void Main(string[] args)
         {
-            // Invoke and run the automated v0.95 specification file spacing conversion check
-            CCFormatMigrator.RunChecksumComparisonTest();
-
             byte[] RoomToCityMap = new byte[] {
                 0x00, 0x02, 0x09, 0xC3, 0x46, 0x71, 0x0C, 0xC7,
                 0x06, 0x0D, 0x45, 0xCB, 0x04, 0x0A, 0x06, 0x4F,
