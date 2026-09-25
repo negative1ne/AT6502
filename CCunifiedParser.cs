@@ -267,19 +267,20 @@ namespace CrystalCastles.DataEngine
         // ====================================================================================
         private static void ParseGemsLine(string line, UnifiedStageProfile profile, ref int gemRow, int lineNum, StreamWriter logger)
         {
-            if (line.Contains("00 01 02") || gemRow >= GridSize)
+            // Phase 2 Defractor: Rigid string-length screening intercepts top labeling row shifts completely
+            string baselineCleanText = line.Trim();
+            if (baselineCleanText.StartsWith("00") && (baselineCleanText.Contains("01  02") || baselineCleanText.Contains("01 02")) || gemRow >= GridSize)
             {
-                if (logger != null && line.Contains("00 01 02")) logger.WriteLine($"  Line {lineNum:D2} [COLUMN LABEL SKIP]: '{line}'");
+                if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [GEM HEADER ROW SKIP]: '{line}'");
                 return;
             }
 
-            // Split on spaces and remove all empty element fragments cleanly
-            string[] rawTokens = line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] rawTokens = baselineCleanText.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
             if (rawTokens.Length == 0) return;
 
-            // DYNAMIC STRIDE FILTER: Isolate the row prefix securely to lock accurate array offsets
+            // Semantic Shield: Read index identifier to securely bind data matrix columns
             int cleanStartCol = 0;
-            if (int.TryParse(rawTokens[0], out int labelCheck) && labelCheck == gemRow)
+            if (int.TryParse(rawTokens[0], out int rowPrefixCheck) && rowPrefixCheck == gemRow)
             {
                 cleanStartCol = 1;
             }
@@ -294,7 +295,6 @@ namespace CrystalCastles.DataEngine
             {
                 string targetToken = rawTokens[colY + cleanStartCol].Trim();
 
-                // Track both single-pass marker profiles to lock gem occupancy records natively
                 if (targetToken == "*" || targetToken == "**" || targetToken == "L")
                 {
                     profile.Gems[gemRow, colY] = true;
@@ -306,30 +306,29 @@ namespace CrystalCastles.DataEngine
                 }
             }
 
-            if (logger != null)
-            {
-                logger.WriteLine($"  Line {lineNum:D2} [MATRIX CELL MAP] -> Row {gemRow:D2} Gems Extracted (Active Count: {activeGemsInRow})");
-            }
-
+            if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [MATRIX CELL MAP] -> Row {gemRow:D2} Gems Extracted (Active Count: {activeGemsInRow})");
             gemRow++;
         }
+        
 
         private static void ParseMapLine(string line, UnifiedStageProfile profile, ref int mapRow, int lineNum, StreamWriter logger)
         {
-            if (line.Contains("00  01  02") || mapRow >= GridSize)
+            // Phase 2 Diagnostics Fixed: Guard column tracker string patterns against row 00 data structures
+            string cleanLineText = line.Trim();
+            if (cleanLineText.Contains("01  02") || cleanLineText.Contains("01 02") || mapRow >= GridSize)
             {
-                if (logger != null && line.Contains("00  01  02")) logger.WriteLine($"  Line {lineNum:D2} [COLUMN LABEL SKIP]: '{line}'");
+                if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [MAP HEADER ROW SKIP]: '{line}'");
                 return;
             }
 
-            string[] tokens = line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] tokens = cleanLineText.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
             if (tokens.Length == 0) return;
 
             int startCol = 0;
             if (int.TryParse(tokens[0], out int rowPrefix) && rowPrefix == mapRow)
             {
                 startCol = 1;
-                if (logger != null && mapRow == 0) logger.WriteLine($"  Line {lineNum:D2} [STRIDE SHIFT] -> Line {lineNum:D2} Row Label '{tokens[0]}' Detected. Stripping Left-Margin Index Prefix.");
+                if (logger != null && mapRow == 0) logger.WriteLine($"  Line {lineNum:D2} [STRIDE SHIFT] -> Margin Index Strip Active.");
             }
 
             if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [DATA INGEST] -> Raw Char Length: {line.Length} | Text: '{line}' | Tokens: {tokens.Length}");
@@ -347,7 +346,7 @@ namespace CrystalCastles.DataEngine
                 }
             }
 
-            if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [HEIGHT VERIFY] -> Row {mapRow:D2} Heights Loaded Natively. Void Tile Filters Synced.");
+            if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [HEIGHT VERIFY] -> Row {mapRow:D2} Heights Loaded Natively.");
             mapRow++;
         }
     }

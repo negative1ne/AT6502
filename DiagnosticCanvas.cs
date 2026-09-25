@@ -58,10 +58,11 @@ namespace cSharpRaylib
                     int cityIndex = roomToCityMap[currentRoom] & 0x0F;
                     activeCity = cities[cityIndex];
 
-                    string revisedFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "revised");
+                    // Phase 2 Path Refactor: Divert asset tracking streams solely to unified data lane
+                    string masterUnifiedFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "unified_data");
                     string formattedName = stageNames[currentRoom].Replace(" ", "_").Replace("'", "").ToUpper();
                     string fileName = $"STAGE_{currentRoom:D2}_{formattedName}.txt";
-                    string revisedFilePath = Path.Combine(revisedFolder, fileName);
+                    string revisedFilePath = Path.Combine(masterUnifiedFolder, fileName);
 
                     // Overwrite pass: session_audit.log resets on every layout switch, preserving historical structure outputs exactly
                     string unifiedSessionLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
@@ -533,53 +534,29 @@ namespace cSharpRaylib
                         // FIX BANNER: Task Step 2 Streamlined Linear Laboratory Ingestion Mapping [v0.95]
                         int evalX = x;
                         int evalY = y;
-                        int h = labScratchHeights[evalX, evalY];
-                    
-
-                        byte tone = (byte)Math.Clamp(h * 4, 0, 255);
-                        Color tileColor = new Color((byte)(tone + 30), (byte)(tone + 25), (byte)(tone + 10), (byte)255);
-                        Color gridColor = new Color((byte)45, (byte)45, (byte)40, (byte)255);
-
-                        Raylib.DrawRectangle(posX, posY, cellSize, cellSize, tileColor);
-                        Raylib.DrawRectangleLines(posX, posY, cellSize, cellSize, gridColor);
-
-                        int locatedElevatorIndex = -1;
-                        for (int i = 0; i < mockList.Count; i++)
+                        // Phase 2 Deep Telemetry: Audit stage 00 cell 07,07 on boot to find data drift
+                        if (currentRoom == 0 && x == 7 && y == 7)
                         {
-                            if (mockList[i].CellX == evalX && mockList[i].CellY == evalY)
+                            try
                             {
-                                locatedElevatorIndex = i;
-                                break;
+                                string deepTracePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
+                                StringBuilder telemetryDump = new StringBuilder();
+                                telemetryDump.AppendLine($"\n--- [PIPELINE GRAPHICS AUDIT: STAGE {currentRoom:D2}] ---");
+                                telemetryDump.AppendLine($"  * Grid Stride Index Variables : Local Loop X={x:D2}, Y={y:D2} | Render EvalX={evalX:D2}, EvalY={evalY:D2}");
+                                if (diagnosticProfile != null && diagnosticProfile.Gems != null)
+                                {
+                                    telemetryDump.AppendLine($"  * Parser RAM State Occupancy : diagnosticProfile.Gems[7,7] = {diagnosticProfile.Gems[7, 7]}");
+                                    telemetryDump.AppendLine($"  * Parser Neighbors Readout   : [7,6]={diagnosticProfile.Gems[7, 6]} | [6,7]={diagnosticProfile.Gems[6, 7]} | [7,8]={diagnosticProfile.Gems[7, 8]}");
+                                }
+                                telemetryDump.AppendLine($"  * Canvas Blit Coordinates     : Screen Raster Calculated Position -> PixelX={posX}, PixelY={posY}");
+                                telemetryDump.AppendLine("------------------------------------------------------\n");
+                                File.AppendAllText(deepTracePath, telemetryDump.ToString(), Encoding.UTF8);
                             }
+                            catch { /* Guard stream collisions */ }
                         }
 
-
-                        // FIX BANNER: STANDALONE MODE ELEVATOR INDEPENDENT MATRIX DRAWER [v0.91]
-
-                        for (int i = 0; i < mockList.Count; i++)
-                        {
-                            if (mockList[i].CellX == x && mockList[i].CellY == y)
-                            {
-                                locatedElevatorIndex = i;
-                                break;
-                            }
-                        }
-
-                        if (locatedElevatorIndex != -1)
-                        {
-                            // Force an independent solid background rectangle to make the elevator box fully clear
-                            Raylib.DrawRectangle(posX + 2, posY + 2, cellSize - 4, cellSize - 4, Color.Blue);
-                            Raylib.DrawRectangleLines(posX + 1, posY + 1, cellSize - 2, cellSize - 2, Color.SkyBlue);
-
-                            // FIX BANNER: ENLARGED CONTRAST TELEMETRY CHARACTER VECTOR DRAW [v0.91]
-                            // Bumped text sizing up to 22 and re-centered coordinates for perfect legibility
-                            Raylib.DrawText($"E{locatedElevatorIndex}", posX + 5, posY + 7, 22, Color.RayWhite);
-
-                        }
-
-                        // FIX BANNER: Task 6 Parallel Gem Layer Matrix Synchronization [v0.95]
                         // Forces the collectible layer lookups to use the exact same transformed map axis pointers
-                        else if (diagnosticProfile != null && diagnosticProfile.Gems != null && diagnosticProfile.Gems[evalX, evalY])
+                        if (diagnosticProfile != null && diagnosticProfile.Gems != null && diagnosticProfile.Gems[evalX, evalY])
                         {
                             Raylib.DrawCircle(posX + (cellSize / 2), posY + (cellSize / 2), 6, Color.Gold);
                         }

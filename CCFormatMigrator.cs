@@ -177,6 +177,7 @@ namespace cSharpRaylib
 
             // Task 3 Hook: Auto-trigger the security verification baseline engine cleanly
             RunChecksumComparisonTest();
+
         }
         // Task 3: High-Security CRC32 Data Engine Integrity Verification System
         private static readonly Dictionary<int, uint> CanonicalCrcChecksums = new Dictionary<int, uint>();
@@ -289,8 +290,8 @@ namespace cSharpRaylib
         }
         public static void InjectGroundTruthElevators()
         {
-            // Task 8 Isolated Custom Editor Relative Data Path Split Integration Pass
-            string targetFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "revised");
+            // Task 8 Master Ingestion Path Alignment
+            string targetFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "unified_data");
             string startupAuditPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "startup_audit.log");
 
             try
@@ -300,12 +301,12 @@ namespace cSharpRaylib
                 startupHeader.AppendLine("================================================================================");
                 startupHeader.AppendLine($"[STARTUP TRACE] Execution Run Initiated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
                 startupHeader.AppendLine($"[ENGINE VERSION ENVIRONMENT] -> Active Build Spec: v{CCFormatConfig.VersionTag}");
-                startupHeader.AppendLine($"[I/O TARGET PATH] -> Fully Resolved Base Directory Location:");
+                startupHeader.AppendLine($"[I/O MASTER TARGET PATH] -> Fully Resolved Master Location:");
                 startupHeader.AppendLine($"                  {targetFolder}");
                 startupHeader.AppendLine("================================================================================");
 
                 File.WriteAllText(startupAuditPath, startupHeader.ToString(), Encoding.UTF8);
-                File.AppendAllText(startupAuditPath, $"[PATH SPLIT INITIALIZED] -> Editor Asset Target Isolated to: \\data\\revised\\\n", Encoding.UTF8);
+                File.AppendAllText(startupAuditPath, $"[MASTER PATH INITIALIZED] -> Engine Target Isolated to: \\data\\unified_data\\\n", Encoding.UTF8);
             }
             catch (Exception logPathEx)
             {
