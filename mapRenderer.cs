@@ -18,24 +18,38 @@ namespace cSharpRaylib
         // ====================================================================================
         public static void Draw2DBlueprint(CityData activeCity, Color[] activeTheme, bool displayPathOverlays, bool displayGems, bool displayElevators, int stageNum)
         {
+            // Phase 2 Pipeline Audit Pass: Trace mapping indices directly to find pointer drift
+            try
+            {
+                byte[] RoomToCityLookupTable = new byte[] {
+                    0x00, 0x02, 0x09, 0xC3, 0x46, 0x71, 0x0C, 0xC7,
+                    0x06, 0x0D, 0x45, 0xCB, 0x04, 0x0A, 0x06, 0x4F,
+                    0x41, 0x4D, 0x3C, 0xC3, 0x0A, 0x02, 0x32, 0x3F,
+                    0x01, 0x04, 0x75, 0xFB, 0x01, 0x3A, 0x06, 0xF7,
+                    0x08, 0x7D, 0x05, 0xCB, 0x0E
+                };
+
+                int resolvedParentBank = RoomToCityLookupTable[stageNum] & 0x0F;
+                string diagnosticTracePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
+
+                string alignmentReport = $"[{DateTime.Now:HH:mm:ss}] [VIEWPORT TRACKING TRACE] -> Active Stage ID: {stageNum:D2} | Render Modulo Index: {stageNum % 16:D2} | True ROM Parent Bank ID: {resolvedParentBank:D2}\n";
+                System.IO.File.AppendAllText(diagnosticTracePath, alignmentReport, System.Text.Encoding.UTF8);
+            }
+            catch { /* Guard concurrent file locks */ }
+
             int cellSize = 16;
             int gridOffsetX = 380;
             int gridOffsetY = 150;
 
-            byte[,] romAttributes = RomManager.BaseCities[stageNum % 16].Attributes;
+            // Unification Fix: Route attributes cleanly from the active in-memory v0.95 city tracking structure
+            byte[,] activeAttributes = activeCity.Attributes;
 
-            // ====================================================================================
-            // UNIFICATION FIX: MAPRENDERER.CS - BROADEN TREE WAVE ROTATION ENGINE RANGE
-            // LOCATION: REPLACES SINGLE-STAGE EXCEPTION CONDITIONAL INSIDE DRAW2DBLUEPRINT METHOD
-            // CONSTRAINTS: EMBEDS STAGES 21 AND 22 TO ROTATE VISUALLY AND ALIGN UNIFORM (v0.90 SPEC)
-            // ====================================================================================
             bool isRotatedStage = (stageNum == 1 || stageNum == 21 || stageNum == 22);
 
             for (int x = 0; x < 22; x++)
             {
                 for (int y = 0; y < 22; y++)
                 {
-                    // INVERSE COORDINATE RE-MAPPER: Rotate 90 deg clockwise visually if exception stage
                     int srcX = isRotatedStage ? (21 - y) : x;
                     int srcY = isRotatedStage ? x : y;
 
@@ -52,18 +66,20 @@ namespace cSharpRaylib
                     int tileHeight = activeCity.Heights[srcX, srcY];
                     byte cellAttr = activeCity.Attributes[srcX, srcY];
                     
-                    // Render coordinates remain linear while tracking source indices step through matrix rotation transformations
                     int posX = gridOffsetX + (y * cellSize);
                     int posY = gridOffsetY + (x * cellSize);
 
-                    // 1. VOID FILTER PASS
                     if (tileHeight == 0 && !isElevatorCell)
                     {
                         if (displayPathOverlays && ((cellAttr & 0x04) == 0x04))
                         {
                             Raylib.DrawRectangleLines(posX, posY, cellSize - 1, cellSize - 1, Color.DarkGray);
                         }
-                        if (displayGems) DrawVerifiedGemMarker2D(srcX, srcY, cellAttr, romAttributes, posX, posY);
+                        // Phase 2 Fix: Call marker display passing the active city attributes matrix directly
+                        if (displayGems && activeCity.Gems[srcX, srcY]) 
+                        {
+                            Raylib.DrawCircle(posX + 8, posY + 8, 3, Color.Yellow);
+                        }
                         continue;
                     }
 
@@ -100,11 +116,10 @@ namespace cSharpRaylib
                     {
                         Raylib.DrawText("L", posX + 4, posY + 1, 12, Color.Orange);
                     }
-                    // FIX BANNER: Task Step 1 Linear 2D Blueprint Gem Coordinate Coupler [v0.95]
-                    else if (displayGems && activeCity.Gems[x, y])
+                    // Task Step 1 Unified 2D Blueprint Gem Coordinate Integration Pass [v0.95]
+                    else if (displayGems && activeCity.Gems[srcX, srcY])
                     {
-                        // Safely processes file coordinates linearly to achieve 0-cell baseline drift parity
-                        DrawVerifiedGemMarker2D(x, y, cellAttr, romAttributes, posX, posY);
+                        Raylib.DrawCircle(posX + 8, posY + 8, 3, Color.Yellow);
                     }
                 }
             }

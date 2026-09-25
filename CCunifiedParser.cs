@@ -267,50 +267,40 @@ namespace CrystalCastles.DataEngine
         // ====================================================================================
         private static void ParseGemsLine(string line, UnifiedStageProfile profile, ref int gemRow, int lineNum, StreamWriter logger)
         {
-            if (line.Contains("00 01 02") || gemRow >= GridSize)
+            // Phase 2 Alignment: Intercept and skip the column tracking indicator strings cleanly
+            if (line.Contains("00") && (line.Contains("01  02") || line.Contains("01 02")) || gemRow >= GridSize)
             {
-                if (logger != null && line.Contains("00 01 02")) logger.WriteLine($"  Line {lineNum:D2} [COLUMN LABEL SKIP]: '{line}'");
+                if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [GEM HEADER SKIP]: '{line}'");
                 return;
             }
 
-            // Split on spaces and remove all empty element fragments cleanly
             string[] rawTokens = line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
             if (rawTokens.Length == 0) return;
 
-            // DYNAMIC STRIDE FILTER: Isolate the row prefix securely to lock accurate array offsets
-            int cleanStartCol = 0;
-            if (int.TryParse(rawTokens[0], out int labelCheck) && labelCheck == gemRow)
+            // Safe Left Margin Stride Pass: Ignore row labels ('00', '01') during matrix value placement
+            int textColumnStartOffset = 0;
+            if (int.TryParse(rawTokens[0], out int leadingRowLabel) && leadingRowLabel == gemRow)
             {
-                cleanStartCol = 1;
+                textColumnStartOffset = 1;
             }
 
-            if (logger != null)
-            {
-                logger.WriteLine($"  Line {lineNum:D2} [DATA INGEST] -> Raw Char Length: {line.Length} | Active Row: {gemRow:D2} | Tokens: {rawTokens.Length}");
-            }
+            if (logger != null) logger.WriteLine($"  Line {lineNum:D2} [DATA INGEST] -> Row: {gemRow:D2} | True Tokens: {rawTokens.Length}");
 
-            int activeGemsInRow = 0;
-            for (int colY = 0; colY < GridSize && (colY + cleanStartCol) < rawTokens.Length; colY++)
+            int activeGemsFound = 0;
+            for (int colY = 0; colY < GridSize && (colY + textColumnStartOffset) < rawTokens.Length; colY++)
             {
-                string targetToken = rawTokens[colY + cleanStartCol].Trim();
+                string tokenCell = rawTokens[colY + textColumnStartOffset].Trim();
 
-                // Track both single-pass marker profiles to lock gem occupancy records natively
-                if (targetToken == "*" || targetToken == "**" || targetToken == "L")
+                if (tokenCell == "*" || tokenCell == "**" || tokenCell == "L")
                 {
                     profile.Gems[gemRow, colY] = true;
-                    activeGemsInRow++;
+                    activeGemsFound++;
                 }
                 else
                 {
                     profile.Gems[gemRow, colY] = false;
                 }
             }
-
-            if (logger != null)
-            {
-                logger.WriteLine($"  Line {lineNum:D2} [MATRIX CELL MAP] -> Row {gemRow:D2} Gems Extracted (Active Count: {activeGemsInRow})");
-            }
-
             gemRow++;
         }
 
