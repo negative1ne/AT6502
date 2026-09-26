@@ -54,18 +54,21 @@ namespace cSharpRaylib
                     int srcY = isRotatedStage ? x : y;
 
                     bool isElevatorCell = false;
+                    int tileHeight = activeCity.Heights[srcX, srcY];
+                    byte cellAttr = activeCity.Attributes[srcX, srcY];
+
+                    // Fetch real-time position to animate the 2D overview blueprint tiles
+                    int currentLiveHeight = tileHeight;
                     foreach (var ev in activeCity.Elevators)
                     {
                         if (ev.IsMapped && ev.CellX == srcX && ev.CellY == srcY)
                         {
                             isElevatorCell = true;
+                            currentLiveHeight = ev.CurrentPosition;
                             break;
                         }
                     }
 
-                    int tileHeight = activeCity.Heights[srcX, srcY];
-                    byte cellAttr = activeCity.Attributes[srcX, srcY];
-                    
                     int posX = gridOffsetX + (y * cellSize);
                     int posY = gridOffsetY + (x * cellSize);
 
@@ -75,16 +78,15 @@ namespace cSharpRaylib
                         {
                             Raylib.DrawRectangleLines(posX, posY, cellSize - 1, cellSize - 1, Color.DarkGray);
                         }
-                        // Phase 2 Fix: Call marker display passing the active city attributes matrix directly
-                        if (displayGems && activeCity.Gems[srcX, srcY]) 
+                        if (displayGems && activeCity.Gems[srcX, srcY])
                         {
                             Raylib.DrawCircle(posX + 8, posY + 8, 3, Color.Yellow);
                         }
                         continue;
                     }
 
-                    // 2. DYNAMIC CELL RENDERING DETERMINATION
-                    int baseShade = Math.Min(100 + (tileHeight * 12), 255);
+                    // Sync Visual Shift: Force the tile shading formula to read our live moving register values
+                    int baseShade = Math.Min(100 + (currentLiveHeight * 12), 255);
                     Color blockColor;
 
                     if (isElevatorCell && displayElevators)
@@ -94,7 +96,7 @@ namespace cSharpRaylib
                     else if (displayPathOverlays)
                     {
                         if ((cellAttr & 0x04) == 0x04) blockColor = Color.Green;
-                        else blockColor = activeTheme[0];
+                        else blockColor = activeTheme[0]; // Restores the array index element safely
                     }
                     else
                     {
@@ -116,7 +118,6 @@ namespace cSharpRaylib
                     {
                         Raylib.DrawText("L", posX + 4, posY + 1, 12, Color.Orange);
                     }
-                    // Task Step 1 Unified 2D Blueprint Gem Coordinate Integration Pass [v0.95]
                     else if (displayGems && activeCity.Gems[srcX, srcY])
                     {
                         Raylib.DrawCircle(posX + 8, posY + 8, 3, Color.Yellow);
@@ -161,7 +162,7 @@ namespace cSharpRaylib
                     int currentHeight = activeCity.Heights[x, y];
                     bool isElevatorCell = false;
 
-                    // Phase 2 Elevator Integration Pass: Map dynamic extrusion targets
+                    // Phase 2 Fix: Safely map drawHeight inside the elevator variable scope block
                     int drawHeight = currentHeight;
 
                     foreach (var ev in activeCity.Elevators)
@@ -169,7 +170,7 @@ namespace cSharpRaylib
                         if (ev.IsMapped && ev.CellX == x && ev.CellY == y)
                         {
                             isElevatorCell = true;
-                            drawHeight = ev.CurrentPosition; // Override frozen height with active state tracker values
+                            drawHeight = ev.CurrentPosition; // Safely reads the moving register inside scope
                             break;
                         }
                     }
@@ -182,7 +183,9 @@ namespace cSharpRaylib
                         }
                         continue;
                     }
+
                     byte cellAttr = activeCity.Attributes[x, y];
+                    
 
                     if (isElevatorCell && displayElevators)
                     {
