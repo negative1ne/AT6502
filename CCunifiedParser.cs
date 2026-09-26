@@ -333,7 +333,12 @@ namespace CrystalCastles.DataEngine
                 }
                 else if (byte.TryParse(token, out byte height))
                 {
-                    profile.Heights[mapRow, colY] = height > 99 ? (byte)99 : height;
+                    // ============================================================================
+                    // TASK 6 FIX MODIFICATION WINDOW: LIFT ALTITUDE CLAMPING CAP FROM 99 TO 100
+                    // ============================================================================
+                    // Expanded boundary protection guard to natively support high-clearance vertical lift ceilings
+                    profile.Heights[mapRow, colY] = (byte)Math.Clamp((int)height, 0, 100);
+                    // ============================================================================
                 }
             }
 

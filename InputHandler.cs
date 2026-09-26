@@ -327,7 +327,11 @@ namespace cSharpRaylib
 
             Raylib.DrawText("W / S      : Scale / Height Multiplier", (int)guiAnchor.X + 10, tY + 148, 11, textClr);
             Raylib.DrawText($"+ / -      : Zoom [{globalScale:F2}]", (int)guiAnchor.X + 10, tY + 164, 11, textClr);
-            Raylib.DrawText($"E          : Queue Output", (int)guiAnchor.X + 10, tY + 180, 11, Raylib_cs.Color.Gold);
+            // ============================================================================
+            // TASK C1 FIX: RENAME SIDEBAR QUICK MENU TEXT LABEL FROM QUEUE OUTPUT TO EXPORT
+            // ============================================================================
+            Raylib.DrawText($"E          : Export", (int)guiAnchor.X + 10, tY + 180, 11, Raylib_cs.Color.Gold);
+            // ============================================================================
             Raylib.DrawText($"R          : Reset View", (int)guiAnchor.X + 10, tY + 196, 11, textClr);
 
             var dRoom = RomManager.IsolatedStages[currentRoom];

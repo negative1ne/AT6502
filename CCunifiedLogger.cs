@@ -78,7 +78,15 @@ namespace cSharpRaylib
 
             try
             {
-                string outFileName = $"export_stage_{currentRoom:D2}_{_sessionTimestamp}.log";
+                // ============================================================================
+                // SUB-TASK B FIX: DIFFERENTIATE MAIN VS DIAGNOSTIC EXPORT PROFILE PATHS
+                // ============================================================================
+                // Checks if name contains the exact un-hydrated framework fallback token string
+                bool isMainCaller = stageName.StartsWith("STAGE_");
+                string prefixLabel = isMainCaller ? "main_export" : "diag_export";
+
+                string outFileName = $"{prefixLabel}_stage_{currentRoom:D2}_{_sessionTimestamp}.log";
+                // ============================================================================
                 string fullExportPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, outFileName);
                 var dRoom = RomManager.IsolatedStages[currentRoom];
 
