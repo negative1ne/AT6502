@@ -55,8 +55,48 @@ namespace cSharpRaylib
 
                 if (shouldUpdateStage)
                 {
-                    int cityIndex = roomToCityMap[currentRoom] & 0x0F;
-                    activeCity = cities[cityIndex];
+                    // ============================================================================
+                    // TASK 4 FIX MODIFICATION WINDOW: DEEP-CLONE SANDBOX INSTANTIATION
+                    // ============================================================================
+                    int parentCityIndex = roomToCityMap[currentRoom] & 0x0F;
+                    var sourceCityReference = cities[parentCityIndex]; // Sample direct target index context safely
+
+                    // Instantiate a distinct, cloned room memory track to prevent pass-by-reference leaks
+                    activeCity = new CityData
+                    {
+                        NumElevators = sourceCityReference.NumElevators,
+                        TrackState = sourceCityReference.TrackState
+                    };
+
+                    // Deep-clone underlying layout grid matrices into the isolated sandbox instance
+                    for (int r = 0; r < 22; r++)
+                    {
+                        for (int c = 0; c < 22; c++)
+                        {
+                            activeCity.Heights[r, c] = sourceCityReference.Heights[r, c];
+                            activeCity.Attributes[r, c] = sourceCityReference.Attributes[r, c];
+                            activeCity.Gems[r, c] = sourceCityReference.Gems[r, c];
+                        }
+                    }
+
+                    // Deep-clone elevator property sheets safely into the local workspace track
+                    activeCity.Elevators = new List<ElevatorData>();
+                    foreach (var srcLift in sourceCityReference.Elevators)
+                    {
+                        activeCity.Elevators.Add(new ElevatorData
+                        {
+                            CellX = srcLift.CellX,
+                            CellY = srcLift.CellY,
+                            BottomPosition = srcLift.BottomPosition,
+                            TopPosition = srcLift.TopPosition,
+                            CurrentPosition = srcLift.CurrentPosition,
+                            IsMapped = srcLift.IsMapped,
+                            Mode = srcLift.Mode,
+                            WaitTime = srcLift.WaitTime,
+                            CurrentSitTime = srcLift.CurrentSitTime
+                        });
+                    }
+                    // ============================================================================
 
                     // Phase 2 Diagnostics Unification: Point file streaming strictly to the master data folder lane
                     string masterUnifiedFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "unified_data");
@@ -171,41 +211,11 @@ namespace cSharpRaylib
                         }
                     }
 
-                    // FIX BANNER: ARCADE REALITY EDGE-STAGE FALLBACK OVERRIDES REGISTRY TABLE [v0.91]
-                    for (int i = 0; i < mockList.Count; i++)
-                    {
-                        var ev = mockList[i];
-
-                        // Hardcode the exact manual adjustments from our verified sandbox database rules
-                        if (currentRoom == 0 && i == 0) { ev.CellX = 18; ev.CellY = 5; ev.IsMapped = true; }
-                        if (currentRoom == 0 && i == 1) { ev.CellX = 5; ev.CellY = 18; ev.IsMapped = true; }
-
-                        if (currentRoom == 2 && i == 0) { ev.CellX = 17; ev.CellY = 17; ev.IsMapped = true; }
-
-                        if (currentRoom == 3 && i == 0) { ev.CellX = 4; ev.CellY = 19; ev.IsMapped = true; }
-                        if (currentRoom == 3 && i == 1) { ev.CellX = 19; ev.CellY = 4; ev.IsMapped = true; }
-
-                        if (currentRoom == 6 && i == 0) { ev.CellX = 2; ev.CellY = 13; ev.IsMapped = true; }
-                        if (currentRoom == 6 && i == 1) { ev.CellX = 6; ev.CellY = 9; ev.IsMapped = true; }
-                        if (currentRoom == 6 && i == 3) { ev.CellX = 14; ev.CellY = 7; ev.IsMapped = true; }
-
-                        if (currentRoom == 11 && i == 0) { ev.CellX = 2; ev.CellY = 16; ev.IsMapped = true; }
-                        if (currentRoom == 11 && i == 1) { ev.CellX = 14; ev.CellY = 6; ev.IsMapped = true; }
-                        if (currentRoom == 11 && i == 2) { ev.CellX = 16; ev.CellY = 7; ev.IsMapped = true; }
-                        if (currentRoom == 11 && i == 3) { ev.CellX = 6; ev.CellY = 18; ev.IsMapped = true; }
-
-                        if (currentRoom == 12 && i == 0) { ev.CellX = 0; ev.CellY = 18; ev.IsMapped = true; }
-                        if (currentRoom == 12 && i == 1) { ev.CellX = 2; ev.CellY = 12; ev.IsMapped = true; }
-
-                        // Sync fallback table mappings right back into the primary master database structures
-                        if (ev.IsMapped && activeCity != null && i < activeCity.Elevators.Count)
-                        {
-                            activeCity.Elevators[i].CellX = ev.CellX;
-                            activeCity.Elevators[i].CellY = ev.CellY;
-                            activeCity.Elevators[i].IsMapped = true;
-                        }
-                    }
-
+                    // ============================================================================
+                    // TASK 5 FIX MODIFICATION WINDOW: ERASE ARCHAIC HARDCODED OVERRIDES REGISTRY
+                    // ============================================================================
+                    // Legacy hardcoded arcade edge-stage fallback overrides block completely removed to honor v0.95 data files directly
+                    // ============================================================================
                     // FIX BANNER: TRUNCATED EXTRA RESET GATE PASS [v0.91]
                     // Left empty intentionally to stop the database from clearing our newly aligned coordinates
 
@@ -266,6 +276,7 @@ namespace cSharpRaylib
                 // Shifting grid offsets down and right to permanently prevent title text collisions
                 _hoveredColY = (mousePixelX - 150) / 36;
                 _hoveredRowX = (mousePixelY - 150) / 36;
+
 
                 // --- v0.91 Focus-Latching Click Interceptor & L-Key Log Matrix ---
                 string telemetryOutputDisplayString = "ROW (X): OUT  |  COL (Y): OUT";
@@ -394,8 +405,7 @@ namespace cSharpRaylib
                     }
                 }
 
-                // FIX BANNER: ULTRA-SAFE IN-MEMORY STAGE BUFFER EXPORTER & TAG INTEGRITY INTEGRATION WATCHER [v0.91]
-                if (Raylib.IsKeyPressed(KeyboardKey.E))
+                if (Raylib.IsKeyPressed(KeyboardKey.F2))
                 {
                     // Phase 2 Path Untangling: Pull original baseline layouts straight out of master unified storage
                     string masterUnifiedFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "unified_data");

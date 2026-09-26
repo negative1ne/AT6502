@@ -51,18 +51,36 @@ namespace cSharpRaylib
         {
             string logTargetName = $"session_audit_{activeSessionTimestamp}.log";
 
-            // Level change intercept: Capture old layout states and log selection details
-            // FIX BANNER: Task Step 1 High-Integrity F2 Key Snapshot Router Pass [v0.95]
+            // ============================================================================
+            // SUB-TASK A FIX: LOCK MAIN VIEWPORT F2 EXPORT STRICLY TO 2D BLUEPRINT MODE
+            // ============================================================================
             if (Raylib.IsKeyPressed(KeyboardKey.F2))
             {
-                // Forces fallback string formatting to safely avoid city engine variable leaks
-                string structuralFallbackName = $"STAGE_{currentRoom:D2}";
+                if (!is3DMode) // Strict 3D Viewport Bypass Guard Enforced
+                {
+                    // Forces fallback string formatting to safely avoid city engine variable leaks
+                    string structuralFallbackName = $"STAGE_{currentRoom:D2}";
 
-                // Routes data straight to logging engine using thread-safe parameters
-                CCUnifiedLogger.ExportActiveSessionSummary(currentRoom, structuralFallbackName, Program.MainLoggedCells, displayGems);
-                Console.Beep(800, 150);
+                    // Routes data straight to logging engine using thread-safe parameters
+                    CCUnifiedLogger.ExportActiveSessionSummary(currentRoom, structuralFallbackName, Program.MainLoggedCells, displayGems);
+                    Console.Beep(800, 150);
+                }
+                // Automatically ignored in 3D Isometric View to prevent keybind cross-firing
             }
-
+            // ============================================================================
+            // ============================================================================
+            // TASK 2 FIX MODIFICATION WINDOW: RESTORE 'E' TO 2D AND DISABLE IN 3D
+            // ============================================================================
+            if (Raylib.IsKeyPressed(KeyboardKey.E))
+            {
+                if (!is3DMode) // Strict 2D Mode Conditional Constraint Enforced
+                {
+                    string structuralFallbackName = $"STAGE_{currentRoom:D2}";
+                    CCUnifiedLogger.ExportActiveSessionSummary(currentRoom, structuralFallbackName, Program.MainLoggedCells, displayGems);
+                }
+                // Automatically ignored if is3DMode is true to preserve camera tilt keys
+            }
+            // ============================================================================
             // Level change intercept: Capture old layout states and log selection details
             if (Raylib.IsKeyPressed(KeyboardKey.Right) || Raylib.IsKeyPressed(KeyboardKey.Left))
 
