@@ -84,29 +84,60 @@ namespace cSharpRaylib
                         }
                         continue;
                     }
-
-                    // Sync Visual Shift: Force the tile shading formula to read our live moving register values
-                    int baseShade = Math.Min(100 + (currentLiveHeight * 12), 255);
+                    // ============================================================================
+                    // TASK C3 REPAIR: HIGH-ACCURACY LINEAR 9-SHADE ALTITUDE HEATMAP ROUTER
+                    // ============================================================================
                     Color blockColor;
 
                     if (isElevatorCell && displayElevators)
                     {
                         blockColor = Color.Orange;
                     }
-                    else if (displayPathOverlays)
+                    else if (displayPathOverlays && ((cellAttr & 0x04) == 0x04))
                     {
-                        if ((cellAttr & 0x04) == 0x04) blockColor = Color.Green;
-                        else blockColor = activeTheme[0]; // Restores the array index element safely
+                        blockColor = Color.Green;
                     }
                     else
                     {
+                        // Safely evaluate local maximum height ranges natively in this layout row scope
+                        int localMaxAltitudeValue = 1;
+                        for (int r = 0; r < 22; r++)
+                        {
+                            for (int c = 0; c < 22; c++)
+                            {
+                                if (activeCity.Heights[r, c] > localMaxAltitudeValue)
+                                {
+                                    localMaxAltitudeValue = activeCity.Heights[r, c];
+                                }
+                            }
+                        }
+
+                        // Protect pipeline against division-by-zero bounds on flat maps
+                        if (localMaxAltitudeValue < 1) localMaxAltitudeValue = 1;
+
+                        // Map height levels evenly across 9 progressive shading intervals
+                        float calculatedAltitudeFactor = (float)currentLiveHeight / localMaxAltitudeValue;
+                        int altitudeStrideIndex = Math.Clamp((int)(calculatedAltitudeFactor * 8.99f), 0, 8);
+
+                        // Extract active theme colors natively from the core array parameters
+                        Color activeBaseTone = activeTheme[0];
+
+                        // ============================================================================
+                        // TASK C3 REPAIR: BRIGHTNESS BOOST SYSTEM FOR DARK ARCADE PALETTES
+                        // ============================================================================
+                        // Elevate the base brightness floor from 0.25 to 0.45 to prevent dark green blackouts
+                        float linearScaleMultiplier = 0.45f + (altitudeStrideIndex * 0.06f);
+                        // ============================================================================
+
                         blockColor = new Color(
-                            (byte)(activeTheme[0].R * baseShade / 255),
-                            (byte)(activeTheme[0].G * baseShade / 255),
-                            (byte)(activeTheme[0].B * baseShade / 255),
+                            (byte)Math.Clamp(activeBaseTone.R * linearScaleMultiplier, 0, 255),
+                            (byte)Math.Clamp(activeBaseTone.G * linearScaleMultiplier, 0, 255),
+                            (byte)Math.Clamp(activeBaseTone.B * linearScaleMultiplier, 0, 255),
                             (byte)255
                         );
                     }
+                    // ============================================================================
+
 
                     Raylib.DrawRectangle(posX, posY, cellSize - 1, cellSize - 1, blockColor);
 

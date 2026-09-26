@@ -578,34 +578,48 @@ namespace cSharpRaylib
                         {
                             int tileHeight = diagnosticProfile.Heights[srcX, srcY];
 
-                            // Task Deep Telemetry: Audit Stage 01 Cell 05,05 to catch clamped or muted palette properties
-                            if (currentRoom == 1 && srcX == 5 && srcY == 5)
+                            // ============================================================================
+                            // REPAIR C3: CORRECT DIAGNOSTIC MATRIX INDEX SCANNER TO POINT TO DATA PROFILES
+                            // ============================================================================
+                            // Force the loop to scan file-parsed height steps to protect other maps
+                            int localMaxAltitudeValue = 1;
+                            for (int r = 0; r < 22; r++)
                             {
-                                try
+                                for (int c = 0; c < 22; c++)
                                 {
-                                    string tracePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
-                                    System.Text.StringBuilder sb = new System.Text.StringBuilder();
-                                    sb.AppendLine($"\n--- [DIAGNOSTIC PALETTE CLAMP TRACE: STAGE {currentRoom:D2}] ---");
-                                    sb.AppendLine($"  * Mapped Cell Address    : MappedX={srcX:D2}, MappedY={srcY:D2}");
-                                    sb.AppendLine($"  * Extracted Altitude      : RawHeight={tileHeight} | BaseShadeMultiplier={Math.Min(100 + (tileHeight * 12), 255)}");
-                                    sb.AppendLine($"  * Memory Matrix Profile  : Profile Object References = {diagnosticProfile}");
-                                    sb.AppendLine("------------------------------------------------------------\n");
-                                    System.IO.File.AppendAllText(tracePath, sb.ToString(), System.Text.Encoding.UTF8);
+                                    if (diagnosticProfile.Heights[r, c] > localMaxAltitudeValue)
+                                    {
+                                        localMaxAltitudeValue = diagnosticProfile.Heights[r, c];
+                                    }
                                 }
-                                catch { /* Avoid file handle contention */ }
                             }
+                            // ============================================================================
 
-                            int baseShade = Math.Min(100 + (tileHeight * 12), 255);
+                            if (localMaxAltitudeValue < 1) localMaxAltitudeValue = 1;
+
+                            // Map height levels evenly across 9 progressive shading intervals
+                            float calculatedAltitudeFactor = (float)tileHeight / localMaxAltitudeValue;
+                            int altitudeStrideIndex = Math.Clamp((int)(calculatedAltitudeFactor * 8.99f), 0, 8);
+
+                            // Extract the active layout color palette natively from the global registry
                             var masterPalettes = StagePalettes.GetMasterPaletteMatrix();
                             Color[] currentTheme = masterPalettes.TryGetValue(currentRoom, out var matchedTheme) ? matchedTheme : new Color[] { Color.White };
-                            Color activeBaseColor = currentTheme[0];
+                            Color activeBaseTone = currentTheme[0];
+
+                            // ============================================================================
+                            // TASK C3 REPAIR: BRIGHTNESS BOOST SYSTEM FOR DARK DIAGNOSTIC PALETTES
+                            // ============================================================================
+                            // Synchronize the base brightness floor across viewports to preserve dark green levels
+                            float linearScaleMultiplier = 0.45f + (altitudeStrideIndex * 0.06f);
+                            // ============================================================================
 
                             Color blockColor = new Color(
-                                (byte)(activeBaseColor.R * baseShade / 255),
-                                (byte)(activeBaseColor.G * baseShade / 255),
-                                (byte)(activeBaseColor.B * baseShade / 255),
+                                (byte)Math.Clamp(activeBaseTone.R * linearScaleMultiplier, 0, 255),
+                                (byte)Math.Clamp(activeBaseTone.G * linearScaleMultiplier, 0, 255),
+                                (byte)Math.Clamp(activeBaseTone.B * linearScaleMultiplier, 0, 255),
                                 (byte)255
                             );
+                            // ============================================================================
 
                             Raylib.DrawRectangle(posX, posY, cellSize - 1, cellSize - 1, blockColor);
                         }
