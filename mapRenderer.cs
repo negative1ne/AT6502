@@ -142,15 +142,17 @@ namespace cSharpRaylib
                 }
             }
         }
-         
+
         // ============================================================================
         // MAPRENDERER.CS APPENDIX FIX: RESTORE 3D WORKSPACE METHOD HOOK (v0.85)
+        // ============================================================================
+        // ============================================================================
+        // MAPRENDERER.CS APPENDIX FIX: RESTORE 3D WORKSPACE METHOD HOOK (v0.95 SYNC)
         // ============================================================================
         public static void Draw3DWorkspace(CityData activeCity, Color[] activeTheme, float scale, float heightScale,
             int offsetX, int offsetY, int rotationAngle, float tiltFactor, int renderStyle, bool showPaths, bool displayGems, bool displayElevators, int stageNum)
         {
             Color[] goldBasePalette = new Color[] { Color.Gold, Color.Orange, Color.DarkBrown };
-            byte[,] romAttributes = RomManager.BaseCities[stageNum % 16].Attributes;
 
             for (int x = 0; x < 22; x++)
             {
@@ -159,34 +161,39 @@ namespace cSharpRaylib
                     int currentHeight = activeCity.Heights[x, y];
                     bool isElevatorCell = false;
 
+                    // Phase 2 Elevator Integration Pass: Map dynamic extrusion targets
+                    int drawHeight = currentHeight;
+
                     foreach (var ev in activeCity.Elevators)
                     {
                         if (ev.IsMapped && ev.CellX == x && ev.CellY == y)
                         {
                             isElevatorCell = true;
+                            drawHeight = ev.CurrentPosition; // Override frozen height with active state tracker values
                             break;
                         }
                     }
 
-                    if (currentHeight == 0 && !isElevatorCell)
+                    if (drawHeight == 0 && !isElevatorCell)
                     {
-                        if (displayGems)
+                        if (displayGems && activeCity.Gems[x, y])
                         {
-                            DrawVerifiedGemMarker3D(x, y, currentHeight, scale, heightScale, offsetX, offsetY, rotationAngle, tiltFactor, activeCity.Attributes[x, y], romAttributes);
+                            LevelTransform.Draw3DGem(x, y, currentHeight, scale, heightScale, offsetX, offsetY, rotationAngle, tiltFactor, Color.Yellow);
                         }
                         continue;
                     }
-
                     byte cellAttr = activeCity.Attributes[x, y];
 
                     if (isElevatorCell && displayElevators)
                     {
-                        int baseTileHeight = Math.Max(1, currentHeight);
+                        // Use the active frame-driven height to extrude the elevator platform dynamically
+                        int baseTileHeight = Math.Max(1, drawHeight);
                         LevelTransform.DrawIsometricBlock(
                             x, y, baseTileHeight, goldBasePalette, scale, heightScale, offsetX, offsetY,
                             rotationAngle, tiltFactor, renderStyle, false, cellAttr
                         );
                     }
+                    
                     else if (currentHeight > 0)
                     {
                         LevelTransform.DrawIsometricBlock(
@@ -195,13 +202,10 @@ namespace cSharpRaylib
                         );
                     }
 
-                    // ============================================================================
-                    // FIX BANNER: Task Step 2 Symmetric 3D Isometric Gem Marker Stride [v0.95]
-                    // ============================================================================
+                    // Task Step 2 Symmetric 3D Isometric Gem Marker Integration Pass [v0.95]
                     if (displayGems && !isElevatorCell && activeCity.Gems[x, y])
                     {
-                        // Evaluates coordinates symmetrically off the underlying master text asset layers
-                        DrawVerifiedGemMarker3D(x, y, currentHeight, scale, heightScale, offsetX, offsetY, rotationAngle, tiltFactor, cellAttr, romAttributes);
+                        LevelTransform.Draw3DGem(x, y, currentHeight, scale, heightScale, offsetX, offsetY, rotationAngle, tiltFactor, Color.Yellow);
                     }
                 }
             }

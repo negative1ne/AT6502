@@ -58,10 +58,14 @@ namespace cSharpRaylib
                     int cityIndex = roomToCityMap[currentRoom] & 0x0F;
                     activeCity = cities[cityIndex];
 
-                    string revisedFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "revised");
+                    // Phase 2 Diagnostics Unification: Point file streaming strictly to the master data folder lane
+                    string masterUnifiedFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "unified_data");
                     string formattedName = stageNames[currentRoom].Replace(" ", "_").Replace("'", "").ToUpper();
                     string fileName = $"STAGE_{currentRoom:D2}_{formattedName}.txt";
-                    string revisedFilePath = Path.Combine(revisedFolder, fileName);
+                    string unifiedFilePath = Path.Combine(masterUnifiedFolder, fileName);
+                    
+                    diagnosticProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(unifiedFilePath, null);
+                    shouldUpdateStage = false;
 
                     // Overwrite pass: session_audit.log resets on every layout switch, preserving historical structure outputs exactly
                     string unifiedSessionLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
@@ -80,7 +84,7 @@ namespace cSharpRaylib
 
                     using (StreamWriter localAuditWriter = new StreamWriter(unifiedSessionLog, true, Encoding.UTF8))
                     {
-                        diagnosticProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(revisedFilePath, localAuditWriter);
+                        diagnosticProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(unifiedFilePath, localAuditWriter);
                     }
 
                     // Populate memory vectors strictly inside the local lab arrays to preserve ground-truth isolation completely
@@ -530,59 +534,72 @@ namespace cSharpRaylib
                     {
                         int posX = startX + (y * cellSize);
                         int posY = startY + (x * cellSize);
-                        // FIX BANNER: Task Step 2 Streamlined Linear Laboratory Ingestion Mapping [v0.95]
-                        int evalX = x;
-                        int evalY = y;
-                        int h = labScratchHeights[evalX, evalY];
-                    
+                        // Phase 2 Diagnostics Unification: Utilize parallel parser coordinate transforms
+                        bool isRotatedStage = (currentRoom == 1 || currentRoom == 21 || currentRoom == 22);
+                        int srcX = isRotatedStage ? (21 - y) : x;
+                        int srcY = isRotatedStage ? x : y;
 
-                        byte tone = (byte)Math.Clamp(h * 4, 0, 255);
-                        Color tileColor = new Color((byte)(tone + 30), (byte)(tone + 25), (byte)(tone + 10), (byte)255);
-                        Color gridColor = new Color((byte)45, (byte)45, (byte)40, (byte)255);
-
-                        Raylib.DrawRectangle(posX, posY, cellSize, cellSize, tileColor);
-                        Raylib.DrawRectangleLines(posX, posY, cellSize, cellSize, gridColor);
-
+                        // Align visual elevator diagnostics with the true parsed file nodes
                         int locatedElevatorIndex = -1;
-                        for (int i = 0; i < mockList.Count; i++)
+                        if (diagnosticProfile != null && diagnosticProfile.Lifts != null)
                         {
-                            if (mockList[i].CellX == evalX && mockList[i].CellY == evalY)
+                            for (int e = 0; e < diagnosticProfile.Lifts.Count; e++)
                             {
-                                locatedElevatorIndex = i;
-                                break;
-                            }
-                        }
-
-
-                        // FIX BANNER: STANDALONE MODE ELEVATOR INDEPENDENT MATRIX DRAWER [v0.91]
-
-                        for (int i = 0; i < mockList.Count; i++)
-                        {
-                            if (mockList[i].CellX == x && mockList[i].CellY == y)
-                            {
-                                locatedElevatorIndex = i;
-                                break;
+                                if (diagnosticProfile.Lifts[e].CellX == srcX && diagnosticProfile.Lifts[e].CellY == srcY)
+                                {
+                                    locatedElevatorIndex = e;
+                                    break;
+                                }
                             }
                         }
 
                         if (locatedElevatorIndex != -1)
                         {
-                            // Force an independent solid background rectangle to make the elevator box fully clear
                             Raylib.DrawRectangle(posX + 2, posY + 2, cellSize - 4, cellSize - 4, Color.Blue);
                             Raylib.DrawRectangleLines(posX + 1, posY + 1, cellSize - 2, cellSize - 2, Color.SkyBlue);
-
-                            // FIX BANNER: ENLARGED CONTRAST TELEMETRY CHARACTER VECTOR DRAW [v0.91]
-                            // Bumped text sizing up to 22 and re-centered coordinates for perfect legibility
                             Raylib.DrawText($"E{locatedElevatorIndex}", posX + 5, posY + 7, 22, Color.RayWhite);
-
                         }
-
-                        // FIX BANNER: Task 6 Parallel Gem Layer Matrix Synchronization [v0.95]
-                        // Forces the collectible layer lookups to use the exact same transformed map axis pointers
-                        else if (diagnosticProfile != null && diagnosticProfile.Gems != null && diagnosticProfile.Gems[evalX, evalY])
+                        else if (diagnosticProfile != null && diagnosticProfile.Gems != null && diagnosticProfile.Gems[srcX, srcY])
                         {
                             Raylib.DrawCircle(posX + (cellSize / 2), posY + (cellSize / 2), 6, Color.Gold);
                         }
+                        else if (diagnosticProfile != null && diagnosticProfile.Heights != null && diagnosticProfile.Heights[srcX, srcY] > 0)
+                        {
+                            int tileHeight = diagnosticProfile.Heights[srcX, srcY];
+
+                            // Task Deep Telemetry: Audit Stage 01 Cell 05,05 to catch clamped or muted palette properties
+                            if (currentRoom == 1 && srcX == 5 && srcY == 5)
+                            {
+                                try
+                                {
+                                    string tracePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
+                                    System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                                    sb.AppendLine($"\n--- [DIAGNOSTIC PALETTE CLAMP TRACE: STAGE {currentRoom:D2}] ---");
+                                    sb.AppendLine($"  * Mapped Cell Address    : MappedX={srcX:D2}, MappedY={srcY:D2}");
+                                    sb.AppendLine($"  * Extracted Altitude      : RawHeight={tileHeight} | BaseShadeMultiplier={Math.Min(100 + (tileHeight * 12), 255)}");
+                                    sb.AppendLine($"  * Memory Matrix Profile  : Profile Object References = {diagnosticProfile}");
+                                    sb.AppendLine("------------------------------------------------------------\n");
+                                    System.IO.File.AppendAllText(tracePath, sb.ToString(), System.Text.Encoding.UTF8);
+                                }
+                                catch { /* Avoid file handle contention */ }
+                            }
+
+                            int baseShade = Math.Min(100 + (tileHeight * 12), 255);
+                            var masterPalettes = StagePalettes.GetMasterPaletteMatrix();
+                            Color[] currentTheme = masterPalettes.TryGetValue(currentRoom, out var matchedTheme) ? matchedTheme : new Color[] { Color.White };
+                            Color activeBaseColor = currentTheme[0];
+
+                            Color blockColor = new Color(
+                                (byte)(activeBaseColor.R * baseShade / 255),
+                                (byte)(activeBaseColor.G * baseShade / 255),
+                                (byte)(activeBaseColor.B * baseShade / 255),
+                                (byte)255
+                            );
+
+                            Raylib.DrawRectangle(posX, posY, cellSize - 1, cellSize - 1, blockColor);
+                        }
+
+
                         // FIX BANNER: UNIFIED VISUAL WORKSPACE INDICATOR DRAWING [v0.91]
                         if (globalSessionLoggedCells[currentRoom, x, y])
                         {

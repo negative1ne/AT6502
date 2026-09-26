@@ -13,4 +13,5 @@ namespace cSharpRaylib
         // Helper property to return uniform file identification token strings dynamically
         public static string MasterEngineHeaderSpec => $"v{VersionTag} MASTER GROUND-TRUTH ENGINE SPECIFICATION";
     }
+
 }
