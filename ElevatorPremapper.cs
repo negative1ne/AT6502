@@ -18,9 +18,10 @@ namespace cSharpRaylib
             if (_isInitialized) return;
 
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string elevatorFolder = Path.Combine(baseDir, "data", "elevator");
+            // Phase 2 Path Untangling: Point premapper strictly to our master layout repository folder track
+            string masterFolder = Path.Combine(baseDir, "data", "unified_data");
 
-            if (!Directory.Exists(elevatorFolder))
+            if (!Directory.Exists(masterFolder))
             {
                 _isInitialized = true;
                 return;
@@ -30,11 +31,10 @@ namespace cSharpRaylib
             {
                 List<(int X, int Y)> stageCoords = new List<(int X, int Y)>();
 
-                string v080Pattern = $"elevators_stage_{stageNum:D2}_*.txt";
-                string flatPattern = $"elevators_stage_{stageNum:D2}.txt";
+                // Aligns scanner parameters directly to parse your master v0.95 stage text files
+                string unifiedPattern = $"STAGE_{stageNum:D2}_*.txt";
 
-                string[] files = Directory.GetFiles(elevatorFolder, v080Pattern);
-                if (files.Length == 0) files = Directory.GetFiles(elevatorFolder, flatPattern);
+                string[] files = Directory.GetFiles(masterFolder, unifiedPattern);
 
                 if (files.Length > 0)
                 {

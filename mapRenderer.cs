@@ -153,8 +153,24 @@ namespace cSharpRaylib
         public static void Draw3DWorkspace(CityData activeCity, Color[] activeTheme, float scale, float heightScale,
             int offsetX, int offsetY, int rotationAngle, float tiltFactor, int renderStyle, bool showPaths, bool displayGems, bool displayElevators, int stageNum)
         {
-            Color[] goldBasePalette = new Color[] { Color.Gold, Color.Orange, Color.DarkBrown };
 
+            // Step 1 Isolated Calibration Pass: Inject known baseline test values into the first elevator on Stage 00 (Level 1-1)
+            // Step 2 Dual Isolation Pass: Force completely asymmetric timing windows on Level 1-1
+            if (stageNum == 0 && activeCity.Elevators.Count >= 2)
+            {
+                var liftE0 = activeCity.Elevators[0];
+                var liftE1 = activeCity.Elevators[1];
+
+                // Inject asymmetric bottom boundaries to completely split their timing loops
+                liftE0.BottomPosition = 6;
+                liftE1.BottomPosition = 14;
+
+                // Safe initialization clip
+                if (liftE0.CurrentPosition < liftE0.BottomPosition) liftE0.CurrentPosition = liftE0.BottomPosition;
+                if (liftE1.CurrentPosition < liftE1.BottomPosition) liftE1.CurrentPosition = liftE1.BottomPosition;
+            }
+
+            Color[] goldBasePalette = new Color[] { Color.Gold, Color.Orange, Color.DarkBrown };
             for (int x = 0; x < 22; x++)
             {
                 for (int y = 0; y < 22; y++)

@@ -138,33 +138,40 @@ namespace cSharpRaylib
                 string fullUnifiedPath = Path.Combine(targetExportFolder, outFileName);
 
                 CrystalCastles.DataEngine.CCUnifiedParser.UnifiedStageProfile ingestedProfile = null;
-
-                // --- v0.91 Isolated Parallel Ingestion Test Leg ---
-                // Live Path: Feeds the visible display variables safely from production records
-                ingestedProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(fullUnifiedPath, null);
-
                 if (IsParserDiagnosticActive)
                 {
-                    // FIX BANNER: ESCAPE BIN CONTEXT ONLY FOR ISOLATED PARALLEL DIAGNOSTIC FILES [v0.91]
-                    string exeDir = AppDomain.CurrentDomain.BaseDirectory;
-                    string projectRoot = Path.GetFullPath(Path.Combine(exeDir, "..", "..", "..", ".."));
-
-                    // FIX BANNER: TARGET DETACHED REVISED SUBDIRECTORY LOCALLY TO PROTECT GRAPHICS [v0.91]
-                    string revisedFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "revised");
-                    string parallelTestPath = Path.Combine(revisedFolder, outFileName);
-                    // FIX BANNER: PIPE HEAVY 37-STAGE VERIFICATION TELEMETRY INTO STATIC OVERWRITE LEDGER [v0.91]
+                    // Phase 2 Path Untangling: Bind parallel auditing loops to use our unified master files track
                     string unifiedSessionLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
 
-                    // Set to TRUE here because it is appending stages consecutively within the SAME boot loop pass
                     using (StreamWriter parallelAuditWriter = new StreamWriter(unifiedSessionLog, true, Encoding.UTF8))
-
                     {
-                        // Parse the local revised layout file and extract its profile properties safely
-                        var diagnosticProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(parallelTestPath, parallelAuditWriter);
+                        // Safely parse the master data repository layout file while outputting structural traces
+                        var diagnosticProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(fullUnifiedPath, parallelAuditWriter);
 
                         if (diagnosticProfile != null && diagnosticProfile.Heights != null)
                         {
-                            // Bind the revised altitude arrays strictly to the isolated target buffer profile
+                            ingestedProfile = diagnosticProfile;
+                        }
+                    }
+                }
+                else
+                {
+                    // Production Mode: Zero disk overhead, 100% direct-to-RAM ingestion
+                    ingestedProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(fullUnifiedPath, null);
+                }
+
+                if (IsParserDiagnosticActive)
+                {
+                    // Phase 2 Path Untangling: Bind parallel auditing loops to use our unified master files track
+                    string unifiedSessionLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "session_audit.log");
+
+                    using (StreamWriter parallelAuditWriter = new StreamWriter(unifiedSessionLog, true, Encoding.UTF8))
+                    {
+                        // Safely parse the master data repository layout file while outputting structural traces
+                        var diagnosticProfile = CrystalCastles.DataEngine.CCUnifiedParser.LoadUnifiedStageFile(fullUnifiedPath, parallelAuditWriter);
+
+                        if (diagnosticProfile != null && diagnosticProfile.Heights != null)
+                        {
                             ingestedProfile = diagnosticProfile;
                         }
                     }

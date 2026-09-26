@@ -397,17 +397,18 @@ namespace cSharpRaylib
                 // FIX BANNER: ULTRA-SAFE IN-MEMORY STAGE BUFFER EXPORTER & TAG INTEGRITY INTEGRATION WATCHER [v0.91]
                 if (Raylib.IsKeyPressed(KeyboardKey.E))
                 {
-                    string revisedFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "revised");
+                    // Phase 2 Path Untangling: Pull original baseline layouts straight out of master unified storage
+                    string masterUnifiedFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "unified_data");
                     string formattedName = stageNames[currentRoom].Replace(" ", "_").Replace("'", "").ToUpper();
                     string targetFileName = $"STAGE_{currentRoom:D2}_{formattedName}.txt";
-                    string fullRevisedPath = Path.Combine(revisedFolder, targetFileName);
+                    string fullUnifiedPath = Path.Combine(masterUnifiedFolder, targetFileName);
 
-                    if (File.Exists(fullRevisedPath))
+                    if (File.Exists(fullUnifiedPath))
                     {
                         try
                         {
                             // TIER 1: Read structural baseline context safely into isolated memory arrays
-                            string[] originalLines = File.ReadAllLines(fullRevisedPath);
+                            string[] originalLines = File.ReadAllLines(fullUnifiedPath);
                             List<string> workingBuffer = new List<string>();
 
                             // Reconstruct the layout properties completely inside RAM
@@ -465,8 +466,8 @@ namespace cSharpRaylib
 
                             if (gemTagCount == 1 && endGemTagCount == 1 && mapTagCount == 1)
                             {
-                                // FIX BANNER: NON-DESTRUCTIVE ISOLATED EXPORTS SUBFOLDER OVERRIDE ROUTE [v0.91]
-                                string exportDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "revised", "exports");
+                                // Phase 2 Path Untangling: Route editor outputs cleanly into a local unified exports directory
+                                string exportDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "unified_data", "exports");
                                 if (!Directory.Exists(exportDirectory))
                                 {
                                     Directory.CreateDirectory(exportDirectory);
@@ -481,7 +482,7 @@ namespace cSharpRaylib
 
                                 using (StreamWriter auditAppend = new StreamWriter(unifiedSessionLog, true, Encoding.UTF8))
                                 {
-                                    auditAppend.WriteLine($"[{DateTime.Now:HH:mm:ss}] [ISOLATED SHIELD WRITE] Generated clean transaction sheet: data\\revised\\exports\\{dynamicExportFile}");
+                                    auditAppend.WriteLine($"[{DateTime.Now:HH:mm:ss}] [ISOLATED SHIELD WRITE] Generated clean transaction sheet: data\\unified_data\\exports\\{dynamicExportFile}");
                                     auditAppend.WriteLine("--------------------------------------------------------------------------------\n");
                                 }
                                 // FIX BANNER: CONSOLIDATED EXPORT DUMP SUMMARY BRIDGE [v0.91]

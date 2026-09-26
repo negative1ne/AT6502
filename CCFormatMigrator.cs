@@ -300,7 +300,7 @@ namespace cSharpRaylib
         public static void InjectGroundTruthElevators()
         {
             // Task 8 Isolated Custom Editor Relative Data Path Split Integration Pass
-            string targetFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "revised");
+            string targetFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "unified_data");
             string startupAuditPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "startup_audit.log");
 
             try
@@ -315,7 +315,7 @@ namespace cSharpRaylib
                 startupHeader.AppendLine("================================================================================");
 
                 File.WriteAllText(startupAuditPath, startupHeader.ToString(), Encoding.UTF8);
-                File.AppendAllText(startupAuditPath, $"[PATH SPLIT INITIALIZED] -> Editor Asset Target Isolated to: \\data\\revised\\\n", Encoding.UTF8);
+                File.AppendAllText(startupAuditPath, $"[PATH SPLIT INITIALIZED] -> Editor Asset Target Isolated to: \\data\\unified_data\\\n", Encoding.UTF8);
             }
             catch (Exception logPathEx)
             {
@@ -491,7 +491,8 @@ namespace cSharpRaylib
         }
         public static void UpgradeQuarantineFilesToV091()
         {
-            string targetRelativePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "revised");
+            // Phase 2 Path Untangling: Point relative folder tracks straight to unified master storage
+            string targetRelativePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "unified_data");
             if (!Directory.Exists(targetRelativePath)) return;
 
             string[] filePaths = Directory.GetFiles(targetRelativePath, "STAGE_*.txt");
