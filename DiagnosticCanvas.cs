@@ -607,18 +607,25 @@ namespace cSharpRaylib
                             Color activeBaseTone = currentTheme[0];
 
                             // ============================================================================
-                            // TASK C3 REPAIR: BRIGHTNESS BOOST SYSTEM FOR DARK DIAGNOSTIC PALETTES
+                            // TASK C3: ALTERNATIVE BRIGHTNESS CONTRAST FLOOR SAFETY GATE
                             // ============================================================================
-                            // Synchronize the base brightness floor across viewports to preserve dark green levels
-                            float linearScaleMultiplier = 0.45f + (altitudeStrideIndex * 0.06f);
-                            // ============================================================================
+                            // Calculate your base linear shade step multiplier cleanly
+                            float shadingStepFactor = 0.35f + (altitudeStrideIndex * 0.07f);
 
-                            Color blockColor = new Color(
-                                (byte)Math.Clamp(activeBaseTone.R * linearScaleMultiplier, 0, 255),
-                                (byte)Math.Clamp(activeBaseTone.G * linearScaleMultiplier, 0, 255),
-                                (byte)Math.Clamp(activeBaseTone.B * linearScaleMultiplier, 0, 255),
-                                (byte)255
-                            );
+                            byte finalR = (byte)Math.Clamp(activeBaseTone.R * shadingStepFactor, 0, 255);
+                            byte finalG = (byte)Math.Clamp(activeBaseTone.G * shadingStepFactor, 0, 255);
+                            byte finalB = (byte)Math.Clamp(activeBaseTone.B * shadingStepFactor, 0, 255);
+
+                            // AUTOMATED CONTRAST ELEVATOR: If all color channels drop near black, boost visibility
+                            if (finalR < 35 && finalG < 35 && finalB < 35)
+                            {
+                                // Force deep shades (like Nasty Tree greens) to stay cleanly visible against the black void
+                                finalR = (byte)Math.Max(finalR, (byte)45);
+                                finalG = (byte)Math.Max(finalG, (byte)85);
+                                finalB = (byte)Math.Max(finalB, (byte)45);
+                            }
+
+                            Color blockColor = new Color(finalR, finalG, finalB, (byte)255);
                             // ============================================================================
 
                             Raylib.DrawRectangle(posX, posY, cellSize - 1, cellSize - 1, blockColor);

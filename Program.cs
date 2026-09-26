@@ -30,8 +30,12 @@ namespace cSharpRaylib
 
         public static void Main(string[] args)
         {
-            // Invoke and run the automated v0.95 specification file spacing conversion check
+            /// ============================================================================
+            // TASK 7 FIX MODIFICATION WINDOW: ENGAGE READ-ONLY DATA ENG_LOCKDOWN PASS
+            // ============================================================================
+            // Performs a fast, non-destructive signature integrity scan over all 37 stage configs
             CCFormatMigrator.RunChecksumComparisonTest();
+            // ============================================================================
 
             byte[] RoomToCityMap = new byte[] {
                 0x00, 0x02, 0x09, 0xC3, 0x46, 0x71, 0x0C, 0xC7,
