@@ -30,4 +30,4 @@ All 37 original game level variants have been meticulously cross-referenced, han
 
 ## 📂 Core Folder Structure Reference Guide
 The suite layout uses the following standardized relative path mapping schema to maintain version insulation:
-*   `.\data\unified_data\` — The master read-only grou
+*   `.\data\unified_data\` — The master read-only group
